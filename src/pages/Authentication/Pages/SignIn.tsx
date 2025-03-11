@@ -1,5 +1,5 @@
-import FotoSanoh from '../../../images/cover/cover-new2.png';
-import Logo from '../../../images/logo-sanoh.png';
+import FotoSanoh from '/images/cover/cover-new2.png';
+import Logo from '/images/logo-sanoh.png';
 import PasswordInput from '../../../components/PasswordInput';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
