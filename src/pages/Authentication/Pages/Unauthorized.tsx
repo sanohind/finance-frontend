@@ -12,7 +12,7 @@ const Unauthorized = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login');
+    navigate('/#/auth/login');
   };
   
   return (
