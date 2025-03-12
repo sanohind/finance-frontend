@@ -81,7 +81,7 @@ const GrTracking = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [userRole, setUserRole] = useState<string>('');
   const [userBpCode, setUserBpCode] = useState<string>('');
-  const [userBpName, setUserBpName] = useState<string>('');
+  const [, setUserBpName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [filterParams, setFilterParams] = useState<FilterParams>({});
   const [initialDataFetched, setInitialDataFetched] = useState(false);
