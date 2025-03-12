@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
-import PrintReceipt from './PrintReceipt';
-import LogoIcon from '../images/logo-sanoh.png';
+import LogoIcon from '/images/logo-sanoh.png';
 
 interface InvoiceCreationWizardProps {
   onClose: () => void;
@@ -20,6 +19,8 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ onClose, 
   const [taxDate, setTaxDate] = useState('2025-01-20');
   const [whtCode, setWhtCode] = useState('35 - Payable PPh 23.2%');
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState('--------- ----');
+  const [paymentTo, setPaymentTo] = useState('Sanoh Indonesia');
+  const [transactionType, setTransactionType] = useState('Invoice Payment');
 
   // Document state
   const [documents, setDocuments] = useState([
@@ -30,7 +31,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ onClose, 
   ]);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [showPrintReceipt, setShowPrintReceipt] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   // File input refs
@@ -298,26 +298,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ onClose, 
     }
   };
 
-  if (showPrintReceipt) {
-    return (
-      <PrintReceipt
-        paymentTo={paymentTo}
-        invoiceNumber={invoiceNumber}
-        taxNumber={taxNumber}
-        invoiceDate={invoiceDate}
-        taxDate={taxDate}
-        taxBaseAmount={taxBaseAmount}
-        taxAmount={taxAmount}
-        eFakturVATAmount={eFakturVATAmount}
-        totalInvoiceAmount={totalInvoiceAmount}
-        transactionType={transactionType}
-        onClose={() => {
-          setShowPrintReceipt(false);
-          onFinish();
-        }}
-      />
-    );
-  }
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">

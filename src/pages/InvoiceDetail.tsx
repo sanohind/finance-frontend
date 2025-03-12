@@ -1,10 +1,26 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
+interface InvoiceData {
+  inv_no: string | string[];
+  doc_date: string;
+  bp_code: string;
+  bp_name: string;
+  currency: string;
+  total_invoice_amount: number;
+  amount_before_tax: number;
+  invoice_status: string;
+  progress_status: string;
+  payment_plan_date: string;
+  payment_actual_date: string;
+  tax_number: string;
+  tax_amount: number;
+}
+
 const InvoiceDetail = () => {
   const router = useRouter();
   const { invoiceNumber } = router.query;
-  const [invoiceData, setInvoiceData] = useState(null);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -360,7 +360,7 @@ const InvoiceCreation = () => {
                   <td className="px-3 py-2 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedRecords.some(r => r.grSaNumber === item.grSaNumber)}
+                      checked={selectedRecords.some(r => r.grNumber === item.grNumber)}
                       onChange={() => handleRecordSelection(item)}
                       className="cursor-pointer"
                     />
