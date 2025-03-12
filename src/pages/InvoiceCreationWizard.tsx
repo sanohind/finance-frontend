@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
-import LogoIcon from '/images/logo-sanoh.png';
+import LogoIcon from '/images/Logo-sanoh.png';
 
 interface InvoiceCreationWizardProps {
   onClose: () => void;
