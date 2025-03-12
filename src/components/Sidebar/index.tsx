@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import Logo from '/images/logo-sanoh.png';
+import Logo from '/images/Logo-sanoh.png';
 import { SuperAdmin } from './SidebarMenu/SuperAdmin';
 import { AdminAccounting } from './SidebarMenu/AdminAccounting';
 import { Supplier } from './SidebarMenu/Supplier';
