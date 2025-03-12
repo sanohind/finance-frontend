@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import DropdownUser from './DropdownUser';
-import LogoIcon from '/images/logo-sanoh.png';
+import LogoIcon from '/images/Logo-sanoh.png';
 
 const Header = (props: {
   sidebarOpen: string | boolean | undefined;
