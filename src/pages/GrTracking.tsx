@@ -81,7 +81,7 @@ const GrTracking = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [userRole, setUserRole] = useState<string>('');
   const [userBpCode, setUserBpCode] = useState<string>('');
-  const [, setUserBpName] = useState<string>('');
+  const [userBpName, setUserBpName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [filterParams, setFilterParams] = useState<FilterParams>({});
   const [initialDataFetched, setInitialDataFetched] = useState(false);
@@ -224,15 +224,26 @@ const GrTracking = () => {
     
     const token = localStorage.getItem('access_token');
     try {
-      // Build query string from filter parameters
-      const queryParams = Object.entries(mergedParams)
+      // Determine which bp_code to use in the URL path
+      // For supplier-finance users, use their bp_code
+      // For admin users, use the selected supplier's bp_code
+      const bpCodeForUrl = isSupplierFinance ? userBpCode : selectedSupplier;
+      
+      // Make a copy of mergedParams without bp_id as we'll include it in the path
+      const { bp_id, ...paramsWithoutBpId } = mergedParams;
+      
+      // Build query string from remaining filter parameters
+      const queryParams = Object.entries(paramsWithoutBpId)
         .filter(([_, value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
-
+  
+      // Construct base URL with bp_code in the path if available
+      const baseUrl = bpCodeForUrl ? `${API_Inv_Line_Admin()}/${bpCodeForUrl}` : API_Inv_Line_Admin();
+      
       // Add query string to URL if it exists
-      const url = queryParams ? `${API_Inv_Line_Admin()}?${queryParams}` : API_Inv_Line_Admin();
-
+      const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
+  
       console.log('Fetching data with URL:', url);
       
       const response = await fetch(url, {
@@ -264,11 +275,7 @@ const GrTracking = () => {
         }
   
         if (invLineList.length > 0) {
-          // Apply client-side filtering if backend doesn't filter
-          if (mergedParams.bp_id) {
-            invLineList = invLineList.filter((item: { bp_id: string | undefined; }) => item.bp_id === mergedParams.bp_id);
-          }
-          
+          // Since bp_id is now in the URL path, we don't need additional client-side filtering
           setData(invLineList);
           setFilteredData(invLineList);
         } else {
