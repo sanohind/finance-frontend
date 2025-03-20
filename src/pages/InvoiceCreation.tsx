@@ -95,6 +95,15 @@ const InvoiceCreation = () => {
   const isSupplierFinance = userRole === '3' || userRole === 'supplier-finance';
   const isAdmin = userRole === '1' || userRole === '2' || userRole === 'super-admin' || userRole === 'admin-finance';
 
+  // Format number to IDR currency format
+  const formatToIDR = (value: number): string => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 2
+    }).format(value);
+  };
+
   useEffect(() => {
     const role = localStorage.getItem('role');
     const bpCode = localStorage.getItem('bp_code');
@@ -469,20 +478,9 @@ const InvoiceCreation = () => {
     currentPage * rowsPerPage
   );
 
-  // Generate skeleton rows for loading state
-  const renderSkeletons = () => {
-    return Array(5).fill(0).map((_, index) => (
-      <tr key={`skeleton-${index}`} className="animate-pulse border-b">
-        <td className="px-3 py-2 text-center">
-          <div className="h-4 bg-gray-200 rounded w-4 mx-auto"></div>
-        </td>
-        {Array(41).fill(0).map((_, cellIndex) => (
-          <td key={`cell-${index}-${cellIndex}`} className="px-3 py-2 text-center">
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
-          </td>
-        ))}
-      </tr>
-    ));
+  // Calculate total amount
+  const calculateTotalAmount = (records: GrSaRecord[]): number => {
+    return records.reduce((sum, item) => sum + (item.receipt_amount || 0), 0);
   };
 
   return (
@@ -599,9 +597,9 @@ const InvoiceCreation = () => {
             <tbody>
               <tr className="border-b hover:bg-gray-50">
                 <td className="px-3 py-2 text-sm text-center">{grSaList.length}</td>
-                <td className="px-3 py-2 text-sm text-center">{grSaList[0]?.currency || '-'}</td>
+                <td className="px-3 py-2 text-sm text-center">{grSaList[0]?.currency || 'IDR'}</td>
                 <td className="px-3 py-2 text-sm text-center">
-                  {grSaList.reduce((sum, item) => sum + (item.receipt_amount || 0), 0).toFixed(2)}
+                  {formatToIDR(calculateTotalAmount(grSaList))}
                 </td>
                 <td className="px-3 py-2 text-sm text-center">
                   {grSaList.length > 0 ? 'Data retrieved successfully' : 'No data available'}
@@ -628,7 +626,7 @@ const InvoiceCreation = () => {
               type="text"
               className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
               readOnly
-              value={selectedRecords.reduce((sum, item) => sum + (item.receipt_amount || 0), 0).toFixed(2)}
+              value={formatToIDR(calculateTotalAmount(selectedRecords))}
             />
           </div>
         </div>
