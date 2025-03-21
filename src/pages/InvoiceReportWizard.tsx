@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
-import PrintReceipt from './PrintReceipt';
 import LogoIcon from '../images/logo-sanoh.png';
 
 interface InvoiceReportWizardProps {
@@ -331,26 +330,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({ onClose, onFi
     }
   };
 
-  if (showPrintReceipt) {
-    return (
-      <PrintReceipt
-        paymentTo={paymentTo}
-        invoiceNumber={invoiceNumber}
-        taxNumber={taxNumber}
-        invoiceDate={invoiceDate}
-        taxDate={taxDate}
-        taxBaseAmount={taxBaseAmount}
-        taxAmount={taxAmount}
-        eFakturVATAmount={eFakturVATAmount}
-        totalInvoiceAmount={totalInvoiceAmount}
-        transactionType={transactionType}
-        onClose={() => {
-          setShowPrintReceipt(false);
-          onFinish();
-        }}
-      />
-    );
-  }
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
