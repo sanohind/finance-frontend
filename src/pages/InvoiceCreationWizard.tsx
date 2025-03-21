@@ -33,7 +33,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
   ]);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [showPrintReceipt, setShowPrintReceipt] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   // New state for PPN and PPH lists; their descriptions will be used in the form select.
@@ -444,7 +443,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         throw new Error('Invoice creation failed');
       }
       await response.json();
-      setShowPrintReceipt(true);
       onFinish();
     } catch (error) {
       console.error('Error creating invoice:', error);
