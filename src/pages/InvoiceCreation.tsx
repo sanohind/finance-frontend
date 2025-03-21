@@ -26,7 +26,7 @@ interface FilterParams {
   dn_number?: string;
 }
 
-interface GrSaRecord {
+export interface GrSaRecord {
   po_no: string;
   bp_id: string;
   bp_name: string;
@@ -147,24 +147,15 @@ const InvoiceCreation = () => {
     
     const token = localStorage.getItem('access_token');
     try {
-      // Determine which bp_code to use in the URL path
-      // For supplier-finance users, use their bp_code
-      // For admin users, use the selected supplier's bp_code
       const bpCodeForUrl = isSupplierFinance ? userBpCode : selectedSupplier;
-      
-      // Make a copy of mergedParams without bp_id as we'll include it in the path
       const { bp_id, ...paramsWithoutBpId } = mergedParams;
       
-      // Build query string from remaining filter parameters
       const queryParams = Object.entries(paramsWithoutBpId)
         .filter(([_, value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
   
-      // Construct base URL with bp_code in the path if available
       const baseUrl = bpCodeForUrl ? `${API_Inv_Line_Outstanding()}/${bpCodeForUrl}` : API_Inv_Line_Outstanding();
-      
-      // Add query string to URL if it exists
       const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
   
       console.log('Fetching GR/SA data with URL:', url);
@@ -185,7 +176,7 @@ const InvoiceCreation = () => {
       console.log('Raw GR/SA Response:', result);
   
       if (result && typeof result === 'object') {
-        let invLineList = [];
+        let invLineList: GrSaRecord[] = [];
   
         if (Array.isArray(result.data)) {
           invLineList = result.data;
@@ -198,7 +189,6 @@ const InvoiceCreation = () => {
         }
   
         if (invLineList.length > 0) {
-          // Since bp_id is now in the URL path, we don't need additional client-side filtering
           setGrSaList(invLineList);
           setFilteredData(invLineList);
         } else {
@@ -224,10 +214,7 @@ const InvoiceCreation = () => {
   };
 
   const fetchBusinessPartners = async () => {
-    if (isSupplierFinance) {
-      // For supplier-finance users, we don't need to fetch the full list
-      return;
-    }
+    if (isSupplierFinance) return;
     
     setIsLoading(true);
     try {
@@ -247,45 +234,40 @@ const InvoiceCreation = () => {
       const result = await response.json();
       console.log('Raw Business Partners Response:', result);
   
-      if (result && typeof result === 'object') {
-        let partnersList = [];
+      let partnersList: BusinessPartner[] = [];
+      if (result.bp_code && result.bp_name && result.adr_line_1) {
+        partnersList = [{
+          bp_code: result.bp_code,
+          bp_name: result.bp_name,
+          adr_line_1: result.adr_line_1,
+        }];
+      }
+      else if (Array.isArray(result.data)) {
+        partnersList = result.data.map((partner: BusinessPartner) => ({
+          bp_code: partner.bp_code,
+          bp_name: partner.bp_name,
+          adr_line_1: partner.adr_line_1,
+        }));
+      }
+      else if (result.data && typeof result.data === 'object') {
+        partnersList = Object.values(result.data).map((partner: any) => ({
+          bp_code: partner.bp_code,
+          bp_name: partner.bp_name,
+          adr_line_1: partner.adr_line_1,
+        }));
+      }
+      else if (Array.isArray(result)) {
+        partnersList = result.map((partner: BusinessPartner) => ({
+          bp_code: partner.bp_code,
+          bp_name: partner.bp_name,
+          adr_line_1: partner.adr_line_1,
+        }));
+      }
   
-        if (result.bp_code && result.bp_name && result.adr_line_1) {
-          partnersList = [{
-            bp_code: result.bp_code,
-            bp_name: result.bp_name,
-            adr_line_1: result.adr_line_1,
-          }];
-        }
-        else if (Array.isArray(result.data)) {
-          partnersList = result.data.map((partner: BusinessPartner) => ({
-            bp_code: partner.bp_code,
-            bp_name: partner.bp_name,
-            adr_line_1: partner.adr_line_1,
-          }));
-        }
-        else if (result.data && typeof result.data === 'object') {
-          partnersList = Object.values(result.data).map((partner: any) => ({
-            bp_code: partner.bp_code,
-            bp_name: partner.bp_name,
-            adr_line_1: partner.adr_line_1,
-          }));
-        }
-        else if (Array.isArray(result)) {
-          partnersList = result.map((partner: BusinessPartner) => ({
-            bp_code: partner.bp_code,
-            bp_name: partner.bp_name,
-            adr_line_1: partner.adr_line_1,
-          }));
-        }
-  
-        if (partnersList.length > 0) {
-          setBusinessPartners(partnersList);
-        } else {
-          toast.warn('No business partners found in the response');
-        }
+      if (partnersList.length > 0) {
+        setBusinessPartners(partnersList);
       } else {
-        throw new Error('Invalid response structure from API');
+        toast.warn('No business partners found in the response');
       }
     } catch (error) {
       console.error('Error fetching business partners:', error);
@@ -300,12 +282,9 @@ const InvoiceCreation = () => {
   };
 
   const handleRecordSelection = (record: GrSaRecord) => {
-    setSelectedRecords((prev) => {
-      const found = prev.find((r) => r.gr_no === record.gr_no);
-      if (found) {
-        return prev.filter((r) => r.gr_no !== record.gr_no);
-      }
-      return [...prev, record];
+    setSelectedRecords(prev => {
+      const found = prev.find(r => r.gr_no === record.gr_no);
+      return found ? prev.filter(r => r.gr_no !== record.gr_no) : [...prev, record];
     });
   };
 
@@ -346,39 +325,29 @@ const InvoiceCreation = () => {
 
   const selectedOption = supplierOptions.find(opt => opt.value === selectedSupplier) || {
     value: selectedSupplier,
-    label: selectedSupplier 
-      ? `${selectedSupplier} | ${businessPartners.find(p => p.bp_code === selectedSupplier)?.bp_name || ''}` 
+    label: selectedSupplier
+      ? `${selectedSupplier} | ${businessPartners.find(p => p.bp_code === selectedSupplier)?.bp_name || ''}`
       : "Select Supplier",
   };
 
   const handleSearch = async () => {
-    // For admin users, require a supplier selection
     if (isAdmin && !selectedSupplier) {
       toast.error('Please select a supplier first');
       return;
     }
     
-    // Fetch invoice line data instead of GR/SA data
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      
-      // Determine which bp_code to use in the URL path
       const bpCodeForUrl = isSupplierFinance ? userBpCode : selectedSupplier;
-      
-      // Make a copy of filterParams without bp_id as we'll include it in the path
       const { bp_id, ...paramsWithoutBpId } = filterParams;
       
-      // Build query string from remaining filter parameters
       const queryParams = Object.entries(paramsWithoutBpId)
         .filter(([_, value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
       
-      // Construct base URL with bp_code in the path if available
       const baseUrl = bpCodeForUrl ? `${API_Inv_Line_Admin()}/${bpCodeForUrl}` : API_Inv_Line_Admin();
-      
-      // Add query string to URL if it exists
       const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
       
       console.log('Searching with URL:', url);
@@ -398,29 +367,24 @@ const InvoiceCreation = () => {
       const result = await response.json();
       console.log('Raw Invoice Line Response:', result);
       
-      if (result && typeof result === 'object') {
-        let invLineList = [];
-        
-        if (Array.isArray(result.data)) {
-          invLineList = result.data;
-        }
-        else if (result.data && typeof result.data === 'object') {
-          invLineList = Object.values(result.data);
-        }
-        else if (Array.isArray(result)) {
-          invLineList = result;
-        }
-        
-        if (invLineList.length > 0) {
-          setGrSaList(invLineList);
-          setFilteredData(invLineList);
-        } else {
-          toast.warn('No invoice line data found for the selected filters');
-          setGrSaList([]);
-          setFilteredData([]);
-        }
+      let invLineList: GrSaRecord[] = [];
+      if (Array.isArray(result.data)) {
+        invLineList = result.data;
+      }
+      else if (result.data && typeof result.data === 'object') {
+        invLineList = Object.values(result.data);
+      }
+      else if (Array.isArray(result)) {
+        invLineList = result;
+      }
+      
+      if (invLineList.length > 0) {
+        setGrSaList(invLineList);
+        setFilteredData(invLineList);
       } else {
-        throw new Error('Invalid response structure from API');
+        toast.warn('No invoice line data found for the selected filters');
+        setGrSaList([]);
+        setFilteredData([]);
       }
     } catch (error) {
       console.error('Error fetching invoice line data:', error);
@@ -437,7 +401,6 @@ const InvoiceCreation = () => {
   };
 
   const handleClear = () => {
-    // Clear all filter params except bp_id for supplier-finance users
     if (isSupplierFinance) {
       setFilterParams({ bp_id: userBpCode });
     } else {
@@ -449,7 +412,6 @@ const InvoiceCreation = () => {
     setInvoiceNumber('');
     setPoNumber('');
     
-    // Reset form fields
     const formInputs = document.querySelectorAll('input');
     formInputs.forEach((input) => {
       if (input.type === 'text' || input.type === 'date') {
@@ -457,7 +419,6 @@ const InvoiceCreation = () => {
       }
     });
     
-    // For admin users, also clear the data until they search again
     if (isAdmin) {
       setGrSaList([]);
       setFilteredData([]);
@@ -468,7 +429,6 @@ const InvoiceCreation = () => {
     setCurrentPage(page);
   };
 
-  // Update filter params when inputs change
   const handleInputChange = (field: keyof FilterParams, value: string) => {
     setFilterParams(prev => ({ ...prev, [field]: value }));
   };
@@ -478,7 +438,6 @@ const InvoiceCreation = () => {
     currentPage * rowsPerPage
   );
 
-  // Calculate total amount
   const calculateTotalAmount = (records: GrSaRecord[]): number => {
     return records.reduce((sum, item) => sum + (item.receipt_amount || 0), 0);
   };
@@ -487,249 +446,265 @@ const InvoiceCreation = () => {
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Creation" />
       <ToastContainer />
-      <form className="space-y-4">
-        <div className='flex space-x-4'>
-          <div className="w-1/3 items-center">
-            <Select
-              options={supplierOptions}
-              value={selectedOption}
-              onChange={(selectedOption) => {
-                setSearchSupplier(selectedOption?.value || "");
-                setSelectedSupplier(selectedOption?.value || "");
-                setFilterParams(prev => ({ ...prev, bp_id: selectedOption?.value || "" }));
-              }}
-              className="w-full text-xs"
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  borderColor: "#9867C5",
-                  padding: "1px",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                }),
-              }}
-              isDisabled={isSupplierFinance}
-              isLoading={isLoading}
-              placeholder="Select Supplier"
-            />
-          </div>
+      {showWizard ? (
+        <InvoiceCreationWizard
+          selectedRecords={selectedRecords}
+          onClose={handleWizardClose}
+          onFinish={handleWizardFinish}
+        />
+      ) : (
+        <>
+          <form className="space-y-4">
+            <div className='flex space-x-4'>
+              <div className="w-1/3 items-center">
+                <Select
+                  options={supplierOptions}
+                  value={selectedOption}
+                  onChange={(selectedOption) => {
+                    setSearchSupplier(selectedOption?.value || "");
+                    setSelectedSupplier(selectedOption?.value || "");
+                    setFilterParams(prev => ({ ...prev, bp_id: selectedOption?.value || "" }));
+                  }}
+                  className="w-full text-xs"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: "#9867C5",
+                      padding: "1px",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                    }),
+                  }}
+                  isDisabled={isSupplierFinance}
+                  isLoading={isLoading}
+                  placeholder="Select Supplier"
+                />
+              </div>
 
-          <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">PO Date</label>
-            <input
-              type="date"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              onChange={(e) => handleInputChange('po_date', e.target.value)}
-            />
-          </div>
+              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">PO Date</label>
+                <input
+                  type="date"
+                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
+                  onChange={(e) => handleInputChange('po_date', e.target.value)}
+                />
+              </div>
 
-          <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">GR / SA Date</label>
-            <input
-              type="date"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              onChange={(e) => handleInputChange('gr_date', e.target.value)}
-            />
-          </div>
-        </div>
+              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">GR / SA Date</label>
+                <input
+                  type="date"
+                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
+                  onChange={(e) => handleInputChange('gr_date', e.target.value)}
+                />
+              </div>
+            </div>
 
-        <div className='flex space-x-4'>
-          <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Number</label>
-            <input
-              type="text"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              placeholder="----  ---------"
-              onChange={(e) => handleInputChange('invoice_no', e.target.value)}
-            />
-          </div>
+            <div className='flex space-x-4'>
+              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Number</label>
+                <input
+                  type="text"
+                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
+                  placeholder="----  ---------"
+                  onChange={(e) => handleInputChange('invoice_no', e.target.value)}
+                />
+              </div>
 
-          <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">PO Number</label>
-            <input
-              type="text"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              placeholder="----  ---------"
-              onChange={(e) => handleInputChange('po_no', e.target.value)}
-            />
-          </div>
+              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">PO Number</label>
+                <input
+                  type="text"
+                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
+                  placeholder="----  ---------"
+                  onChange={(e) => handleInputChange('po_no', e.target.value)}
+                />
+              </div>
 
-          <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Date</label>
-            <input
-              type="date"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              onChange={(e) => handleInputChange('invoice_date', e.target.value)}
-            />
-          </div>
-        </div>
-      </form>
+              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Date</label>
+                <input
+                  type="date"
+                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
+                  onChange={(e) => handleInputChange('invoice_date', e.target.value)}
+                />
+              </div>
+            </div>
+          </form>
 
-      <div className="flex justify-end items-center gap-4 ">
-        <button 
-          className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800" 
-          onClick={handleSearch}
-        >
-          Search
-        </button>
-        <button
-          className="bg-white text-sm text-black px-8 py-2 rounded border border-purple-800 hover:bg-gray-100"
-          onClick={handleClear}
-        >
-          Clear
-        </button>
-      </div>
-
-      {/* Section for GR/SA Outstanding */}
-      <h3 className="text-xl font-semibold text-gray-700 mb-2">GR / SA Outstanding</h3>
-      <div className="bg-white p-6 flex flex-wrap md:flex-nowrap justify-between gap-4">
-        {/* Table Section */}
-        <div className="overflow-x-auto shadow-md border rounded-lg w-full md:w-2/3">
-          <table className="w-full text-md text-left">
-            <thead className="bg-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-md text-gray-800 text-center border">Total Record(s)</th>
-                <th className="px-4 py-3 text-md text-gray-800 text-center border">Currency</th>
-                <th className="px-4 py-3 text-md text-gray-800 text-center border">Total Amount</th>
-                <th className="px-4 py-3 text-md text-gray-800 text-center border">Message</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b hover:bg-gray-50">
-                <td className="px-3 py-2 text-sm text-center">{grSaList.length}</td>
-                <td className="px-3 py-2 text-sm text-center">{grSaList[0]?.currency || 'IDR'}</td>
-                <td className="px-3 py-2 text-sm text-center">
-                  {formatToIDR(calculateTotalAmount(grSaList))}
-                </td>
-                <td className="px-3 py-2 text-sm text-center">
-                  {grSaList.length > 0 ? 'Data retrieved successfully' : 'No data available'}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Input Section */}
-        <div className="flex flex-col gap-4 w-full md:w-1/3">
-          <div className="flex items-center gap-3">
-            <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">Selected Record(s)</label>
-            <input
-              type="text"
-              className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
-              readOnly
-              value={selectedRecords.length}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">Total Amount</label>
-            <input
-              type="text"
-              className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
-              readOnly
-              value={formatToIDR(calculateTotalAmount(selectedRecords))}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Separate Section for GR/SA List */}
-      <h3 className="text-xl font-semibold text-gray-700">GR / SA List</h3>
-      <div className="bg-white p-6 space-y-6 mt-8">
-        <div className="flex justify-between mb-8">
-          <div>
-            <button className="bg-purple-900 text-sm text-white px-6 py-2 rounded hover:bg-purple-800">Invoice Upload</button>
-            <button className="bg-purple-800 text-sm text-white px-6 py-2 rounded hover:bg-violet-800 ml-4">Download GR/SA</button>
-          </div>
-          <div>
-            <button
-              className="bg-blue-900 text-sm text-white px-6 py-2 rounded hover:bg-blue-800"
-              onClick={handleInvoiceCreation}
+          <div className="flex justify-end items-center gap-4 ">
+            <button 
+              type="button" // Added type="button" to prevent form submission
+              className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800" 
+              onClick={handleSearch}
             >
-              Invoice Creation
+              Search
             </button>
             <button
-              className="bg-red-600 text-sm text-white px-6 py-2 rounded hover:bg-red-500 ml-4"
-              onClick={handleCancelInvoice}
+              type="button" // Added type="button" here as well
+              className="bg-white text-sm text-black px-8 py-2 rounded border border-purple-800 hover:bg-gray-100"
+              onClick={handleClear}
             >
-              Cancel Invoice
+              Clear
             </button>
           </div>
-        </div>
 
-        <div className="overflow-x-auto shadow-md border rounded-lg">
-          <table className="w-full text-sm text-center">
-            <thead className="bg-gray-100 uppercase">
-              <tr>
-                <th className="px-3 py-2 text-center border">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                    className="cursor-pointer"
-                  />
-                </th>
-                <th className="px-8 py-2 text-gray-700 text-center border">PO No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">BP ID</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">BP Name</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Currency</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">PO Type</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">PO Reference</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">PO Line</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">PO Sequence</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Sequence</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Year</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Period</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Line</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">GR No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Packing Slip</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Item No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">ICS Code</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">ICS Part</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Part No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Item Description</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Item Group</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Item Type</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Item Type Desc</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Request Qty</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Qty</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Approve Qty</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Unit</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Amount</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Unit Price</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Final Receipt</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Confirmed</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Invoice No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Invoice Date</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Invoice Qty</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Invoice Amount</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Supplier No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Due Date</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Created At</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Updated At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={42} className="px-6 py-4 text-center text-gray-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : paginatedData.length > 0 ? (
-                paginatedData.map((item, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="px-3 py-2 text-center">
+          {/* Section for GR/SA Outstanding */}
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">GR / SA Outstanding</h3>
+          <div className="bg-white p-6 flex flex-wrap md:flex-nowrap justify-between gap-4">
+            {/* Table Section */}
+            <div className="overflow-x-auto shadow-md border rounded-lg w-full md:w-2/3">
+              <table className="w-full text-md text-left">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-md text-gray-800 text-center border">Total Record(s)</th>
+                    <th className="px-4 py-3 text-md text-gray-800 text-center border">Currency</th>
+                    <th className="px-4 py-3 text-md text-gray-800 text-center border">Total Amount</th>
+                    <th className="px-4 py-3 text-md text-gray-800 text-center border">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b hover:bg-gray-50">
+                    <td className="px-3 py-2 text-sm text-center">{grSaList.length}</td>
+                    <td className="px-3 py-2 text-sm text-center">{grSaList[0]?.currency || 'IDR'}</td>
+                    <td className="px-3 py-2 text-sm text-center">
+                      {formatToIDR(calculateTotalAmount(grSaList))}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-center">
+                      {grSaList.length > 0 ? 'Data retrieved successfully' : 'No data available'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Input Section */}
+            <div className="flex flex-col gap-4 w-full md:w-1/3">
+              <div className="flex items-center gap-3">
+                <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">Selected Record(s)</label>
+                <input
+                  type="text"
+                  className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
+                  readOnly
+                  value={selectedRecords.length}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">Total Amount</label>
+                <input
+                  type="text"
+                  className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
+                  readOnly
+                  value={formatToIDR(calculateTotalAmount(selectedRecords))}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Separate Section for GR/SA List */}
+          <h3 className="text-xl font-semibold text-gray-700">GR / SA List</h3>
+          <div className="bg-white p-6 space-y-6 mt-8">
+          <div className="flex justify-between mb-8">
+            <div>
+              <button className="bg-purple-900 text-sm text-white px-6 py-2 rounded hover:bg-purple-800">
+                Invoice Upload
+              </button>
+              <button className="bg-purple-800 text-sm text-white px-6 py-2 rounded hover:bg-violet-800 ml-4">
+                Download GR/SA
+              </button>
+            </div>
+            <div>
+              <button
+                type="button" // <-- This is the important change
+                className="bg-blue-900 text-sm text-white px-6 py-2 rounded hover:bg-blue-800"
+                onClick={handleInvoiceCreation}
+              >
+                Invoice Creation
+              </button>
+              <button
+                type="button" // And here too
+                className="bg-red-600 text-sm text-white px-6 py-2 rounded hover:bg-red-500 ml-4"
+                onClick={handleCancelInvoice}
+              >
+                Cancel Invoice
+              </button>
+            </div>
+          </div>
+
+            <div className="overflow-x-auto shadow-md border rounded-lg">
+              <table className="w-full text-sm text-center">
+                <thead className="bg-gray-100 uppercase">
+                  <tr>
+                    <th className="px-3 py-2 text-center border">
                       <input
                         type="checkbox"
-                        checked={selectedRecords.some(r => r.gr_no === item.gr_no)}
-                        onChange={() => handleRecordSelection(item)}
+                        checked={selectAll}
+                        onChange={handleSelectAll}
                         className="cursor-pointer"
                       />
-                    </td>
+                    </th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">BP ID</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">BP Name</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Currency</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Type</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Reference</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Line</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Sequence</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Sequence</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Year</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Period</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Line</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">GR No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Packing Slip</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">ICS Code</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">ICS Part</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Part No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Description</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Group</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Type</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Type Desc</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Request Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Approve Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Unit</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Amount</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Unit Price</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Final Receipt</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Confirmed</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Invoice No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Invoice Date</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Invoice Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Invoice Amount</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Supplier No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Due Date</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Created At</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Updated At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={42} className="px-6 py-4 text-center text-gray-500">
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : paginatedData.length > 0 ? (
+                    paginatedData.map((item, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="px-3 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedRecords.some(r => r.gr_no === item.gr_no)}
+                            onChange={() => handleRecordSelection(item)}
+                            className="cursor-pointer"
+                          />
+                        </td>
                     <td className="px-3 py-2 text-center">{item.po_no}</td>
                     <td className="px-3 py-2 text-center">{item.bp_id}</td>
                     <td className="px-3 py-2 text-center">{item.bp_name}</td>
@@ -792,6 +767,8 @@ const InvoiceCreation = () => {
           onPageChange={handlePageChange}
         />
       </div>
+    </>
+    )}
     </div>
   );
 };
