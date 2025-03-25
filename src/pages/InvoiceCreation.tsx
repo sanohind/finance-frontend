@@ -27,6 +27,7 @@ interface FilterParams {
 }
 
 export interface GrSaRecord {
+  inv_line_id: string;
   po_no: string;
   bp_id: string;
   bp_name: string;

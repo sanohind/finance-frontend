@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import LogoIcon from '/images/Logo-sanoh.png';
 import { GrSaRecord } from './InvoiceCreation';
-import { API_Create_Inv_Header_Admin, API_Ppn, API_Pph } from '../api/api';
+import { API_Create_Inv_Header_Admin, API_Ppn } from '../api/api';
 
 interface InvoiceCreationWizardProps {
   selectedRecords: GrSaRecord[];
@@ -11,20 +11,18 @@ interface InvoiceCreationWizardProps {
 }
 
 const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedRecords, onClose, onFinish }) => {
-  // Invoice state (all fields start empty)
+  // Invoice state
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
-  // taxCode will hold the chosen PPN id via the select; its description is shown in the select options.
   const [taxCode, setTaxCode] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
+  // States for preview (computed later)
   const [taxBaseAmount, setTaxBaseAmount] = useState('');
   const [taxAmount, setTaxAmount] = useState('');
   const [taxDate, setTaxDate] = useState('');
-  // whtCode will hold the chosen PPH id via the select; its description is shown in the select options.
-  const [whtCode, setWhtCode] = useState('');
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState('');
 
-  // Document state remains (no dummy fileName preset)
+  // Document state
   const [documents, setDocuments] = useState([
     { type: 'Invoice *', fileName: '', required: true },
     { type: 'Tax Invoice *', fileName: '', required: true },
@@ -33,11 +31,11 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
   ]);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [showPrintReceipt, setShowPrintReceipt] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
-  // New state for PPN and PPH lists; their descriptions will be used in the form select.
+  // New state for PPN and PPH lists
   const [ppnList, setPpnList] = useState<any[]>([]);
-  const [pphList, setPphList] = useState<any[]>([]);
 
   // Pagination for selected records table
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,9 +65,9 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
     }).format(value);
   };
 
-  // Load PPN and PPH options on mount and include the token in headers.
+  // Load PPN and PPH options (with token)
   useEffect(() => {
-    const token = localStorage.getItem('access_token'); // Adjust as needed.
+    const token = localStorage.getItem('access_token');
     const loadPPN = async () => {
       try {
         const res = await fetch(API_Ppn(), {
@@ -81,22 +79,10 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         console.error('Error loading PPN', error);
       }
     };
-    const loadPPH = async () => {
-      try {
-        const res = await fetch(API_Pph(), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setPphList(data);
-      } catch (error) {
-        console.error('Error loading PPH', error);
-      }
-    };
     loadPPN();
-    loadPPH();
   }, []);
 
-  // Render selected records preview (only on Main Form)
+  // Render the selected records table with pagination.
   const renderSelectedRecords = () => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     const displayedRecords = selectedRecords.slice(startIndex, startIndex + rowsPerPage);
@@ -150,6 +136,10 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
       </div>
     );
   };
+
+  // Compute preview values for Tax Base Amount and Tax Amount.
+  const computedTaxBase = selectedRecords.reduce((acc, record) => acc + Number(record.receipt_amount), 0);
+  const computedTaxAmount = computedTaxBase * 0.11;
 
   const renderMainForm = () => (
     <div className="space-y-4">
@@ -206,45 +196,16 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             />
           </div>
         </div>
-        {/* Row 3 */}
+        {/* Row 3 - Preview fields */}
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Tax Base Amount</label>
             <input
               type="text"
-              placeholder="Enter Tax Base Amount"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={taxBaseAmount}
-              onChange={(e) => setTaxBaseAmount(e.target.value)}
+              readOnly
+              className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              value={formatToIDR(computedTaxBase)}
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Tax Amount</label>
-            <input
-              type="text"
-              placeholder="Enter Tax Amount"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={taxAmount}
-              onChange={(e) => setTaxAmount(e.target.value)}
-            />
-          </div>
-        </div>
-        {/* Row 4 */}
-        <div className="grid grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">WHT Code (PPH)</label>
-            <select
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={whtCode}
-              onChange={(e) => setWhtCode(e.target.value)}
-            >
-              <option value="">Select PPH</option>
-              {pphList.map((pph) => (
-                <option key={pph.id} value={pph.id}>
-                  {pph.pph_description}
-                </option>
-              ))}
-            </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Tax Date</label>
@@ -256,9 +217,16 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             />
           </div>
         </div>
-        {/* Row 5 */}
+        {/* Row 4 */}
         <div className="grid grid-cols-2 gap-8">
-          <div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Tax Amount</label>
+            <input
+              type="text"
+              readOnly
+              className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              value={taxCode ? formatToIDR(computedTaxAmount) : ''}
+            />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Total Invoice Amount</label>
@@ -398,28 +366,37 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
   // Invoice submission handled via API_Create_Inv_Header_Admin
   const submitInvoice = async () => {
     try {
-      const totalDPP = selectedRecords.reduce((acc, record) => acc + Number(record.receipt_amount), 0);
-      setTotalInvoiceAmount(taxAmount);
-
+      // Compute values based on selected records
+      const computedTaxBase = selectedRecords.reduce(
+        (acc, record) => acc + Number(record.receipt_amount),
+        0
+      );
+      const ppnRate = 0.11; // Fixed rate; the backend looks it up by ppn_id.
+      const computedTaxAmount = computedTaxBase * ppnRate;
+      const computedTotalInvoiceAmount = computedTaxBase + computedTaxAmount;
+  
       const formData = new FormData();
       formData.append('inv_no', invoiceNumber);
       formData.append('inv_date', invoiceDate);
       formData.append('inv_faktur', invoiceNumber);
       formData.append('inv_faktur_date', invoiceDate);
-      formData.append('inv_supplier', '');
-      formData.append('total_dpp', totalDPP.toString());
+      formData.append('total_dpp', computedTaxBase.toString());
       formData.append('ppn_id', taxCode);
-      formData.append('pph_id', whtCode);
-      formData.append('tax_base_amount', taxBaseAmount);
-      formData.append('tax_amount', taxAmount);
-      formData.append('total_amount', totalInvoiceAmount);
+      formData.append('tax_base_amount', computedTaxBase.toString());
+      formData.append('tax_amount', computedTaxAmount.toString());
+      formData.append('total_amount', computedTotalInvoiceAmount.toString());
       formData.append('status', 'New');
       formData.append('created_by', '');
-
-      selectedRecords.forEach((record) => {
-        formData.append('inv_line_detail[]', record.gr_no);
+  
+      // IMPORTANT: Use the invoice line ID (inv_line_id) expected by the backend.
+      // Check that each record has a valid inv_line_id. If not, update or log for debugging.
+      selectedRecords.forEach((record, idx) => {
+        if (!record.inv_line_id) {
+          console.error(`Record at index ${idx} is missing inv_line_id`, record);
+        }
+        formData.append('inv_line_detail[]', record.inv_line_id || '');
       });
-
+  
       documents.forEach((doc, index) => {
         const fileInput = fileInputRefs.current[index];
         if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -434,18 +411,25 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
           }
         }
       });
-
+  
       const response = await fetch(API_Create_Inv_Header_Admin(), {
         method: 'POST',
         body: formData,
       });
       if (!response.ok) {
-        throw new Error('Invoice creation failed');
+        throw new Error(`Invoice creation failed with status: ${response.status}`);
       }
       await response.json();
+  
+      alert("Invoice created successfully!");
+  
+      // The invoice has been stored—now trigger the next steps.
+      // Ensure that onFinish (or your parent component) clears the invoice lines (selectedRecords)
+      // so they no longer appear in the UI.
       onFinish();
     } catch (error) {
       console.error('Error creating invoice:', error);
+      alert("Failed to create invoice. Please try again.");
     }
   };
 
