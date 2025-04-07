@@ -30,11 +30,11 @@ const DashboardSupplier: React.FC = () => {
         if (result.success) {
           // Adapt these keys to match your actual API response
           const data = result.data;
-          setNewInvoice(data.new_invoice?.toString() || '0');
-          setInProcessInvoice(data.in_process_invoice?.toString() || '0');
-          setRejectedInvoice(data.rejected_invoice?.toString() || '0');
-          setReadyToPaymentInvoice(data.ready_to_payment_invoice?.toString() || '0');
-          setPaidInvoice(data.paid_invoice?.toString() || '0');
+          setNewInvoice(data.new_invoices?.toString() || '0');
+          setInProcessInvoice(data.in_process_invoices?.toString() || '0');
+          setRejectedInvoice(data.rejected_invoices?.toString() || '0');
+          setReadyToPaymentInvoice(data.ready_to_payment_invoices?.toString() || '0');
+          setPaidInvoice(data.paid_invoices?.toString() || '0');
         } else {
           toast.error(`Error fetching dashboard data: ${result.message}`);
         }

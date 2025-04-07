@@ -317,6 +317,7 @@ const InvoiceCreation = () => {
   const handleWizardFinish = () => {
     setShowWizard(false);
     toast.success('Invoice process completed!');
+    setSelectedRecords([]); // Clear selected records
   };
 
   const supplierOptions = businessPartners.map(partner => ({

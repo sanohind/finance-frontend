@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
-import LogoIcon from '/images/Logo-sanoh.png';
+import LogoIcon from '../images/Logo-sanoh.png';
 import { GrSaRecord } from './InvoiceCreation';
 import { API_Create_Inv_Header_Admin, API_Ppn } from '../api/api';
 
@@ -75,12 +75,19 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         });
         const data = await res.json();
         setPpnList(data);
+        console.log('ppnList:', data); // Log the ppnList
       } catch (error) {
         console.error('Error loading PPN', error);
       }
     };
     loadPPN();
   }, []);
+
+  const handleTaxCodeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedPpnId = e.target.value;
+    setTaxCode(selectedPpnId);
+    console.log('taxCode:', selectedPpnId); // Log the taxCode
+  };
 
   // Render the selected records table with pagination.
   const renderSelectedRecords = () => {
@@ -163,11 +170,11 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <select
               className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={taxCode}
-              onChange={(e) => setTaxCode(e.target.value)}
+              onChange={handleTaxCodeChange}
             >
               <option value="">Select PPN</option>
               {ppnList.map((ppn) => (
-                <option key={ppn.id} value={ppn.id}>
+                <option key={ppn.ppn_id} value={ppn.ppn_id}>
                   {ppn.ppn_description}
                 </option>
               ))}
@@ -340,7 +347,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         </div>
         <div className="mt-6 flex justify-end">
           <button
-            onClick={submitInvoice}
+            onClick={submitInvoice} // Changed onClick handler to submitInvoice
             className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md transition-colors"
           >
             I Agree
@@ -366,6 +373,13 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
   // Invoice submission handled via API_Create_Inv_Header_Admin
   const submitInvoice = async () => {
     try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        console.error('No access token found');
+        alert('Please log in to create an invoice.');
+        return;
+      }
+
       // Compute values based on selected records
       const computedTaxBase = selectedRecords.reduce(
         (acc, record) => acc + Number(record.receipt_amount),
@@ -374,12 +388,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
       const ppnRate = 0.11; // Fixed rate; the backend looks it up by ppn_id.
       const computedTaxAmount = computedTaxBase * ppnRate;
       const computedTotalInvoiceAmount = computedTaxBase + computedTaxAmount;
-  
+
       const formData = new FormData();
       formData.append('inv_no', invoiceNumber);
       formData.append('inv_date', invoiceDate);
-      formData.append('inv_faktur', invoiceNumber);
-      formData.append('inv_faktur_date', invoiceDate);
+      formData.append('inv_faktur', taxNumber);
+      formData.append('inv_faktur_date', taxDate);
       formData.append('total_dpp', computedTaxBase.toString());
       formData.append('ppn_id', taxCode);
       formData.append('tax_base_amount', computedTaxBase.toString());
@@ -387,7 +401,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
       formData.append('total_amount', computedTotalInvoiceAmount.toString());
       formData.append('status', 'New');
       formData.append('created_by', '');
-  
+
       // IMPORTANT: Use the invoice line ID (inv_line_id) expected by the backend.
       // Check that each record has a valid inv_line_id. If not, update or log for debugging.
       selectedRecords.forEach((record, idx) => {
@@ -396,7 +410,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         }
         formData.append('inv_line_detail[]', record.inv_line_id || '');
       });
-  
+
       documents.forEach((doc, index) => {
         const fileInput = fileInputRefs.current[index];
         if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -411,18 +425,26 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
           }
         }
       });
-  
+
+      // Log the FormData object for debugging
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
       const response = await fetch(API_Create_Inv_Header_Admin(), {
         method: 'POST',
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`, // Include the token in the headers
+        },
       });
       if (!response.ok) {
         throw new Error(`Invoice creation failed with status: ${response.status}`);
       }
       await response.json();
-  
+
       alert("Invoice created successfully!");
-  
+
       // The invoice has been stored—now trigger the next steps.
       // Ensure that onFinish (or your parent component) clears the invoice lines (selectedRecords)
       // so they no longer appear in the UI.
@@ -494,7 +516,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
                 </ul>
                 <div className="mt-2 mb-2 flex justify-end gap-2">
                   <button
-                    onClick={onClose}
+                    onClick={submitInvoice}
                     className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md transition-colors"
                   >
                     I Agree
