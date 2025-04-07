@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
-import LogoIcon from '../images/Logo-sanoh.png';
+import LogoIcon from '/images/Logo-sanoh.png';
 import { GrSaRecord } from './InvoiceCreation';
 import { API_Create_Inv_Header_Admin, API_Ppn } from '../api/api';
 
