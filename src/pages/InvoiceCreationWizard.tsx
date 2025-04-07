@@ -3,6 +3,7 @@ import { X, Plus } from 'lucide-react';
 import LogoIcon from '/images/Logo-sanoh.png';
 import { GrSaRecord } from './InvoiceCreation';
 import { API_Create_Inv_Header_Admin, API_Ppn } from '../api/api';
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface InvoiceCreationWizardProps {
   selectedRecords: GrSaRecord[];
@@ -39,7 +40,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
 
   // Pagination for selected records table
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 3;
+  const rowsPerPage = 5;
   const totalPages = Math.ceil(selectedRecords.length / rowsPerPage);
 
   // File input refs
@@ -100,34 +101,34 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
           <table className="min-w-full border-collapse">
             <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-3 py-2">Gr No</th>
-                <th className="border px-3 py-2">Item Description</th>
-                <th className="border px-3 py-2">Receipt Amount</th>
+              <tr className="bg-purple-800 text-white">
+                <th className="border px-2 py-3">Gr No</th>
+                <th className="border px-2 py-3">Item Description</th>
+                <th className="border px-2 py-3">Receipt Amount</th>
               </tr>
             </thead>
             <tbody>
               {displayedRecords.map((record, index) => (
                 <tr key={index}>
-                  <td className="border px-3 py-2">{record.gr_no}</td>
-                  <td className="border px-3 py-2">{record.item_desc}</td>
-                  <td className="border px-3 py-2">{formatToIDR(record.receipt_amount)}</td>
+                  <td className="border px-3 py-2 text-center">{record.gr_no}</td>
+                  <td className="border px-3 py-2 text-center">{record.item_desc}</td>
+                  <td className="border px-3 py-2 text-center">{formatToIDR(record.receipt_amount)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-2">
+            <div className="flex items-center justify-center gap-3 mt-2 mb-2">
               <button
                 type="button"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
               >
-                &lt;
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
-              <span className="text-gray-800 font-medium">
-                {currentPage} / {totalPages}
+              <span className="text-gray-700 font-medium text-sm">
+                Page {currentPage} of {totalPages}
               </span>
               <button
                 type="button"
@@ -135,7 +136,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
                 disabled={currentPage === totalPages}
                 className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
               >
-                &gt;
+                <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
             </div>
           )}
@@ -153,6 +154,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
       {currentStep === 1 && selectedRecords.length > 0 && renderSelectedRecords()}
       <div className="space-y-4 pt-2 border-t border-gray-200">
         <h2 className="text-lg font-medium text-gray-900">Create Invoice</h2>
+        <hr className="my-6 border-t-1 border-blue-900" />
         {/* Row 1 */}
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
@@ -160,7 +162,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <input
               type="text"
               placeholder="Enter Invoice Number"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
             />
@@ -168,7 +170,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Tax Code (PPN)</label>
             <select
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={taxCode}
               onChange={handleTaxCodeChange}
             >
@@ -187,7 +189,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <label className="text-sm font-medium text-gray-700">Invoice Date</label>
             <input
               type="date"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={invoiceDate}
               onChange={(e) => setInvoiceDate(e.target.value)}
             />
@@ -197,7 +199,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <input
               type="text"
               placeholder="Enter Tax Number"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={taxNumber}
               onChange={(e) => setTaxNumber(e.target.value)}
             />
@@ -210,7 +212,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <input
               type="text"
               readOnly
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              className="w-full p-2 border border-blue-900 text-blue-900 rounded-md shadow-sm bg-blue-200"
               value={formatToIDR(computedTaxBase)}
             />
           </div>
@@ -218,7 +220,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <label className="text-sm font-medium text-gray-700">Tax Date</label>
             <input
               type="date"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={taxDate}
               onChange={(e) => setTaxDate(e.target.value)}
             />
@@ -231,7 +233,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <input
               type="text"
               readOnly
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              className="w-full p-2 border border-blue-900 text-blue-900 rounded-md shadow-sm bg-blue-200"
               value={taxCode ? formatToIDR(computedTaxAmount) : ''}
             />
           </div>
@@ -240,7 +242,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             <input
               type="text"
               readOnly
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              className="w-full p-2 border border-blue-900 text-blue-900 rounded-md shadow-sm bg-blue-200"
               value={totalInvoiceAmount}
             />
           </div>
@@ -254,15 +256,15 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
       <h2 className="text-lg font-medium text-gray-900">Attach and Submit Document</h2>
       <div className="overflow-hidden rounded-lg border-y border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-purple-800">
             <tr>
-              <th className="w-24 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-24 px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                 Action
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                 Document Type
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                 File Name
               </th>
             </tr>
