@@ -1,18 +1,34 @@
-//// filepath: /d:/tes-vercel/src/pages/InvoiceReportWizard.tsx
 import React, { useState, useRef } from 'react';
-import { X, Plus } from 'lucide-react';
-import LogoIcon from '/images/LogoSanoh.png';
+import { X } from 'lucide-react';
+import LogoIcon from '/images/Logo-sanoh.png';
 
 interface InvoiceReportWizardProps {
+  /** Controls whether the modal is open or not. */
+  isOpen: boolean;
+  /** Callback triggered when user closes the modal. */
   onClose: () => void;
-  onFinish: () => void;
+  /** Callback triggered when wizard finishes (optional). */
+  onFinish?: () => void;
+  /** Pass an invoice number from parent (optional). */
+  invoiceNumberProp?: string;
 }
 
-const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({ onClose, onFinish }) => {
+const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
+  isOpen,
+  onClose,
+  onFinish,
+  invoiceNumberProp
+}) => {
+  // Hide component if not open
+  if (!isOpen) return null;
+
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
-  // Dummy invoice data
-  const [invoiceNumber, setInvoiceNumber] = useState('DUMMY-INV-1234');
+
+  // Use passed invoiceNumber if available
+  const [invoiceNumber, setInvoiceNumber] = useState(
+    invoiceNumberProp ? invoiceNumberProp : 'DUMMY-INV-1234'
+  );
   const [invoiceDate, setInvoiceDate] = useState('2025-01-10');
   const [taxNumber, setTaxNumber] = useState('0100003204952412');
   const [taxDate, setTaxDate] = useState('2025-01-20');
@@ -21,7 +37,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({ onClose, onFi
   const [taxAmount] = useState(123750);
   const [totalInvoiceAmount] = useState(11373750);
 
-  // Document state (dummy)
+  // Dummy documents
   const [documents, setDocuments] = useState([
     { type: 'Invoice *', fileName: 'Invoice.pdf', required: true },
     { type: 'Tax Invoice *', fileName: 'FakturPajak.pdf', required: true },
@@ -206,7 +222,10 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({ onClose, onFi
       </ul>
       <div className="mt-4 flex justify-end gap-2">
         <button
-          onClick={onClose}
+          onClick={() => {
+            onClose();
+            if (onFinish) onFinish();
+          }}
           className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md"
         >
           I Agree
@@ -231,7 +250,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({ onClose, onFi
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
       <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="p-6 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">Invoice Wizard (Preview)</h2>
           <div className="flex items-center gap-4">
@@ -242,7 +260,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({ onClose, onFi
           </div>
         </div>
 
-        {/* Main content */}
         <div className="p-6 bg-violet-100 rounded-lg">
           {currentStep < 3 ? (
             <>

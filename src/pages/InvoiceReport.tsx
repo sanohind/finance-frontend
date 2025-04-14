@@ -1,8 +1,6 @@
-//// filepath: /d:/tes-vercel/src/pages/InvoiceReport.tsx
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
-import { useRouter } from 'next/router'; // [ADDED] for routing to InvoiceReportWizard
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import {
@@ -10,6 +8,7 @@ import {
   API_List_Partner_Admin,
   API_Update_Status_To_In_Process_Finance,
 } from '../api/api';
+import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
 
 interface Invoice {
   inv_no: string;
@@ -44,8 +43,10 @@ interface BusinessPartner {
   adr_line_1: string;
 }
 
-const InvoiceReport = () => {
-  const router = useRouter(); // [ADDED]
+const InvoiceReport: React.FC = () => {
+  // Wizard modal state
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [modalInvoiceNumber, setModalInvoiceNumber] = useState('');
 
   const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>([]);
   const [searchSupplier, setSearchSupplier] = useState<string>('');
@@ -65,12 +66,11 @@ const InvoiceReport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rowsPerPage] = useState(10);
 
-  // Track a single selected invoice so only one can be checked
+  // Single selected invoice
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
 
-  // Build select options for business partners
   const supplierOptions = businessPartners.map((bp) => ({
     value: bp.bp_code,
     label: `${bp.bp_code} | ${bp.bp_name}`,
@@ -142,7 +142,7 @@ const InvoiceReport = () => {
     fetchBusinessPartners();
   }, []);
 
-  // Fetch invoice data
+  // Fetch invoices
   useEffect(() => {
     const fetchInvoiceData = async () => {
       setIsLoading(true);
@@ -193,7 +193,7 @@ const InvoiceReport = () => {
     fetchInvoiceData();
   }, []);
 
-  // Filtering
+  // Search filter
   const handleSearch = () => {
     let newFiltered = [...data];
 
@@ -204,7 +204,6 @@ const InvoiceReport = () => {
         return codeMatch || nameMatch;
       });
     }
-
     if (invoiceNumber.trim()) {
       newFiltered = newFiltered.filter((row) =>
         row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase())
@@ -253,22 +252,20 @@ const InvoiceReport = () => {
     setCurrentPage(1);
   };
 
-  // Record selection (only one invoice can be selected)
+  // Record selection
   const handleRecordSelection = (invoice: Invoice) => {
-    // If the same invoice is checked again, unselect it
     if (selectedInvoice && selectedInvoice.inv_no === invoice.inv_no) {
       setSelectedInvoice(null);
       setSelectedRecords(0);
       setTotalAmount(0);
     } else {
-      // Otherwise select this invoice
       setSelectedInvoice(invoice);
       setSelectedRecords(1);
       setTotalAmount(invoice.total_amount || 0);
     }
   };
 
-  // Update invoice status or go to InvoiceReportWizard
+  // Update or open wizard
   const handleVerify = async () => {
     if (!selectedInvoice) {
       toast.warning('Please select an invoice first');
@@ -277,7 +274,6 @@ const InvoiceReport = () => {
 
     const currentStatus = selectedInvoice.status?.toLowerCase();
     if (currentStatus === 'new') {
-      // 1) If status is "New", update to "in process"
       try {
         const token = localStorage.getItem('access_token');
         if (!token) {
@@ -299,9 +295,7 @@ const InvoiceReport = () => {
           throw new Error('Failed to update invoice status');
         }
 
-        toast.success('Selected invoice status updated to "in process"!');
-
-        // Update local data so it shows up without a full reload
+        toast.success('Selected invoice status updated to "In Process"!');
         const updatedData = data.map((inv) => {
           if (inv.inv_no === selectedInvoice.inv_no) {
             return { ...inv, status: 'In Process' };
@@ -314,12 +308,12 @@ const InvoiceReport = () => {
       } catch (err: any) {
         toast.error(err.message || 'Error updating invoice status');
       }
-    } else if (currentStatus === 'In Process') {
-      // 2) If status is "in process", go to InvoiceReportWizard
-      router.push('./InvoiceReportWizard');
+    } else if (currentStatus === 'in process') {
+      // Open the wizard modal instead of navigating to a route
+      setModalInvoiceNumber(selectedInvoice.inv_no);
+      setWizardOpen(true);
     } else {
-      // 3) Otherwise show prompt
-      toast.warning('Selected invoice is not "new" or "in process", cannot proceed');
+      toast.warning('Selected invoice is not "new" or "in process"; cannot proceed');
     }
   };
 
@@ -327,7 +321,6 @@ const InvoiceReport = () => {
     toast.info('Invoice cancelled');
   };
 
-  // Download all displayed data as Excel (CSV format)
   const handleDownloadAttachment = () => {
     if (!filteredData.length) {
       toast.warn('No data available to download');
@@ -394,7 +387,6 @@ const InvoiceReport = () => {
     currentPage * rowsPerPage
   );
 
-  // Helpers
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     try {
@@ -437,7 +429,6 @@ const InvoiceReport = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <form className="space-y-4">
         <div className="flex space-x-4">
           <div className="flex w-1/3 items-center gap-2">
@@ -514,7 +505,6 @@ const InvoiceReport = () => {
         </div>
       </form>
 
-      {/* Actions */}
       <div className="flex justify-end items-center gap-4">
         <button
           className="bg-purple-900 text-sm text-white px-4 py-2 rounded hover:bg-purple-800"
@@ -535,7 +525,6 @@ const InvoiceReport = () => {
       <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>
       <div className="bg-white p-6 space-y-6 mt-8">
         <div className="flex justify-between mb-8">
-          {/* Cancel Invoice separated to the left */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
               className="bg-red-600 text-sm text-white px-4 py-2 rounded hover:bg-red-500"
@@ -546,7 +535,6 @@ const InvoiceReport = () => {
             </button>
           </div>
 
-          {/* Download, Verify, and Post on the right (Verify placed in between) */}
           <div>
             <button
               className="bg-purple-900 text-sm text-white px-4 py-2 rounded hover:bg-purple-800"
@@ -574,7 +562,6 @@ const InvoiceReport = () => {
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto shadow-md border rounded-lg">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
@@ -619,7 +606,7 @@ const InvoiceReport = () => {
                     Loading...
                   </td>
                 </tr>
-              ) : paginatedData.length > 0 ? (
+              ) : filteredData.length > 0 ? (
                 paginatedData.map((invoice, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-2 text-center">
@@ -642,7 +629,9 @@ const InvoiceReport = () => {
                     <td className="px-4 py-2 text-center">{invoice.inv_faktur || '-'}</td>
                     <td className="px-4 py-2 text-center">{formatDate(invoice.inv_faktur_date)}</td>
                     <td className="px-4 py-2 text-center">{formatCurrency(invoice.total_dpp)}</td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.tax_base_amount)}</td>
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(invoice.tax_base_amount)}
+                    </td>
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0)}
                     </td>
@@ -650,7 +639,9 @@ const InvoiceReport = () => {
                       {formatCurrency(invoice.pph_base_amount)}
                     </td>
                     <td className="px-4 py-2 text-center">{formatCurrency(invoice.pph_amount)}</td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.total_amount)}</td>
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(invoice.total_amount)}
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -671,6 +662,13 @@ const InvoiceReport = () => {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Render the wizard modal here */}
+      <InvoiceReportWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        invoiceNumberProp={modalInvoiceNumber}
+      />
     </div>
   );
 };
