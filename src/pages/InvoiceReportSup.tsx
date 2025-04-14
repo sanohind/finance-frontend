@@ -1,15 +1,8 @@
-//// filepath: /d:/tes-vercel/src/pages/InvoiceReport.tsx
 import React, { useState, useEffect } from 'react';
-import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
-import { useRouter } from 'next/router'; // [ADDED] for routing to InvoiceReportWizard
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
-import {
-  API_Inv_Header_Admin,
-  API_List_Partner_Admin,
-  API_Update_Status_To_In_Process_Finance,
-} from '../api/api';
+import { API_Inv_Header_Admin } from '../api/api';
 
 interface Invoice {
   inv_no: string;
@@ -20,8 +13,8 @@ interface Invoice {
   inv_date: string | null;
   plan_date: string | null;
   actual_date: string | null;
-  inv_faktur: string | null;
-  inv_faktur_date: string | null;
+  inv_faktur: string | null;       // "Tax Number"
+  inv_faktur_date: string | null;  // "Tax Date"
   total_dpp: number | null;
   ppn_id: number | null;
   tax_base_amount: number | null;
@@ -38,18 +31,7 @@ interface Invoice {
   updated_at: string;
 }
 
-interface BusinessPartner {
-  bp_code: string;
-  bp_name: string;
-  adr_line_1: string;
-}
-
-const InvoiceReport = () => {
-  const router = useRouter(); // [ADDED]
-
-  const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>([]);
-  const [searchSupplier, setSearchSupplier] = useState<string>('');
-
+const InvoiceReportSup = () => {
   // Filter states
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [verificationDate, setVerificationDate] = useState('');
@@ -65,82 +47,9 @@ const InvoiceReport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rowsPerPage] = useState(10);
 
-  // Track a single selected invoice so only one can be checked
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  // Selection tracking
   const [selectedRecords, setSelectedRecords] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
-
-  // Build select options for business partners
-  const supplierOptions = businessPartners.map((bp) => ({
-    value: bp.bp_code,
-    label: `${bp.bp_code} | ${bp.bp_name}`,
-  }));
-  const selectedOption = supplierOptions.find((opt) => opt.value === searchSupplier) || null;
-
-  // Fetch business partners
-  useEffect(() => {
-    const fetchBusinessPartners = async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
-      try {
-        const response = await fetch(API_List_Partner_Admin(), {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch business partners');
-        }
-
-        const result = await response.json();
-        let partnersList: BusinessPartner[] = [];
-
-        if (result && typeof result === 'object') {
-          if (Array.isArray(result.data)) {
-            partnersList = result.data.map((partner: any) => ({
-              bp_code: partner.bp_code,
-              bp_name: partner.bp_name,
-              adr_line_1: partner.adr_line_1,
-            }));
-          } else if (result.data && typeof result.data === 'object') {
-            partnersList = Object.values(result.data).map((partner: any) => ({
-              bp_code: partner.bp_code,
-              bp_name: partner.bp_name,
-              adr_line_1: partner.adr_line_1,
-            }));
-          } else if (Array.isArray(result)) {
-            partnersList = result.map((partner: any) => ({
-              bp_code: partner.bp_code,
-              bp_name: partner.bp_name,
-              adr_line_1: partner.adr_line_1,
-            }));
-          } else if (result.bp_code && result.bp_name) {
-            partnersList = [
-              {
-                bp_code: result.bp_code,
-                bp_name: result.bp_name,
-                adr_line_1: result.adr_line_1 || '',
-              },
-            ];
-          }
-        }
-
-        if (partnersList.length > 0) {
-          setBusinessPartners(partnersList);
-        } else {
-          toast.warn('No business partners found');
-        }
-      } catch (error) {
-        console.error('Error fetching business partners:', error);
-        toast.error('Error fetching business partners');
-      }
-    };
-
-    fetchBusinessPartners();
-  }, []);
 
   // Fetch invoice data
   useEffect(() => {
@@ -148,9 +57,6 @@ const InvoiceReport = () => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('access_token');
-        if (!token) {
-          throw new Error('No access token found');
-        }
         const response = await fetch(API_Inv_Header_Admin(), {
           method: 'GET',
           headers: {
@@ -164,9 +70,9 @@ const InvoiceReport = () => {
         }
 
         const result = await response.json();
-        let invoiceList: Invoice[] = [];
-
         if (result && typeof result === 'object') {
+          let invoiceList: Invoice[] = [];
+
           if (Array.isArray(result.data)) {
             invoiceList = result.data;
           } else if (result.data && typeof result.data === 'object') {
@@ -174,13 +80,13 @@ const InvoiceReport = () => {
           } else if (Array.isArray(result)) {
             invoiceList = result;
           }
-        }
 
-        if (invoiceList.length > 0) {
-          setData(invoiceList);
-          setFilteredData(invoiceList);
-        } else {
-          toast.warn('No invoice data found');
+          if (invoiceList.length > 0) {
+            setData(invoiceList);
+            setFilteredData(invoiceList);
+          } else {
+            toast.warn('No invoice data found');
+          }
         }
       } catch (error) {
         console.error('Error fetching invoice data:', error);
@@ -193,17 +99,9 @@ const InvoiceReport = () => {
     fetchInvoiceData();
   }, []);
 
-  // Filtering
+  // Search
   const handleSearch = () => {
     let newFiltered = [...data];
-
-    if (searchSupplier.trim()) {
-      newFiltered = newFiltered.filter((row) => {
-        const codeMatch = row.bp_code?.toLowerCase().includes(searchSupplier.toLowerCase());
-        const nameMatch = row.bp_name?.toLowerCase().includes(searchSupplier.toLowerCase());
-        return codeMatch || nameMatch;
-      });
-    }
 
     if (invoiceNumber.trim()) {
       newFiltered = newFiltered.filter((row) =>
@@ -240,9 +138,8 @@ const InvoiceReport = () => {
     setCurrentPage(1);
   };
 
-  // Clear filters
+  // Clear
   const handleClear = () => {
-    setSearchSupplier('');
     setInvoiceNumber('');
     setVerificationDate('');
     setInvoiceStatus('');
@@ -253,89 +150,23 @@ const InvoiceReport = () => {
     setCurrentPage(1);
   };
 
-  // Record selection (only one invoice can be selected)
-  const handleRecordSelection = (invoice: Invoice) => {
-    // If the same invoice is checked again, unselect it
-    if (selectedInvoice && selectedInvoice.inv_no === invoice.inv_no) {
-      setSelectedInvoice(null);
-      setSelectedRecords(0);
-      setTotalAmount(0);
-    } else {
-      // Otherwise select this invoice
-      setSelectedInvoice(invoice);
-      setSelectedRecords(1);
-      setTotalAmount(invoice.total_amount || 0);
-    }
+  // Selection
+  const handleRecordSelection = (record: Invoice) => {
+    setSelectedRecords((prev) => prev + 1);
+    setTotalAmount((prev) => prev + (record.total_amount || 0));
   };
 
-  // Update invoice status or go to InvoiceReportWizard
-  const handleVerify = async () => {
-    if (!selectedInvoice) {
-      toast.warning('Please select an invoice first');
-      return;
-    }
-
-    const currentStatus = selectedInvoice.status?.toLowerCase();
-    if (currentStatus === 'new') {
-      // 1) If status is "New", update to "in process"
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          toast.error('No access token found');
-          return;
-        }
-        const response = await fetch(
-          API_Update_Status_To_In_Process_Finance() + `/${selectedInvoice.inv_no}`,
-          {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'In Process' }),
-          }
-        );
-        if (!response.ok) {
-          throw new Error('Failed to update invoice status');
-        }
-
-        toast.success('Selected invoice status updated to "in process"!');
-
-        // Update local data so it shows up without a full reload
-        const updatedData = data.map((inv) => {
-          if (inv.inv_no === selectedInvoice.inv_no) {
-            return { ...inv, status: 'In Process' };
-          }
-          return inv;
-        });
-        setData(updatedData);
-        setFilteredData(updatedData);
-        setSelectedInvoice({ ...selectedInvoice, status: 'In Process' });
-      } catch (err: any) {
-        toast.error(err.message || 'Error updating invoice status');
-      }
-    } else if (currentStatus === 'In Process') {
-      // 2) If status is "in process", go to InvoiceReportWizard
-      router.push('./InvoiceReportWizard');
-    } else {
-      // 3) Otherwise show prompt
-      toast.warning('Selected invoice is not "new" or "in process", cannot proceed');
-    }
-  };
-
-  const handleCancelInvoice = () => {
-    toast.info('Invoice cancelled');
-  };
-
-  // Download all displayed data as Excel (CSV format)
+  // Download all displayed data as Excel (CSV format) 
   const handleDownloadAttachment = () => {
     if (!filteredData.length) {
       toast.warn('No data available to download');
       return;
     }
 
+    // Show a toast info
     toast.info('Preparing Excel file, please wait...');
 
+    // Build CSV content
     const headers = [
       'Invoice No',
       'Inv Date',
@@ -373,13 +204,14 @@ const InvoiceReport = () => {
       inv.total_amount?.toString() || '-',
     ]);
 
-    const csvHeader = headers.join(',') + '\n';
-    const csvBody = rows.map((row) => row.join(',')).join('\n');
-    const csvContent = csvHeader + csvBody;
+    let csvHeader = headers.join(',') + '\n';
+    let csvBody = rows.map((row) => row.join(',')).join('\n');
+    let csvContent = csvHeader + csvBody;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
+    // Create link to download
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', 'Invoice_Report.csv');
@@ -389,12 +221,13 @@ const InvoiceReport = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Pagination
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  // Helpers
+  // Formatters
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     try {
@@ -410,36 +243,19 @@ const InvoiceReport = () => {
     return `Rp ${amount.toLocaleString()},00`;
   };
 
+  function handleCancelInvoice(): void {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Report" />
       <ToastContainer />
 
-      <div className="space-y-2">
-        <div className="w-1/3 items-center">
-          <Select
-            options={supplierOptions}
-            value={selectedOption}
-            onChange={(option) => setSearchSupplier(option?.value ?? '')}
-            className="w-full text-xs"
-            styles={{
-              control: (base) => ({
-                ...base,
-                borderColor: '#9867C5',
-                padding: '1px',
-                borderRadius: '6px',
-                fontSize: '14px',
-              }),
-            }}
-            isLoading={isLoading}
-            placeholder="Select Supplier"
-          />
-        </div>
-      </div>
-
       {/* Filters */}
       <form className="space-y-4">
         <div className="flex space-x-4">
+          {/* Invoice Number */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Number
@@ -452,6 +268,8 @@ const InvoiceReport = () => {
               onChange={(e) => setInvoiceNumber(e.target.value)}
             />
           </div>
+
+          {/* Verification Date */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Verification Date
@@ -463,6 +281,8 @@ const InvoiceReport = () => {
               onChange={(e) => setVerificationDate(e.target.value)}
             />
           </div>
+
+          {/* Invoice Status */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Status
@@ -478,6 +298,7 @@ const InvoiceReport = () => {
         </div>
 
         <div className="flex space-x-4">
+          {/* Payment Planning Date */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Payment Planning Date
@@ -489,6 +310,8 @@ const InvoiceReport = () => {
               onChange={(e) => setPaymentPlanningDate(e.target.value)}
             />
           </div>
+
+          {/* Creation Date */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Creation Date
@@ -500,6 +323,8 @@ const InvoiceReport = () => {
               onChange={(e) => setCreationDate(e.target.value)}
             />
           </div>
+
+          {/* Invoice Date */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Date
@@ -514,7 +339,7 @@ const InvoiceReport = () => {
         </div>
       </form>
 
-      {/* Actions */}
+      {/* Buttons */}
       <div className="flex justify-end items-center gap-4">
         <button
           className="bg-purple-900 text-sm text-white px-4 py-2 rounded hover:bg-purple-800"
@@ -532,11 +357,11 @@ const InvoiceReport = () => {
         </button>
       </div>
 
+      {/* Table */}
       <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>
       <div className="bg-white p-6 space-y-6 mt-8">
         <div className="flex justify-between mb-8">
-          {/* Cancel Invoice separated to the left */}
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div>
             <button
               className="bg-red-600 text-sm text-white px-4 py-2 rounded hover:bg-red-500"
               onClick={handleCancelInvoice}
@@ -545,8 +370,6 @@ const InvoiceReport = () => {
               Cancel Invoice
             </button>
           </div>
-
-          {/* Download, Verify, and Post on the right (Verify placed in between) */}
           <div>
             <button
               className="bg-purple-900 text-sm text-white px-4 py-2 rounded hover:bg-purple-800"
@@ -555,15 +378,6 @@ const InvoiceReport = () => {
             >
               Download Attachment
             </button>
-
-            <button
-              className="bg-green-600 text-sm text-white px-4 py-2 rounded hover:bg-green-500 ml-4"
-              onClick={handleVerify}
-              type="button"
-            >
-              Verify
-            </button>
-
             <button
               className="bg-blue-900 text-sm text-white px-4 py-2 rounded hover:bg-blue-800 ml-4"
               onClick={handleCancelInvoice}
@@ -574,7 +388,6 @@ const InvoiceReport = () => {
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto shadow-md border rounded-lg">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
@@ -582,6 +395,7 @@ const InvoiceReport = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border"></th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Invoice No</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Inv Date</th>
+                {/* Payment Date with subcolumns */}
                 <th className="px-4 py-2 text-gray-700 text-center border" colSpan={2}>
                   Payment Date
                 </th>
@@ -591,13 +405,11 @@ const InvoiceReport = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border">Supplier Name</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Number</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Total DPP</th>
+                <th className="px-4 py-3 text-gray-700 text-center border">Total DPP</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">
                   Tax Base Amount
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border">
-                  Tax Amount (11%)
-                </th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Tax Amount</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">
                   PPh Base Amount
                 </th>
@@ -622,35 +434,79 @@ const InvoiceReport = () => {
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((invoice, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
+                    {/* Checkbox */}
                     <td className="px-4 py-2 text-center">
-                      {(!selectedInvoice || selectedInvoice.inv_no === invoice.inv_no) && (
-                        <input
-                          type="checkbox"
-                          checked={!!(selectedInvoice && selectedInvoice.inv_no === invoice.inv_no)}
-                          onChange={() => handleRecordSelection(invoice)}
-                        />
+                      <input
+                        type="checkbox"
+                        onChange={() => handleRecordSelection(invoice)}
+                      />
+                    </td>
+                    {/* Invoice No */}
+                    <td className="px-4 py-2 text-center">
+                      {invoice.inv_no || '-'}
+                    </td>
+                    {/* Inv Date */}
+                    <td className="px-4 py-2 text-center">
+                      {formatDate(invoice.inv_date)}
+                    </td>
+                    {/* Payment Plan Date */}
+                    <td className="px-4 py-2 text-center">
+                      {formatDate(invoice.plan_date)}
+                    </td>
+                    {/* Payment Actual Date */}
+                    <td className="px-4 py-2 text-center">
+                      {formatDate(invoice.actual_date)}
+                    </td>
+                    {/* Status */}
+                    <td className="px-4 py-2 text-center">
+                      {invoice.status || '-'}
+                    </td>
+                    {/* Receipt No */}
+                    <td className="px-4 py-2 text-center">
+                      {invoice.receipt_number || '-'}
+                    </td>
+                    {/* Supplier Code */}
+                    <td className="px-4 py-2 text-center">
+                      {invoice.bp_code || '-'}
+                    </td>
+                    {/* Supplier Name */}
+                    <td className="px-4 py-2 text-center">
+                      {invoice.bp_name || '-'}
+                    </td>
+                    {/* Tax Number */}
+                    <td className="px-4 py-2 text-center">
+                      {invoice.inv_faktur || '-'}
+                    </td>
+                    {/* Tax Date */}
+                    <td className="px-4 py-2 text-center">
+                      {formatDate(invoice.inv_faktur_date)}
+                    </td>
+                    {/* Total DPP */}
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(invoice.total_dpp)}
+                    </td>
+                    {/* Tax Base Amount */}
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(invoice.tax_base_amount)}
+                    </td>
+                    {/* Tax Amount (11% preview) */}
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(
+                        invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
                       )}
                     </td>
-                    <td className="px-4 py-2 text-center">{invoice.inv_no || '-'}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.inv_date)}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.plan_date)}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.actual_date)}</td>
-                    <td className="px-4 py-2 text-center">{invoice.status || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.receipt_number || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.bp_code || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.bp_name || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.inv_faktur || '-'}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.inv_faktur_date)}</td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.total_dpp)}</td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.tax_base_amount)}</td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0)}
-                    </td>
+                    {/* PPh Base Amount */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.pph_base_amount)}
                     </td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.pph_amount)}</td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.total_amount)}</td>
+                    {/* PPh Amount */}
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(invoice.pph_amount)}
+                    </td>
+                    {/* Total Amount */}
+                    <td className="px-4 py-2 text-center">
+                      {formatCurrency(invoice.total_amount)}
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -675,4 +531,4 @@ const InvoiceReport = () => {
   );
 };
 
-export default InvoiceReport;
+export default InvoiceReportSup;

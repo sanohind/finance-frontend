@@ -1,7 +1,7 @@
 import Dashboard from "./component/Dashboard";
 import GRTrackingSup from "./component/GRTrackingSup";
 import InvoiceCreation from "./component/InvoiceCreation";
-import InvoiceReport from "./component/InvoiceReport";
+import InvoiceReportSup from "./component/InvoiceReportSup";
 
 export const Supplier = () => {
 
@@ -22,7 +22,7 @@ export const Supplier = () => {
                     <InvoiceCreation />
                     </li>
                     <li>
-                    <InvoiceReport />
+                    <InvoiceReportSup />
                     </li>
                 </ul>
             </div>

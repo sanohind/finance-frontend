@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import LogoIcon from '/images/Logo-sanoh.png';
 import { GrSaRecord } from './InvoiceCreation';
 import { API_Create_Inv_Header_Admin, API_Ppn } from '../api/api';
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface InvoiceCreationWizardProps {
   selectedRecords: GrSaRecord[];
@@ -11,89 +11,149 @@ interface InvoiceCreationWizardProps {
   onFinish: () => void;
 }
 
-const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedRecords, onClose, onFinish }) => {
-  // Invoice state
+const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
+  selectedRecords,
+  onClose,
+  onFinish,
+}) => {
+  // Invoice fields
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
   const [taxCode, setTaxCode] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
-  // States for preview (computed later)
-  const [taxBaseAmount, setTaxBaseAmount] = useState('');
-  const [taxAmount, setTaxAmount] = useState('');
   const [taxDate, setTaxDate] = useState('');
-  const [totalInvoiceAmount, setTotalInvoiceAmount] = useState('');
+  const [totalInvoiceAmount] = useState('');
 
-  // Document state
-  const [documents, setDocuments] = useState([
-    { type: 'Invoice *', fileName: '', required: true },
-    { type: 'Tax Invoice *', fileName: '', required: true },
-    { type: 'Delivery Note *', fileName: '', required: true },
-    { type: 'Purchase Order *', fileName: '', required: true },
-  ]);
+  // Individual file references (one-by-one)
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [fakturPajakFile, setFakturPajakFile] = useState<File | null>(null);
+  const [suratJalanFile, setSuratJalanFile] = useState<File | null>(null);
+  const [poFile, setPoFile] = useState<File | null>(null);
+
+  // UI state
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [showPrintReceipt, setShowPrintReceipt] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
 
-  // New state for PPN and PPH lists
+  // PPN data
   const [ppnList, setPpnList] = useState<any[]>([]);
 
-  // Pagination for selected records table
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
   const totalPages = Math.ceil(selectedRecords.length / rowsPerPage);
 
-  // File input refs
-  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const handleFileUpload = (index: number, file: File | null) => {
-    if (file) {
-      const updatedDocuments = [...documents];
-      updatedDocuments[index] = { ...updatedDocuments[index], fileName: file.name };
-      setDocuments(updatedDocuments);
-    }
-  };
-
-  const handlePlusClick = (index: number) => {
-    fileInputRefs.current[index]?.click();
-  };
-
-  const formatToIDR = (value: number): string => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 2,
-    }).format(value);
-  };
-
-  // Load PPN and PPH options (with token)
+  // Load PPN
   useEffect(() => {
     const token = localStorage.getItem('access_token');
+    if (!token) return;
     const loadPPN = async () => {
       try {
-        const res = await fetch(API_Ppn(), {
+        const response = await fetch(API_Ppn(), {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        const data = await response.json();
         setPpnList(data);
-        console.log('ppnList:', data); // Log the ppnList
-      } catch (error) {
-        console.error('Error loading PPN', error);
+      } catch (err) {
+        console.error('Error loading PPN:', err);
       }
     };
     loadPPN();
   }, []);
 
-  const handleTaxCodeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedPpnId = e.target.value;
-    setTaxCode(selectedPpnId);
-    console.log('taxCode:', selectedPpnId); // Log the taxCode
+  const formatToIDR = (value: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 2,
+    }).format(value);
+
+  // Submit
+  const submitInvoice = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('Please log in.');
+        return;
+      }
+
+      // Compute amounts
+      const computedTaxBase = selectedRecords.reduce(
+        (acc, record) => acc + Number(record.receipt_amount),
+        0
+      );
+      const ppnRate = 0.11;
+      const computedTaxAmount = computedTaxBase * ppnRate;
+      const computedTotalInvoiceAmount = computedTaxBase + computedTaxAmount;
+
+      // Form data
+      const formData = new FormData();
+      formData.append('inv_no', invoiceNumber);
+      formData.append('inv_date', invoiceDate);
+      formData.append('inv_faktur', taxNumber);
+      formData.append('inv_faktur_date', taxDate);
+      formData.append('total_dpp', computedTaxBase.toString());
+      formData.append('ppn_id', taxCode);
+      formData.append('tax_base_amount', computedTaxBase.toString());
+      formData.append('tax_amount', computedTaxAmount.toString());
+      formData.append('total_amount', computedTotalInvoiceAmount.toString());
+      formData.append('status', 'New');
+      formData.append('created_by', '');
+
+      // Lines
+      selectedRecords.forEach((rec) => {
+        if (rec.inv_line_id) {
+          formData.append('inv_line_detail[]', rec.inv_line_id);
+        }
+      });
+
+      // Files (one by one)
+      if (invoiceFile) formData.append('invoice_file', invoiceFile);
+      if (fakturPajakFile) formData.append('fakturpajak_file', fakturPajakFile);
+      if (suratJalanFile) formData.append('suratjalan_file', suratJalanFile);
+      if (poFile) formData.append('po_file', poFile);
+
+      // Debug
+      for (const pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(`FormData => ${pair[0]} => File: ${(pair[1] as File).name}`);
+        } else {
+          console.log(`FormData => ${pair[0]} => ${pair[1]}`);
+        }
+      }
+
+      // Send
+      const response = await fetch(API_Create_Inv_Header_Admin(), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const responseText = await response.text();
+      let parsedData: any;
+      try {
+        parsedData = JSON.parse(responseText);
+      } catch {
+        parsedData = responseText;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Invoice creation failed: ${response.status} => ${JSON.stringify(parsedData)}`
+        );
+      }
+
+      alert('Invoice created successfully!');
+      onFinish();
+    } catch (err: any) {
+      console.error('Error creating invoice:', err);
+      alert(`Failed to create invoice: ${err.message || String(err)}`);
+    }
   };
 
-  // Render the selected records table with pagination.
+  // Render items
   const renderSelectedRecords = () => {
     const startIndex = (currentPage - 1) * rowsPerPage;
-    const displayedRecords = selectedRecords.slice(startIndex, startIndex + rowsPerPage);
+    const displayed = selectedRecords.slice(startIndex, startIndex + rowsPerPage);
 
     return (
       <div className="mb-6">
@@ -108,8 +168,8 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
               </tr>
             </thead>
             <tbody>
-              {displayedRecords.map((record, index) => (
-                <tr key={index}>
+              {displayed.map((record, idx) => (
+                <tr key={idx}>
                   <td className="border px-3 py-2 text-center">{record.gr_no}</td>
                   <td className="border px-3 py-2 text-center">{record.item_desc}</td>
                   <td className="border px-3 py-2 text-center">{formatToIDR(record.receipt_amount)}</td>
@@ -117,11 +177,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
               ))}
             </tbody>
           </table>
+
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-3 mt-2 mb-2">
               <button
                 type="button"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
                 disabled={currentPage === 1}
                 className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
               >
@@ -132,7 +193,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
               </span>
               <button
                 type="button"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
               >
@@ -145,17 +206,24 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
     );
   };
 
-  // Compute preview values for Tax Base Amount and Tax Amount.
-  const computedTaxBase = selectedRecords.reduce((acc, record) => acc + Number(record.receipt_amount), 0);
+  // Calculate taxes
+  const computedTaxBase = selectedRecords.reduce(
+    (acc, record) => acc + Number(record.receipt_amount),
+    0
+  );
   const computedTaxAmount = computedTaxBase * 0.11;
 
+  const handleTaxCodeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTaxCode(e.target.value);
+  };
+
+  // Step 1
   const renderMainForm = () => (
     <div className="space-y-4">
       {currentStep === 1 && selectedRecords.length > 0 && renderSelectedRecords()}
       <div className="space-y-4 pt-2 border-t border-gray-200">
         <h2 className="text-lg font-medium text-gray-900">Create Invoice</h2>
         <hr className="my-6 border-t-1 border-blue-900" />
-        {/* Row 1 */}
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Invoice Number</label>
@@ -175,15 +243,14 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
               onChange={handleTaxCodeChange}
             >
               <option value="">Select PPN</option>
-              {ppnList.map((ppn) => (
-                <option key={ppn.ppn_id} value={ppn.ppn_id}>
-                  {ppn.ppn_description}
+              {ppnList.map((item) => (
+                <option key={item.ppn_id} value={item.ppn_id}>
+                  {item.ppn_description}
                 </option>
               ))}
             </select>
           </div>
         </div>
-        {/* Row 2 */}
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Invoice Date</label>
@@ -205,7 +272,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             />
           </div>
         </div>
-        {/* Row 3 - Preview fields */}
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Tax Base Amount</label>
@@ -226,7 +292,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
             />
           </div>
         </div>
-        {/* Row 4 */}
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Tax Amount</label>
@@ -251,6 +316,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
     </div>
   );
 
+  // Step 2: table design but handle docs individually
   const renderAttachDocuments = () => (
     <div className="space-y-6">
       <h2 className="text-lg font-medium text-gray-900">Attach and Submit Document</h2>
@@ -258,58 +324,186 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-purple-800">
             <tr>
-              <th className="w-24 px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              <th className="w-24 px-6 py-3 text-center text-xs font-medium text-white uppercase">
                 Action
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase">
                 Document Type
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-white uppercase">
                 File Name
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {documents.map((doc, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <button
-                    onClick={() => handlePlusClick(index)}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-600 transition-colors"
-                  >
-                    <Plus size={18} className="text-white font-bold stroke-[2.5]" />
-                  </button>
-                  <input
-                    type="file"
-                    ref={(el) => (fileInputRefs.current[index] = el)}
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(index, e.target.files?.[0] || null)}
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <span className="text-sm text-purple-800 font-medium">{doc.type}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+            {/* Invoice row */}
+            <tr>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <button
+                  onClick={() => document.getElementById('invoice_file')?.click()}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-600 transition-colors"
+                >
+                  <Plus size={18} className="text-white font-bold stroke-[2.5]" />
+                </button>
+                <input
+                  type="file"
+                  id="invoice_file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setInvoiceFile(file);
+                  }}
+                />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <span className="text-sm text-purple-800 font-medium">Invoice</span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                {invoiceFile ? (
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-sm text-gray-500">
-                      {doc.fileName || 'No file selected'}
-                    </span>
-                    {doc.fileName && (
-                      <button
-                        onClick={() => {
-                          const updatedDocuments = [...documents];
-                          updatedDocuments[index] = { ...updatedDocuments[index], fileName: '' };
-                          setDocuments(updatedDocuments);
-                        }}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
+                    <span className="text-sm text-gray-500">{invoiceFile.name}</span>
+                    <button
+                      onClick={() => {
+                        setInvoiceFile(null);
+                        (document.getElementById('invoice_file') as HTMLInputElement).value = '';
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-                </td>
-              </tr>
-            ))}
+                ) : (
+                  'No file selected'
+                )}
+              </td>
+            </tr>
+            {/* Faktur Pajak */}
+            <tr>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <button
+                  onClick={() => document.getElementById('fakturpajak_file')?.click()}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-600 transition-colors"
+                >
+                  <Plus size={18} className="text-white font-bold stroke-[2.5]" />
+                </button>
+                <input
+                  type="file"
+                  id="fakturpajak_file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setFakturPajakFile(file);
+                  }}
+                />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <span className="text-sm text-purple-800 font-medium">Tax Invoice</span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                {fakturPajakFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-gray-500">{fakturPajakFile.name}</span>
+                    <button
+                      onClick={() => {
+                        setFakturPajakFile(null);
+                        (
+                          document.getElementById('fakturpajak_file') as HTMLInputElement
+                        ).value = '';
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  'No file selected'
+                )}
+              </td>
+            </tr>
+            {/* Surat Jalan */}
+            <tr>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <button
+                  onClick={() => document.getElementById('suratjalan_file')?.click()}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-600 transition-colors"
+                >
+                  <Plus size={18} className="text-white font-bold stroke-[2.5]" />
+                </button>
+                <input
+                  type="file"
+                  id="suratjalan_file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSuratJalanFile(file);
+                  }}
+                />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <span className="text-sm text-purple-800 font-medium">Delivery Note</span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                {suratJalanFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-gray-500">{suratJalanFile.name}</span>
+                    <button
+                      onClick={() => {
+                        setSuratJalanFile(null);
+                        (
+                          document.getElementById('suratjalan_file') as HTMLInputElement
+                        ).value = '';
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  'No file selected'
+                )}
+              </td>
+            </tr>
+            {/* PO */}
+            <tr>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <button
+                  onClick={() => document.getElementById('po_file')?.click()}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-600 transition-colors"
+                >
+                  <Plus size={18} className="text-white font-bold stroke-[2.5]" />
+                </button>
+                <input
+                  type="file"
+                  id="po_file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setPoFile(file);
+                  }}
+                />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <span className="text-sm text-purple-800 font-medium">Purchase Order</span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                {poFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-gray-500">{poFile.name}</span>
+                    <button
+                      onClick={() => {
+                        setPoFile(null);
+                        (document.getElementById('po_file') as HTMLInputElement).value = '';
+                      }}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  'No file selected'
+                )}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -327,29 +521,28 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
     </div>
   );
 
+  // Step 3
   const renderTermsAndConditions = () => (
     <div className="fixed inset-0 flex items-center justify-center z-[9999]">
       <div className="bg-white rounded-lg w-full max-w-2xl p-6 shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-medium text-gray-900">Attach and Submit Document</h2>
-          <button onClick={() => setShowTermsModal(false)} className="text-gray-400 hover:text-gray-500 transition-colors">
+          <button onClick={() => {}} className="text-gray-400 hover:text-gray-500 transition-colors">
             <X size={16} />
           </button>
         </div>
         <div className="space-y-4">
           <ol className="list-decimal pl-4 space-y-2 text-sm text-gray-600">
-            {Array(9)
+            {Array(5)
               .fill(null)
-              .map((_, index) => (
-                <li key={index}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.
-                </li>
+              .map((_, idx) => (
+                <li key={idx}>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
               ))}
           </ol>
         </div>
         <div className="mt-6 flex justify-end">
           <button
-            onClick={submitInvoice} // Changed onClick handler to submitInvoice
+            onClick={submitInvoice}
             className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md transition-colors"
           >
             I Agree
@@ -372,164 +565,81 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({ selectedR
     }
   };
 
-  // Invoice submission handled via API_Create_Inv_Header_Admin
-  const submitInvoice = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        console.error('No access token found');
-        alert('Please log in to create an invoice.');
-        return;
-      }
-
-      // Compute values based on selected records
-      const computedTaxBase = selectedRecords.reduce(
-        (acc, record) => acc + Number(record.receipt_amount),
-        0
-      );
-      const ppnRate = 0.11; // Fixed rate; the backend looks it up by ppn_id.
-      const computedTaxAmount = computedTaxBase * ppnRate;
-      const computedTotalInvoiceAmount = computedTaxBase + computedTaxAmount;
-
-      const formData = new FormData();
-      formData.append('inv_no', invoiceNumber);
-      formData.append('inv_date', invoiceDate);
-      formData.append('inv_faktur', taxNumber);
-      formData.append('inv_faktur_date', taxDate);
-      formData.append('total_dpp', computedTaxBase.toString());
-      formData.append('ppn_id', taxCode);
-      formData.append('tax_base_amount', computedTaxBase.toString());
-      formData.append('tax_amount', computedTaxAmount.toString());
-      formData.append('total_amount', computedTotalInvoiceAmount.toString());
-      formData.append('status', 'New');
-      formData.append('created_by', '');
-
-      // IMPORTANT: Use the invoice line ID (inv_line_id) expected by the backend.
-      // Check that each record has a valid inv_line_id. If not, update or log for debugging.
-      selectedRecords.forEach((record, idx) => {
-        if (!record.inv_line_id) {
-          console.error(`Record at index ${idx} is missing inv_line_id`, record);
-        }
-        formData.append('inv_line_detail[]', record.inv_line_id || '');
-      });
-
-      documents.forEach((doc, index) => {
-        const fileInput = fileInputRefs.current[index];
-        if (fileInput && fileInput.files && fileInput.files[0]) {
-          if (doc.type.includes('Invoice')) {
-            formData.append('invoice_file', fileInput.files[0]);
-          } else if (doc.type.includes('Tax Invoice')) {
-            formData.append('fakturpajak_file', fileInput.files[0]);
-          } else if (doc.type.includes('Delivery Note')) {
-            formData.append('suratjalan_file', fileInput.files[0]);
-          } else if (doc.type.includes('Purchase Order')) {
-            formData.append('po_file', fileInput.files[0]);
-          }
-        }
-      });
-
-      // Log the FormData object for debugging
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      const response = await fetch(API_Create_Inv_Header_Admin(), {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`, // Include the token in the headers
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Invoice creation failed with status: ${response.status}`);
-      }
-      await response.json();
-
-      alert("Invoice created successfully!");
-
-      // The invoice has been stored—now trigger the next steps.
-      // Ensure that onFinish (or your parent component) clears the invoice lines (selectedRecords)
-      // so they no longer appear in the UI.
-      onFinish();
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-      alert("Failed to create invoice. Please try again.");
-    }
-  };
-
   return (
-    <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-        <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="p-6 border-b flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Invoice Preview</h2>
-            <div className="flex items-center gap-4">
-              <img src={LogoIcon} alt="Sanoh Logo" className="h-8" />
-              <button onClick={onClose} className="text-gray-400 hover:text-gray-500 transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-          {/* Content */}
-          <div className="p-6 bg-violet-100 rounded-lg">
-            {currentStep < 3 ? (
-              <>
-                {renderCurrentStep()}
-                <div className="mt-6 flex justify-end gap-2">
-                  {currentStep > 1 && (
-                    <button
-                      onClick={() => setCurrentStep((prev) => prev - 1)}
-                      className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-md transition-colors"
-                    >
-                      Previous
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setCurrentStep((prev) => prev + 1)}
-                    disabled={
-                      currentStep === 2 &&
-                      (documents.some((doc) => !doc.fileName) || !disclaimerAccepted)
-                    }
-                    className={`px-6 py-2 rounded-md transition-colors ${
-                      currentStep === 2 &&
-                      (documents.some((doc) => !doc.fileName) || !disclaimerAccepted)
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-900 hover:bg-blue-800 text-white'
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Terms & Condition</h2>
-                <ul className="list-decimal list-inside space-y-2 text-gray-700">
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                  <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                </ul>
-                <div className="mt-2 mb-2 flex justify-end gap-2">
-                  <button
-                    onClick={submitInvoice}
-                    className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md transition-colors"
-                  >
-                    I Agree
-                  </button>
-                </div>
-              </div>
-            )}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="p-6 border-b flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900">Invoice Preview</h2>
+          <div className="flex items-center gap-4">
+            <img src={LogoIcon} alt="Sanoh Logo" className="h-8" />
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-500 transition-colors">
+              <X size={18} />
+            </button>
           </div>
         </div>
+        {/* Content */}
+        <div className="p-6 bg-violet-100 rounded-lg">
+          {currentStep < 3 ? (
+            <>
+              {renderCurrentStep()}
+              <div className="mt-6 flex justify-end gap-2">
+                {currentStep > 1 && (
+                  <button
+                    onClick={() => setCurrentStep(currentStep - 1)}
+                    className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-md transition-colors"
+                  >
+                    Previous
+                  </button>
+                )}
+                <button
+                  onClick={() => setCurrentStep(currentStep + 1)}
+                  disabled={
+                    currentStep === 2 &&
+                    (!invoiceFile ||
+                      !fakturPajakFile ||
+                      !suratJalanFile ||
+                      !poFile ||
+                      !disclaimerAccepted)
+                  }
+                  className={`px-6 py-2 rounded-md transition-colors ${
+                    currentStep === 2 &&
+                    (!invoiceFile ||
+                      !fakturPajakFile ||
+                      !suratJalanFile ||
+                      !poFile ||
+                      !disclaimerAccepted)
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-900 hover:bg-blue-800 text-white'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          ) : (
+            <div>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Terms & Condition</h2>
+              <ul className="list-decimal list-inside space-y-2 text-gray-700">
+                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
+                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
+                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
+                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
+                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
+              </ul>
+              <div className="mt-2 mb-2 flex justify-end gap-2">
+                <button
+                  onClick={submitInvoice}
+                  className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md transition-colors"
+                >
+                  I Agree
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

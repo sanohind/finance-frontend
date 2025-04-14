@@ -13,6 +13,7 @@ import GrTracking from './pages/GrTracking';
 import GrTrackingSup from './pages/GrTrackingSup';
 import InvoiceCreation from './pages/InvoiceCreation';
 import InvoiceReport from './pages/InvoiceReport';
+import InvoiceReportSup from './pages/InvoiceReportSup';
 
 const App = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -108,8 +109,17 @@ const App = () => {
             <Route
               path="/invoice-report"
               element={
-                <ProtectedRoute allowedRoles={['1', '2', '3']}>
+                <ProtectedRoute allowedRoles={['1', '2']}>
                   <InvoiceReport/>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/invoicereport"
+              element={
+                <ProtectedRoute allowedRoles={['3']}>
+                  <InvoiceReportSup/>
                 </ProtectedRoute>
               }
             />

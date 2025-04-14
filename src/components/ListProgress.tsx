@@ -44,32 +44,43 @@ const ListProgress: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const rowsPerPage = 5;
 
+  // Function to format numbers to Indonesian Rupiah
+  const formatToRupiah = (value: number | null): string => {
+    if (value === null) return "-";
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 2, // Ensure two decimal places
+      maximumFractionDigits: 2, // Ensure two decimal places
+    }).format(value);
+  };
+
   // Fetch invoice header data
   const fetchInvoiceData = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem("access_token");
       const response = await fetch(API_Inv_Header_Admin(), {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch invoice data');
+        throw new Error("Failed to fetch invoice data");
       }
 
       const result = await response.json();
-      console.log('Raw Invoice Data Response:', result);
+      console.log("Raw Invoice Data Response:", result);
 
-      if (result && typeof result === 'object') {
+      if (result && typeof result === "object") {
         let invoiceList = [];
 
         if (Array.isArray(result.data)) {
           invoiceList = result.data;
-        } else if (result.data && typeof result.data === 'object') {
+        } else if (result.data && typeof result.data === "object") {
           invoiceList = Object.values(result.data);
         } else if (Array.isArray(result)) {
           invoiceList = result;
@@ -79,24 +90,24 @@ const ListProgress: React.FC = () => {
         const mappedInvoices = invoiceList.map((invoice: any) => ({
           ...invoice,
           process_status: invoice.process_status || invoice.status || "New",
-          po_number: invoice.po_number || "N/A"
+          po_number: invoice.po_number || "N/A",
         }));
 
         if (mappedInvoices.length > 0) {
           setData(mappedInvoices);
           setFilteredData(mappedInvoices);
         } else {
-          toast.warn('No invoice data found');
+          toast.warn("No invoice data found");
         }
       } else {
-        throw new Error('Invalid response structure from API');
+        throw new Error("Invalid response structure from API");
       }
     } catch (error) {
-      console.error('Error fetching invoice data:', error);
+      console.error("Error fetching invoice data:", error);
       if (error instanceof Error) {
         toast.error(`Error fetching invoice data: ${error.message}`);
       } else {
-        toast.error('Error fetching invoice data');
+        toast.error("Error fetching invoice data");
       }
     } finally {
       setIsLoading(false);
@@ -113,12 +124,10 @@ const ListProgress: React.FC = () => {
     let filtered = [...data];
 
     if (fromDate && toDate) {
-      filtered = filtered.filter(
-        (item) => {
-          const docDate = item.inv_date || "";
-          return docDate >= fromDate && docDate <= toDate;
-        }
-      );
+      filtered = filtered.filter((item) => {
+        const docDate = item.inv_date || "";
+        return docDate >= fromDate && docDate <= toDate;
+      });
     }
 
     setFilteredData(filtered);
@@ -142,12 +151,14 @@ const ListProgress: React.FC = () => {
   return (
     <div className="bg-white rounded-lg p-6">
       <h2 className="text-2xl font-semibold text-black mb-4">List Progress</h2>
-  
+
       {/* Filter & Search Section */}
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex items-end gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">From Date</label>
+            <label className="block text-sm font-medium text-gray-700">
+              From Date
+            </label>
             <input
               type="date"
               value={fromDate}
@@ -156,7 +167,9 @@ const ListProgress: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">To Date</label>
+            <label className="block text-sm font-medium text-gray-700">
+              To Date
+            </label>
             <input
               type="date"
               value={toDate}
@@ -171,7 +184,7 @@ const ListProgress: React.FC = () => {
             Refresh
           </button>
         </div>
-  
+
         <div className="flex items-end gap-4 mt-6 w-80">
           <SearchBar
             placeholder="Search Supplier Code/Name..."
@@ -179,18 +192,30 @@ const ListProgress: React.FC = () => {
           />
         </div>
       </div>
-  
+
       {/* Table Section */}
       <div className="overflow-x-auto shadow-md rounded-lg border">
         <table className="min-w-full divide-y divide-gray-200 text-center mx-auto">
           <thead className="bg-gray-100 uppercase">
             <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">Invoice Number</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">Supplier ID</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">Doc Date</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">Total Amount</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">Process Status</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">Payment Plan Date</th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+                Invoice Number
+              </th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+                Supplier ID
+              </th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+                Doc Date
+              </th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+                Total Amount
+              </th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+                Process Status
+              </th>
+              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+                Payment Plan Date
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -203,28 +228,42 @@ const ListProgress: React.FC = () => {
             ) : paginatedData.length > 0 ? (
               paginatedData.map((invoice) => (
                 <tr key={invoice.inv_no} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-800">{invoice.inv_no}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{invoice.bp_code || "-"}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{invoice.inv_date || "-"}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{(invoice.total_amount || 0).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">
+                    {invoice.inv_no}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-800">
+                    {invoice.bp_code || "-"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-800">
+                    {invoice.inv_date || "-"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-800">
+                    {formatToRupiah(invoice.total_amount)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <span
                       className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${
-                        (invoice.process_status === "In Process" || invoice.status === "In Process")
-                        ? "bg-yellow-200"
-                        : (invoice.process_status === "Rejected" || invoice.status === "Rejected")
-                        ? "bg-red-500"
-                        : (invoice.process_status === "Paid" || invoice.status === "Paid")
-                        ? "bg-blue-900"
-                        : (invoice.process_status === "Ready to Payment" || invoice.status === "Ready to Payment")
-                        ? "bg-green-400"
-                        : "bg-blue-400"
+                        invoice.process_status === "In Process" ||
+                        invoice.status === "In Process"
+                          ? "bg-yellow-200"
+                          : invoice.process_status === "Rejected" ||
+                            invoice.status === "Rejected"
+                          ? "bg-red-500"
+                          : invoice.process_status === "Paid" ||
+                            invoice.status === "Paid"
+                          ? "bg-blue-900"
+                          : invoice.process_status === "Ready to Payment" ||
+                            invoice.status === "Ready to Payment"
+                          ? "bg-green-400"
+                          : "bg-blue-400"
                       }`}
                     >
                       {invoice.process_status || invoice.status || "New"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{invoice.plan_date || "-"}</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">
+                    {invoice.plan_date || "-"}
+                  </td>
                 </tr>
               ))
             ) : (

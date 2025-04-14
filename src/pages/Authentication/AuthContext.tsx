@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         toast.success('Logout success');
         
         // Add redirect after successful logout
-        window.location.href = '/auth/login';
+        window.location.href = '/';
       } catch (error: any) {
         setUserRole(null);
         localStorage.clear();
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error:', error.response ? error.response.data : error.message);
         
         // Still redirect even if logout API fails
-        window.location.href = '/auth/login';
+        window.location.href = '/';
       }
     } else {
       setUserRole(null);
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error: Token not found');
       
       // Redirect if no token found
-      window.location.href = '/auth/login';
+      window.location.href = '/';
     }
   };
 
