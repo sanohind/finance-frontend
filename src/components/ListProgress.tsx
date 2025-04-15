@@ -148,6 +148,15 @@ const ListProgress: React.FC = () => {
     currentPage * rowsPerPage
   );
 
+  // Helper to get status color
+  const getStatusColor = (status: string) => {
+    if (status === "Ready To Payment") return "bg-green-400";
+    if (status === "Rejected") return "bg-red-500";
+    if (status === "Paid") return "bg-blue-900";
+    if (status === "In Process") return "bg-yellow-300";
+    return "bg-blue-400";
+  };
+
   return (
     <div className="bg-white rounded-lg p-6">
       <h2 className="text-2xl font-semibold text-black mb-4">List Progress</h2>
@@ -226,46 +235,38 @@ const ListProgress: React.FC = () => {
                 </td>
               </tr>
             ) : paginatedData.length > 0 ? (
-              paginatedData.map((invoice) => (
-                <tr key={invoice.inv_no} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-800">
-                    {invoice.inv_no}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-800">
-                    {invoice.bp_code || "-"}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-800">
-                    {invoice.inv_date || "-"}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-800">
-                    {formatToRupiah(invoice.total_amount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <span
-                      className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${
-                        invoice.process_status === "In Process" ||
-                        invoice.status === "In Process"
-                          ? "bg-yellow-200"
-                          : invoice.process_status === "Rejected" ||
-                            invoice.status === "Rejected"
-                          ? "bg-red-500"
-                          : invoice.process_status === "Paid" ||
-                            invoice.status === "Paid"
-                          ? "bg-blue-900"
-                          : invoice.process_status === "Ready to Payment" ||
-                            invoice.status === "Ready to Payment"
-                          ? "bg-green-400"
-                          : "bg-blue-400"
-                      }`}
-                    >
-                      {invoice.process_status || invoice.status || "New"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-800">
-                    {invoice.plan_date || "-"}
-                  </td>
-                </tr>
-              ))
+              paginatedData.map((invoice) => {
+                const status =
+                  invoice.process_status || invoice.status || "New";
+                return (
+                  <tr key={invoice.inv_no} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {invoice.inv_no}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {invoice.bp_code || "-"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {invoice.inv_date || "-"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {formatToRupiah(invoice.total_amount)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <span
+                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(
+                          status
+                        )}`}
+                      >
+                        {status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {invoice.plan_date || "-"}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
