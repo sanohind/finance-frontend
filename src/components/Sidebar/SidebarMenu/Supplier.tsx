@@ -1,6 +1,6 @@
 import Dashboard from "./component/Dashboard";
 import GRTrackingSup from "./component/GRTrackingSup";
-import InvoiceCreation from "./component/InvoiceCreation";
+import InvoiceCreationSup from "./component/InvoiceCreationSup";
 import InvoiceReportSup from "./component/InvoiceReportSup";
 
 export const Supplier = () => {
@@ -19,7 +19,7 @@ export const Supplier = () => {
                     <GRTrackingSup />
                     </li>
                     <li>
-                    <InvoiceCreation />
+                    <InvoiceCreationSup />
                     </li>
                     <li>
                     <InvoiceReportSup />

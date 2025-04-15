@@ -12,6 +12,7 @@ import { AuthProvider } from './pages/Authentication/AuthContext';
 import GrTracking from './pages/GrTracking';
 import GrTrackingSup from './pages/GrTrackingSup';
 import InvoiceCreation from './pages/InvoiceCreation';
+import InvoiceCreationSup from './pages/InvoiceCreationSup';
 import InvoiceReport from './pages/InvoiceReport';
 import InvoiceReportSup from './pages/InvoiceReportSup';
 
@@ -100,8 +101,17 @@ const App = () => {
             <Route
               path="/invoice-creation"
               element={
-                <ProtectedRoute allowedRoles={['1', '3']}>
+                <ProtectedRoute allowedRoles={['1']}>
                   <InvoiceCreation/>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/invoicecreation"
+              element={
+                <ProtectedRoute allowedRoles={['3']}>
+                  <InvoiceCreationSup/>
                 </ProtectedRoute>
               }
             />

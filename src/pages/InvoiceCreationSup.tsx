@@ -1,19 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import InvoiceCreationWizard from './InvoiceCreationWizard';
-import Select from "react-select";
-import { API_Inv_Line_Admin, API_List_Partner_Admin, API_Inv_Line_Outstanding } from '../api/api';
-
-interface BusinessPartner {
-  bp_code: string;
-  bp_name: string;
-  adr_line_1: string;
-}
+import { API_Inv_Line_Admin } from '../api/api';
 
 interface FilterParams {
-  bp_id?: string;
   gr_no?: string;
   tax_number?: string;
   po_no?: string;
@@ -72,22 +64,16 @@ export interface GrSaRecord {
   updated_at: string;
 }
 
-const InvoiceCreation = () => {
+const InvoiceCreationSup = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState<GrSaRecord[]>([]);
-  const [searchSupplier, setSearchSupplier] = useState('');
-  const [grSaDate, setGrSaDate] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [poNumber, setPoNumber] = useState('');
   const [grSaList, setGrSaList] = useState<GrSaRecord[]>([]);
   const [filteredData, setFilteredData] = useState<GrSaRecord[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
-  const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filterParams, setFilterParams] = useState<FilterParams>({});
-  const [selectedSupplier, setSelectedSupplier] = useState('');
 
   // Format number to IDR currency format
   const formatToIDR = (value: number): string => {
@@ -98,36 +84,12 @@ const InvoiceCreation = () => {
     }).format(value);
   };
 
-  useEffect(() => {
-    // Removed all role-specific logic,
-    // keep only localStorage reads if you still need them for other reasons
-    // (currently removed to strip role conditions entirely)
-  }, []);
-
-  useEffect(() => {
-    fetchBusinessPartners();
-  }, []);
-
-  const fetchGrSaData = async (params: FilterParams = {}) => {
+  // Fetch all data first, then filter on frontend like GrTrackingSup
+  const handleSearch = async () => {
     setIsLoading(true);
-    console.log('Fetching GR/SA data with params:', params);
-
-    const token = localStorage.getItem('access_token');
     try {
-      const queryParams = Object.entries(params)
-        .filter(([_, value]) => value !== undefined && value !== '')
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&');
-
-      // If no supplier is selected, call the base URL; otherwise append the supplier code
-      const baseUrl = selectedSupplier
-        ? `${API_Inv_Line_Outstanding()}/${selectedSupplier}`
-        : API_Inv_Line_Outstanding();
-      const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
-
-      console.log('Fetching GR/SA data with URL:', url);
-
-      const response = await fetch(url, {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(API_Inv_Line_Admin(), {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -136,40 +98,46 @@ const InvoiceCreation = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch GR/SA data: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch invoice line data: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('Raw GR/SA Response:', result);
+      let invLineList: GrSaRecord[] = [];
+      if (Array.isArray(result.data)) {
+        invLineList = result.data;
+      } else if (result.data && typeof result.data === 'object') {
+        invLineList = Object.values(result.data);
+      } else if (Array.isArray(result)) {
+        invLineList = result;
+      }
 
-      if (result && typeof result === 'object') {
-        let invLineList: GrSaRecord[] = [];
-
-        if (Array.isArray(result.data)) {
-          invLineList = result.data;
-        } else if (result.data && typeof result.data === 'object') {
-          invLineList = Object.values(result.data);
-        } else if (Array.isArray(result)) {
-          invLineList = result;
+      // Filter on frontend
+      let filtered = invLineList;
+      Object.entries(filterParams).forEach(([key, value]) => {
+        if (value && value !== '') {
+          filtered = filtered.filter((item: any) => {
+            if (!item[key]) return false;
+            // For date fields, do exact match; for others, partial match
+            if (key.endsWith('_date')) {
+              return String(item[key]).slice(0, 10) === String(value);
+            }
+            return String(item[key]).toLowerCase().includes(String(value).toLowerCase());
+          });
         }
+      });
 
-        if (invLineList.length > 0) {
-          setGrSaList(invLineList);
-          setFilteredData(invLineList);
-        } else {
-          toast.warn('No GR/SA data found for the selected filters');
-          setGrSaList([]);
-          setFilteredData([]);
-        }
-      } else {
-        throw new Error('Invalid response structure from API');
+      setGrSaList(filtered);
+      setFilteredData(filtered);
+
+      if (filtered.length === 0) {
+        toast.warn('No invoice line data found for the selected filters');
       }
     } catch (error) {
-      console.error('Error fetching GR/SA data:', error);
+      console.error('Error fetching invoice line data:', error);
       if (error instanceof Error) {
-        toast.error(`Error fetching GR/SA data: ${error.message}`);
+        toast.error(`Error fetching invoice line data: ${error.message}`);
       } else {
-        toast.error('Error fetching GR/SA data');
+        toast.error('Error fetching invoice line data');
       }
       setGrSaList([]);
       setFilteredData([]);
@@ -178,67 +146,16 @@ const InvoiceCreation = () => {
     }
   };
 
-  const fetchBusinessPartners = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(API_List_Partner_Admin(), {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch business partners');
+  const handleClear = () => {
+    setFilterParams({});
+    const formInputs = document.querySelectorAll('input');
+    formInputs.forEach((input) => {
+      if (input.type === 'text' || input.type === 'date') {
+        input.value = '';
       }
-
-      const result = await response.json();
-      console.log('Raw Business Partners Response:', result);
-
-      let partnersList: BusinessPartner[] = [];
-      if (result.bp_code && result.bp_name && result.adr_line_1) {
-        partnersList = [{
-          bp_code: result.bp_code,
-          bp_name: result.bp_name,
-          adr_line_1: result.adr_line_1,
-        }];
-      } else if (Array.isArray(result.data)) {
-        partnersList = result.data.map((partner: BusinessPartner) => ({
-          bp_code: partner.bp_code,
-          bp_name: partner.bp_name,
-          adr_line_1: partner.adr_line_1,
-        }));
-      } else if (result.data && typeof result.data === 'object') {
-        partnersList = Object.values(result.data).map((partner: any) => ({
-          bp_code: partner.bp_code,
-          bp_name: partner.bp_name,
-          adr_line_1: partner.adr_line_1,
-        }));
-      } else if (Array.isArray(result)) {
-        partnersList = result.map((partner: BusinessPartner) => ({
-          bp_code: partner.bp_code,
-          bp_name: partner.bp_name,
-          adr_line_1: partner.adr_line_1,
-        }));
-      }
-
-      if (partnersList.length > 0) {
-        setBusinessPartners(partnersList);
-      } else {
-        toast.warn('No business partners found in the response');
-      }
-    } catch (error) {
-      console.error('Error fetching business partners:', error);
-      if (error instanceof Error) {
-        toast.error(`Error fetching business partners: ${error.message}`);
-      } else {
-        toast.error('Error fetching business partners');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    });
+    setGrSaList([]);
+    setFilteredData([]);
   };
 
   const handleRecordSelection = (record: GrSaRecord) => {
@@ -279,100 +196,6 @@ const InvoiceCreation = () => {
     setSelectedRecords([]);
   };
 
-  const supplierOptions = businessPartners.map(partner => ({
-    value: partner.bp_code,
-    label: `${partner.bp_code} | ${partner.bp_name}`,
-  }));
-
-  const selectedOption = supplierOptions.find(opt => opt.value === selectedSupplier) || {
-    value: selectedSupplier,
-    label: selectedSupplier
-      ? `${selectedSupplier} | ${businessPartners.find(p => p.bp_code === selectedSupplier)?.bp_name || ''}`
-      : "Select Supplier",
-  };
-
-  const handleSearch = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('access_token');
-      const { bp_id, ...paramsWithoutBpId } = filterParams;
-
-      const queryParams = Object.entries(paramsWithoutBpId)
-        .filter(([_, value]) => value !== undefined && value !== '')
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&');
-
-      const baseUrl = selectedSupplier
-        ? `${API_Inv_Line_Admin()}/${selectedSupplier}`
-        : API_Inv_Line_Admin();
-      const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
-
-      console.log('Searching with URL:', url);
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch invoice line data: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('Raw Invoice Line Response:', result);
-
-      let invLineList: GrSaRecord[] = [];
-      if (Array.isArray(result.data)) {
-        invLineList = result.data;
-      } else if (result.data && typeof result.data === 'object') {
-        invLineList = Object.values(result.data);
-      } else if (Array.isArray(result)) {
-        invLineList = result;
-      }
-
-      if (invLineList.length > 0) {
-        setGrSaList(invLineList);
-        setFilteredData(invLineList);
-      } else {
-        toast.warn('No invoice line data found for the selected filters');
-        setGrSaList([]);
-        setFilteredData([]);
-      }
-    } catch (error) {
-      console.error('Error fetching invoice line data:', error);
-      if (error instanceof Error) {
-        toast.error(`Error fetching invoice line data: ${error.message}`);
-      } else {
-        toast.error('Error fetching invoice line data');
-      }
-      setGrSaList([]);
-      setFilteredData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClear = () => {
-    setFilterParams({});
-    setSelectedSupplier('');
-    setSearchSupplier('');
-    setInvoiceNumber('');
-    setPoNumber('');
-
-    const formInputs = document.querySelectorAll('input');
-    formInputs.forEach((input) => {
-      if (input.type === 'text' || input.type === 'date') {
-        input.value = '';
-      }
-    });
-
-    setGrSaList([]);
-    setFilteredData([]);
-  };
-
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -381,14 +204,14 @@ const InvoiceCreation = () => {
     setFilterParams(prev => ({ ...prev, [field]: value }));
   };
 
+  const calculateTotalAmount = (records: GrSaRecord[]): number => {
+    return records.reduce((sum, item) => sum + (item.receipt_amount || 0), 0);
+  };
+
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
-
-  const calculateTotalAmount = (records: GrSaRecord[]): number => {
-    return records.reduce((sum, item) => sum + (item.receipt_amount || 0), 0);
-  };
 
   return (
     <div className="space-y-6">
@@ -403,31 +226,8 @@ const InvoiceCreation = () => {
       ) : (
         <>
           <form className="space-y-4">
-            <div className='flex space-x-4'>
-              <div className="w-1/3 items-center">
-                <Select
-                  options={supplierOptions}
-                  value={selectedOption}
-                  onChange={(selectedOption) => {
-                    setSearchSupplier(selectedOption?.value || "");
-                    setSelectedSupplier(selectedOption?.value || "");
-                    setFilterParams(prev => ({ ...prev, bp_id: selectedOption?.value || "" }));
-                  }}
-                  className="w-full text-xs"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      borderColor: "#9867C5",
-                      padding: "1px",
-                      borderRadius: "6px",
-                      fontSize: "14px",
-                    }),
-                  }}
-                  isLoading={isLoading}
-                  placeholder="Select Supplier"
-                />
-              </div>
-
+            {/* First row of filters */}
+            <div className="flex space-x-4">
               <div className="flex w-1/3 items-center gap-2">
                 <label className="w-1/4 text-sm font-medium text-gray-700">PO Date</label>
                 <input
@@ -436,7 +236,6 @@ const InvoiceCreation = () => {
                   onChange={(e) => handleInputChange('po_date', e.target.value)}
                 />
               </div>
-
               <div className="flex w-1/3 items-center gap-2">
                 <label className="w-1/4 text-sm font-medium text-gray-700">GR / SA Date</label>
                 <input
@@ -445,9 +244,18 @@ const InvoiceCreation = () => {
                   onChange={(e) => handleInputChange('gr_date', e.target.value)}
                 />
               </div>
+              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">Tax Number</label>
+                <input
+                  type="text"
+                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
+                  placeholder="tax number..."
+                  onChange={(e) => handleInputChange('tax_number', e.target.value)}
+                />
+              </div>
             </div>
-
-            <div className='flex space-x-4'>
+            {/* Second row of filters */}
+            <div className="flex space-x-4">
               <div className="flex w-1/3 items-center gap-2">
                 <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Number</label>
                 <input
@@ -457,7 +265,6 @@ const InvoiceCreation = () => {
                   onChange={(e) => handleInputChange('invoice_no', e.target.value)}
                 />
               </div>
-
               <div className="flex w-1/3 items-center gap-2">
                 <label className="w-1/4 text-sm font-medium text-gray-700">PO Number</label>
                 <input
@@ -467,7 +274,6 @@ const InvoiceCreation = () => {
                   onChange={(e) => handleInputChange('po_no', e.target.value)}
                 />
               </div>
-
               <div className="flex w-1/3 items-center gap-2">
                 <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Date</label>
                 <input
@@ -480,9 +286,9 @@ const InvoiceCreation = () => {
           </form>
 
           <div className="flex justify-end items-center gap-4 ">
-            <button 
+            <button
               type="button"
-              className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800" 
+              className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800"
               onClick={handleSearch}
             >
               Search
@@ -525,10 +331,11 @@ const InvoiceCreation = () => {
               </table>
             </div>
 
-            {/* Input Section */}
             <div className="flex flex-col gap-4 w-full md:w-1/3">
               <div className="flex items-center gap-3">
-                <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">Selected Record(s)</label>
+                <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">
+                  Selected Record(s)
+                </label>
                 <input
                   type="text"
                   className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
@@ -537,7 +344,9 @@ const InvoiceCreation = () => {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">Total Amount</label>
+                <label className="w-1/3 text-sm md:text-md font-medium text-gray-700">
+                  Total Amount
+                </label>
                 <input
                   type="text"
                   className="w-2/3 border border-purple-200 p-2 rounded-md text-xs md:text-sm text-center"
@@ -720,4 +529,4 @@ const InvoiceCreation = () => {
   );
 };
 
-export default InvoiceCreation;
+export default InvoiceCreationSup;

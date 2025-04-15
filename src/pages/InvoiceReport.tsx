@@ -44,7 +44,6 @@ interface BusinessPartner {
 }
 
 const InvoiceReport: React.FC = () => {
-  // Wizard modal state
   const [wizardOpen, setWizardOpen] = useState(false);
   const [modalInvoiceNumber, setModalInvoiceNumber] = useState('');
 
@@ -66,10 +65,8 @@ const InvoiceReport: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rowsPerPage] = useState(10);
 
-  // Single selected invoice
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [selectedRecords, setSelectedRecords] = useState<number>(0);
-  const [totalAmount, setTotalAmount] = useState<number>(0);
+  // Allow multiple 'New' but only single 'In Process'
+  const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
 
   const supplierOptions = businessPartners.map((bp) => ({
     value: bp.bp_code,
@@ -77,7 +74,6 @@ const InvoiceReport: React.FC = () => {
   }));
   const selectedOption = supplierOptions.find((opt) => opt.value === searchSupplier) || null;
 
-  // Fetch business partners
   useEffect(() => {
     const fetchBusinessPartners = async () => {
       const token = localStorage.getItem('access_token');
@@ -90,11 +86,9 @@ const InvoiceReport: React.FC = () => {
             'Content-Type': 'application/json',
           },
         });
-
         if (!response.ok) {
           throw new Error('Failed to fetch business partners');
         }
-
         const result = await response.json();
         let partnersList: BusinessPartner[] = [];
 
@@ -142,7 +136,6 @@ const InvoiceReport: React.FC = () => {
     fetchBusinessPartners();
   }, []);
 
-  // Fetch invoices
   useEffect(() => {
     const fetchInvoiceData = async () => {
       setIsLoading(true);
@@ -158,7 +151,6 @@ const InvoiceReport: React.FC = () => {
             'Content-Type': 'application/json',
           },
         });
-
         if (!response.ok) {
           throw new Error('Failed to fetch invoice data');
         }
@@ -193,7 +185,6 @@ const InvoiceReport: React.FC = () => {
     fetchInvoiceData();
   }, []);
 
-  // Search filter
   const handleSearch = () => {
     let newFiltered = [...data];
 
@@ -210,9 +201,7 @@ const InvoiceReport: React.FC = () => {
       );
     }
     if (verificationDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.actual_date?.slice(0, 10) === verificationDate
-      );
+      newFiltered = newFiltered.filter((row) => row.actual_date?.slice(0, 10) === verificationDate);
     }
     if (invoiceStatus.trim()) {
       newFiltered = newFiltered.filter((row) =>
@@ -220,26 +209,19 @@ const InvoiceReport: React.FC = () => {
       );
     }
     if (paymentPlanningDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate
-      );
+      newFiltered = newFiltered.filter((row) => row.plan_date?.slice(0, 10) === paymentPlanningDate);
     }
     if (creationDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.created_at?.slice(0, 10) === creationDate
-      );
+      newFiltered = newFiltered.filter((row) => row.created_at?.slice(0, 10) === creationDate);
     }
     if (invoiceDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.inv_date?.slice(0, 10) === invoiceDate
-      );
+      newFiltered = newFiltered.filter((row) => row.inv_date?.slice(0, 10) === invoiceDate);
     }
 
     setFilteredData(newFiltered);
     setCurrentPage(1);
   };
 
-  // Clear filters
   const handleClear = () => {
     setSearchSupplier('');
     setInvoiceNumber('');
@@ -250,70 +232,105 @@ const InvoiceReport: React.FC = () => {
     setInvoiceDate('');
     setFilteredData(data);
     setCurrentPage(1);
+    setSelectedInvoices([]);
   };
 
-  // Record selection
+  // Multi-record selection
   const handleRecordSelection = (invoice: Invoice) => {
-    if (selectedInvoice && selectedInvoice.inv_no === invoice.inv_no) {
-      setSelectedInvoice(null);
-      setSelectedRecords(0);
-      setTotalAmount(0);
-    } else {
-      setSelectedInvoice(invoice);
-      setSelectedRecords(1);
-      setTotalAmount(invoice.total_amount || 0);
-    }
-  };
-
-  // Update or open wizard
-  const handleVerify = async () => {
-    if (!selectedInvoice) {
-      toast.warning('Please select an invoice first');
+    // If user clicks a row that's already selected, just toggle it off:
+    const exists = selectedInvoices.find((inv) => inv.inv_no === invoice.inv_no);
+    if (exists) {
+      setSelectedInvoices((prev) => prev.filter((inv) => inv.inv_no !== invoice.inv_no));
       return;
     }
 
-    const currentStatus = selectedInvoice.status?.toLowerCase();
-    if (currentStatus === 'new') {
+    // If the invoice is 'New' but there's already an 'In Process' selected, clear selection first
+    if (
+      invoice.status?.toLowerCase() === 'new' &&
+      selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'in process')
+    ) {
+      setSelectedInvoices([invoice]);
+      return;
+    }
+
+    // If the invoice is 'In Process' but there's already a 'New' selected, clear selection first
+    if (
+      invoice.status?.toLowerCase() === 'in process' &&
+      selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new')
+    ) {
+      setSelectedInvoices([invoice]);
+      return;
+    }
+
+    // Otherwise, add it
+    setSelectedInvoices((prev) => [...prev, invoice]);
+  };
+
+  const handleVerify = async () => {
+    if (selectedInvoices.length === 0) {
+      toast.warning('Please select at least one invoice');
+      return;
+    }
+
+    const newInvoices = selectedInvoices.filter((inv) => inv.status?.toLowerCase() === 'new');
+    const inProcessInvoices = selectedInvoices.filter(
+      (inv) => inv.status?.toLowerCase() === 'in process'
+    );
+
+    // If all selected are 'New', do a bulk update to 'In Process'
+    if (newInvoices.length === selectedInvoices.length) {
       try {
         const token = localStorage.getItem('access_token');
         if (!token) {
           toast.error('No access token found');
           return;
         }
-        const response = await fetch(
-          API_Update_Status_To_In_Process_Finance() + `/${selectedInvoice.inv_no}`,
-          {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'In Process' }),
+
+        for (const invoice of newInvoices) {
+          const response = await fetch(
+            API_Update_Status_To_In_Process_Finance() + `/${invoice.inv_no}`,
+            {
+              method: 'PUT',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ status: 'In Process' }),
+            }
+          );
+          if (!response.ok) {
+            throw new Error(`Failed to update invoice ${invoice.inv_no}`);
           }
-        );
-        if (!response.ok) {
-          throw new Error('Failed to update invoice status');
         }
 
-        toast.success('Selected invoice status updated to "In Process"!');
+        toast.success('All selected invoices updated to "In Process"!');
+        // Update local data
         const updatedData = data.map((inv) => {
-          if (inv.inv_no === selectedInvoice.inv_no) {
+          if (selectedInvoices.find((selInv) => selInv.inv_no === inv.inv_no)) {
             return { ...inv, status: 'In Process' };
           }
           return inv;
         });
         setData(updatedData);
         setFilteredData(updatedData);
-        setSelectedInvoice({ ...selectedInvoice, status: 'In Process' });
+        setSelectedInvoices([]);
       } catch (err: any) {
-        toast.error(err.message || 'Error updating invoice status');
+        toast.error(err.message || 'Error updating invoice(s) status');
       }
-    } else if (currentStatus === 'in process') {
-      // Open the wizard modal instead of navigating to a route
-      setModalInvoiceNumber(selectedInvoice.inv_no);
+    }
+    // If all selected are 'In Process' and only one record is selected, open the wizard
+    else if (
+      inProcessInvoices.length === selectedInvoices.length &&
+      selectedInvoices.length === 1
+    ) {
+      setModalInvoiceNumber(inProcessInvoices[0].inv_no);
       setWizardOpen(true);
-    } else {
-      toast.warning('Selected invoice is not "new" or "in process"; cannot proceed');
+    }
+    // Otherwise, it's mixed or more than one 'In Process' selected
+    else {
+      toast.warning(
+        'Mixed statuses selected or more than one "In Process" invoice selected. Please re-check.'
+      );
     }
   };
 
@@ -401,6 +418,13 @@ const InvoiceReport: React.FC = () => {
     if (!amount) return '-';
     return `Rp ${amount.toLocaleString()},00`;
   };
+
+  // If there is a selected 'In Process' invoice, only that one keeps its checkbox; hide other checkboxes.
+  const inProcessSelected = selectedInvoices.find(
+    (inv) => inv.status?.toLowerCase() === 'in process'
+  );
+  // If any 'New' is selected, hide checkboxes for 'In Process' that isn't already the selected one
+  const hasSelectedNew = selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new');
 
   return (
     <div className="space-y-6">
@@ -543,7 +567,6 @@ const InvoiceReport: React.FC = () => {
             >
               Download Attachment
             </button>
-
             <button
               className="bg-green-600 text-sm text-white px-4 py-2 rounded hover:bg-green-500 ml-4"
               onClick={handleVerify}
@@ -551,7 +574,6 @@ const InvoiceReport: React.FC = () => {
             >
               Verify
             </button>
-
             <button
               className="bg-blue-900 text-sm text-white px-4 py-2 rounded hover:bg-blue-800 ml-4"
               onClick={handleCancelInvoice}
@@ -607,43 +629,74 @@ const InvoiceReport: React.FC = () => {
                   </td>
                 </tr>
               ) : filteredData.length > 0 ? (
-                paginatedData.map((invoice, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2 text-center">
-                      {(!selectedInvoice || selectedInvoice.inv_no === invoice.inv_no) && (
-                        <input
-                          type="checkbox"
-                          checked={!!(selectedInvoice && selectedInvoice.inv_no === invoice.inv_no)}
-                          onChange={() => handleRecordSelection(invoice)}
-                        />
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-center">{invoice.inv_no || '-'}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.inv_date)}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.plan_date)}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.actual_date)}</td>
-                    <td className="px-4 py-2 text-center">{invoice.status || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.receipt_number || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.bp_code || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.bp_name || '-'}</td>
-                    <td className="px-4 py-2 text-center">{invoice.inv_faktur || '-'}</td>
-                    <td className="px-4 py-2 text-center">{formatDate(invoice.inv_faktur_date)}</td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.total_dpp)}</td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.tax_base_amount)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.pph_base_amount)}
-                    </td>
-                    <td className="px-4 py-2 text-center">{formatCurrency(invoice.pph_amount)}</td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.total_amount)}
-                    </td>
-                  </tr>
-                ))
+                paginatedData.map((invoice) => {
+                  const isSelected = selectedInvoices.some(
+                    (inv) => inv.inv_no === invoice.inv_no
+                  );
+                  const invoiceStatusLower = invoice.status?.toLowerCase();
+
+                  let showCheckbox = false;
+
+                  // If there's already one 'In Process' chosen, only show its checkbox
+                  if (inProcessSelected) {
+                    // If this invoice is the chosen in-process invoice, show
+                    showCheckbox =
+                      inProcessSelected.inv_no === invoice.inv_no &&
+                      invoiceStatusLower === 'in process';
+                  } else if (hasSelectedNew && invoiceStatusLower === 'in process') {
+                    // Hides 'In Process' checkboxes when 'New' is selected
+                    showCheckbox = false;
+                  } else if (invoiceStatusLower === 'new' || invoiceStatusLower === 'in process') {
+                    // Show if not restricted by the above conditions
+                    showCheckbox = true;
+                  }
+
+                  return (
+                    <tr key={invoice.inv_no} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-2 text-center">
+                        {showCheckbox ? (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleRecordSelection(invoice)}
+                          />
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2 text-center">{invoice.inv_no || '-'}</td>
+                      <td className="px-4 py-2 text-center">{formatDate(invoice.inv_date)}</td>
+                      <td className="px-4 py-2 text-center">{formatDate(invoice.plan_date)}</td>
+                      <td className="px-4 py-2 text-center">{formatDate(invoice.actual_date)}</td>
+                      <td className="px-4 py-2 text-center">{invoice.status || '-'}</td>
+                      <td className="px-4 py-2 text-center">{invoice.receipt_number || '-'}</td>
+                      <td className="px-4 py-2 text-center">{invoice.bp_code || '-'}</td>
+                      <td className="px-4 py-2 text-center">{invoice.bp_name || '-'}</td>
+                      <td className="px-4 py-2 text-center">{invoice.inv_faktur || '-'}</td>
+                      <td className="px-4 py-2 text-center">
+                        {formatDate(invoice.inv_faktur_date)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.total_dpp)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.tax_base_amount)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(
+                          invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.pph_base_amount)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.pph_amount)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.total_amount)}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={17} className="px-4 py-4 text-center text-gray-500">

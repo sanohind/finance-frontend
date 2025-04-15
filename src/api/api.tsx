@@ -36,6 +36,7 @@ export const API_Update_Status_Admin = () => API + getRolePath() + `/status/`;
 export const API_Inv_Header_Admin = () => API + getRolePath() + `/inv-header`;
 export const API_Inv_Header_By_Bp_Code_Admin = () => API + getRolePath() + `/inv-header/bp-code/`;
 export const API_Create_Inv_Header_Admin = () => API + getRolePath() + `/inv-header/store`;
+export const API_Inv_Header_By_Inv_No_Admin = () => API + getRolePath() + `/inv-header/detail/`;
 export const API_Update_Inv_Header_Admin = () => API + getRolePath() + `/inv-header/`;
 export const API_Update_In_Process_Admin = () => API + getRolePath() + `/inv-header/`;
 

@@ -220,7 +220,6 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
   // Step 1
   const renderMainForm = () => (
     <div className="space-y-4">
-      {currentStep === 1 && selectedRecords.length > 0 && renderSelectedRecords()}
       <div className="space-y-4 pt-2 border-t border-gray-200">
         <h2 className="text-lg font-medium text-gray-900">Create Invoice</h2>
         <hr className="my-6 border-t-1 border-blue-900" />
@@ -312,6 +311,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
             />
           </div>
         </div>
+        {currentStep === 1 && selectedRecords.length > 0 && renderSelectedRecords()}
       </div>
     </div>
   );
@@ -620,13 +620,16 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
           ) : (
             <div>
               <h2 className="text-lg font-medium text-gray-900 mb-4">Terms & Condition</h2>
-              <ul className="list-decimal list-inside space-y-2 text-gray-700">
-                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</li>
-              </ul>
+              <p>By submitting this invoice and related documents, you agree to the following terms:</p>
+              <ol>
+                <li>All information provided is accurate and complete to the best of your knowledge.</li>
+                <li>The submitted documents (Invoice, Tax Invoice, Delivery Note, Purchase Order) are authentic and correspond to the goods/services rendered.</li>
+                <li>You understand that payment processing is subject to verification and approval by PT Sanoh Indonesia.</li>
+                <li>Any discrepancies or missing required documents may result in payment delays or rejection.</li>
+                <li>PT Sanoh Indonesia reserves the right to request additional information or clarification regarding this submission.</li>
+                <li>Submission of this invoice constitutes agreement to PT Sanoh Indonesia's standard payment terms and conditions unless otherwise specified in a prior written agreement.</li>
+              </ol>
+              <p>Please ensure all required fields are filled and mandatory documents are attached before final submission.</p>
               <div className="mt-2 mb-2 flex justify-end gap-2">
                 <button
                   onClick={submitInvoice}
