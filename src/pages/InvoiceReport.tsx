@@ -69,7 +69,7 @@ const InvoiceReport: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rowsPerPage] = useState(10);
 
-  // Allow multiple 'New' but only single 'In Process'
+  // Allow multiple 'New' but only single 'In Process' or multiple 'Ready To Payment'
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
 
   const supplierOptions = businessPartners.map((bp) => ({
@@ -237,28 +237,47 @@ const InvoiceReport: React.FC = () => {
     setSelectedInvoices([]);
   };
 
-  // Multi-record selection
+  // --- MODIFIED: Multi-record selection logic for Ready To Payment ---
   const handleRecordSelection = (invoice: Invoice) => {
-    // If user clicks a row that's already selected, just toggle it off:
     const exists = selectedInvoices.find((inv) => inv.inv_no === invoice.inv_no);
+    const invoiceStatusLower = invoice.status?.toLowerCase();
+
+    // If user clicks a row that's already selected, just toggle it off:
     if (exists) {
       setSelectedInvoices((prev) => prev.filter((inv) => inv.inv_no !== invoice.inv_no));
       return;
     }
 
-    // If the invoice is 'New' but there's already an 'In Process' selected, clear selection first
+    // Allow selecting multiple "Ready To Payment" if all selected are "Ready To Payment"
+    if (invoiceStatusLower === 'ready to payment') {
+      // If there are already selected invoices and any of them is not "Ready To Payment", replace selection
+      if (
+        selectedInvoices.length > 0 &&
+        !selectedInvoices.every((inv) => inv.status?.toLowerCase() === 'ready to payment')
+      ) {
+        setSelectedInvoices([invoice]);
+        return;
+      }
+      // Otherwise, add to selection
+      setSelectedInvoices((prev) => [...prev, invoice]);
+      return;
+    }
+
+    // If the invoice is 'New' but there's already an 'In Process' or 'Ready To Payment' selected, clear selection first
     if (
-      invoice.status?.toLowerCase() === 'new' &&
-      selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'in process')
+      invoiceStatusLower === 'new' &&
+      (selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'in process') ||
+        selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'ready to payment'))
     ) {
       setSelectedInvoices([invoice]);
       return;
     }
 
-    // If the invoice is 'In Process' but there's already a 'New' selected, clear selection first
+    // If the invoice is 'In Process' but there's already a 'New' or 'Ready To Payment' selected, clear selection first
     if (
-      invoice.status?.toLowerCase() === 'in process' &&
-      selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new')
+      invoiceStatusLower === 'in process' &&
+      (selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new') ||
+        selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'ready to payment'))
     ) {
       setSelectedInvoices([invoice]);
       return;
@@ -421,12 +440,15 @@ const InvoiceReport: React.FC = () => {
     return `Rp ${amount.toLocaleString()},00`;
   };
 
-  // If there is a selected 'In Process' invoice, only that one keeps its checkbox; hide other checkboxes.
+  // --- MODIFIED: Checkbox visibility logic for Ready To Payment ---
   const inProcessSelected = selectedInvoices.find(
     (inv) => inv.status?.toLowerCase() === 'in process'
   );
-  // If any 'New' is selected, hide checkboxes for 'In Process' that isn't already the selected one
   const hasSelectedNew = selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new');
+  const readyToPaymentSelectedList = selectedInvoices.filter(
+    (inv) => inv.status?.toLowerCase() === 'ready to payment'
+  );
+  const hasSelectedReadyToPayment = readyToPaymentSelectedList.length > 0;
 
   // Click handler for showing invoice detail modal
   const handleShowDetail = (invoice: Invoice) => {
@@ -651,20 +673,27 @@ const InvoiceReport: React.FC = () => {
 
                   let showCheckbox = false;
 
-                  // If there's already one 'In Process' chosen, only show its checkbox
-                  const inProcessSelected = selectedInvoices.find(
-                    (inv) => inv.status?.toLowerCase() === 'in process'
-                  );
-                  if (inProcessSelected) {
-                    // If this invoice is the chosen in-process invoice, show
+                  // --- MODIFIED LOGIC FOR CHECKBOX VISIBILITY ---
+                  if (readyToPaymentSelectedList.length > 0) {
+                    // Only show checkbox for "Ready To Payment" invoices if all selected are "Ready To Payment"
+                    showCheckbox =
+                      invoiceStatusLower === 'ready to payment' &&
+                      (readyToPaymentSelectedList.length === 0 ||
+                        readyToPaymentSelectedList.some((inv) => inv.inv_no === invoice.inv_no));
+                  } else if (inProcessSelected) {
                     showCheckbox =
                       inProcessSelected.inv_no === invoice.inv_no &&
                       invoiceStatusLower === 'in process';
-                  } else if (hasSelectedNew && invoiceStatusLower === 'in process') {
-                    // Hides 'In Process' checkboxes when 'New' is selected
+                  } else if (
+                    hasSelectedNew &&
+                    (invoiceStatusLower === 'in process' || invoiceStatusLower === 'ready to payment')
+                  ) {
                     showCheckbox = false;
-                  } else if (invoiceStatusLower === 'new' || invoiceStatusLower === 'in process') {
-                    // Show if not restricted
+                  } else if (
+                    invoiceStatusLower === 'new' ||
+                    invoiceStatusLower === 'in process' ||
+                    invoiceStatusLower === 'ready to payment'
+                  ) {
                     showCheckbox = true;
                   }
 

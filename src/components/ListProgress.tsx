@@ -42,7 +42,7 @@ const ListProgress: React.FC = () => {
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const rowsPerPage = 5;
+  const rowsPerPage = 15;
 
   // Function to format numbers to Indonesian Rupiah
   const formatToRupiah = (value: number | null): string => {
