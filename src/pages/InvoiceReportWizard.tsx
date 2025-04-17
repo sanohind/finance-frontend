@@ -391,7 +391,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
     </div>
   );
 
-  // Step 2: Attach Documents (Dummy, no changes)
+  // Step 2: Attach Documents (Dummy, no changes except removing "Change")
   const renderAttachDocuments = () => (
     <div className="space-y-6">
       <h2 className="text-lg font-medium text-gray-900">Attach Documents (Dummy)</h2>
@@ -419,7 +419,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                     onClick={() => fileInputRefs.current[index]?.click()}
                     className="bg-blue-800 text-white px-2 py-1 rounded"
                   >
-                    {doc.fileName ? 'Change' : 'Upload'}
+                    Upload
                   </button>
                   <input
                     type="file"
@@ -522,7 +522,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                   plan_date: planDate,
                   reason: '',
                 };
-  
+
                 const response = await fetch(
                   API_Update_Inv_Header_Admin() + `${invoiceNumber}`,
                   {
@@ -579,17 +579,13 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                   return;
                 }
                 try {
-                  const pph_id = parseInt(pphCode, 10) || 0;
-                  const numericPphBase = parseFloat(pphBaseAmount.replace(/[^0-9.]/g, '')) || 0;
+                  // No pph_id, pph_base_amount, or plan_date for Rejected
                   const bodyData = {
-                    pph_id,
-                    pph_base_amount: numericPphBase,
                     inv_line_remove: invLineRemove,
                     status: 'Rejected',
-                    plan_date: planDate,
                     reason: rejectReason,
                   };
-  
+
                   const response = await fetch(
                     API_Update_Inv_Header_Admin() + `${invoiceNumber}`,
                     {

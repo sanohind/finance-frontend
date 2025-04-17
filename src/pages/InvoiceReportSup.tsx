@@ -13,8 +13,8 @@ interface Invoice {
   inv_date: string | null;
   plan_date: string | null;
   actual_date: string | null;
-  inv_faktur: string | null;       // "Tax Number"
-  inv_faktur_date: string | null;  // "Tax Date"
+  inv_faktur: string | null; // "Tax Number"
+  inv_faktur_date: string | null; // "Tax Date"
   total_dpp: number | null;
   ppn_id: number | null;
   tax_base_amount: number | null;
@@ -32,6 +32,10 @@ interface Invoice {
 }
 
 const InvoiceReportSup = () => {
+  // Detail modal states
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+
   // Filter states
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [verificationDate, setVerificationDate] = useState('');
@@ -51,7 +55,6 @@ const InvoiceReportSup = () => {
   const [selectedRecords, setSelectedRecords] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
 
-  // Fetch invoice data
   useEffect(() => {
     const fetchInvoiceData = async () => {
       setIsLoading(true);
@@ -99,7 +102,6 @@ const InvoiceReportSup = () => {
     fetchInvoiceData();
   }, []);
 
-  // Search
   const handleSearch = () => {
     let newFiltered = [...data];
 
@@ -138,7 +140,6 @@ const InvoiceReportSup = () => {
     setCurrentPage(1);
   };
 
-  // Clear
   const handleClear = () => {
     setInvoiceNumber('');
     setVerificationDate('');
@@ -150,23 +151,19 @@ const InvoiceReportSup = () => {
     setCurrentPage(1);
   };
 
-  // Selection
   const handleRecordSelection = (record: Invoice) => {
     setSelectedRecords((prev) => prev + 1);
     setTotalAmount((prev) => prev + (record.total_amount || 0));
   };
 
-  // Download all displayed data as Excel (CSV format) 
   const handleDownloadAttachment = () => {
     if (!filteredData.length) {
       toast.warn('No data available to download');
       return;
     }
 
-    // Show a toast info
     toast.info('Preparing Excel file, please wait...');
 
-    // Build CSV content
     const headers = [
       'Invoice No',
       'Inv Date',
@@ -204,14 +201,13 @@ const InvoiceReportSup = () => {
       inv.total_amount?.toString() || '-',
     ]);
 
-    let csvHeader = headers.join(',') + '\n';
-    let csvBody = rows.map((row) => row.join(',')).join('\n');
-    let csvContent = csvHeader + csvBody;
+    const csvHeader = headers.join(',') + '\n';
+    const csvBody = rows.map((row) => row.join(',')).join('\n');
+    const csvContent = csvHeader + csvBody;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
-    // Create link to download
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', 'Invoice_Report.csv');
@@ -221,13 +217,11 @@ const InvoiceReportSup = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Pagination
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  // Formatters
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     try {
@@ -244,8 +238,20 @@ const InvoiceReportSup = () => {
   };
 
   function handleCancelInvoice(): void {
-    throw new Error('Function not implemented.');
+    toast.info('Invoice cancelled');
   }
+
+  // Show detail
+  const handleShowDetail = (invoice: Invoice) => {
+    setDetailInvoice(invoice);
+    setDetailModalOpen(true);
+  };
+
+  // Close modal
+  const closeDetailModal = () => {
+    setDetailInvoice(null);
+    setDetailModalOpen(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -395,7 +401,6 @@ const InvoiceReportSup = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border"></th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Invoice No</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Inv Date</th>
-                {/* Payment Date with subcolumns */}
                 <th className="px-4 py-2 text-gray-700 text-center border" colSpan={2}>
                   Payment Date
                 </th>
@@ -405,14 +410,10 @@ const InvoiceReportSup = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border">Supplier Name</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Number</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Date</th>
-                <th className="px-4 py-3 text-gray-700 text-center border">Total DPP</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">
-                  Tax Base Amount
-                </th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Total DPP</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Tax Base Amount</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">
-                  PPh Base Amount
-                </th>
+                <th className="px-4 py-2 text-gray-700 text-center border">PPh Base Amount</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">PPh Amount</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Total Amount</th>
               </tr>
@@ -434,76 +435,65 @@ const InvoiceReportSup = () => {
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((invoice, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
-                    {/* Checkbox */}
                     <td className="px-4 py-2 text-center">
                       <input
                         type="checkbox"
                         onChange={() => handleRecordSelection(invoice)}
                       />
                     </td>
-                    {/* Invoice No */}
+                    {/* Clickable invoice number to open detail modal */}
                     <td className="px-4 py-2 text-center">
-                      {invoice.inv_no || '-'}
+                      <button
+                        onClick={() => handleShowDetail(invoice)}
+                        className="text-blue-600 underline"
+                      >
+                        {invoice.inv_no || '-'}
+                      </button>
                     </td>
-                    {/* Inv Date */}
                     <td className="px-4 py-2 text-center">
                       {formatDate(invoice.inv_date)}
                     </td>
-                    {/* Payment Plan Date */}
                     <td className="px-4 py-2 text-center">
                       {formatDate(invoice.plan_date)}
                     </td>
-                    {/* Payment Actual Date */}
                     <td className="px-4 py-2 text-center">
                       {formatDate(invoice.actual_date)}
                     </td>
-                    {/* Status */}
                     <td className="px-4 py-2 text-center">
                       {invoice.status || '-'}
                     </td>
-                    {/* Receipt No */}
                     <td className="px-4 py-2 text-center">
                       {invoice.receipt_number || '-'}
                     </td>
-                    {/* Supplier Code */}
                     <td className="px-4 py-2 text-center">
                       {invoice.bp_code || '-'}
                     </td>
-                    {/* Supplier Name */}
                     <td className="px-4 py-2 text-center">
                       {invoice.bp_name || '-'}
                     </td>
-                    {/* Tax Number */}
                     <td className="px-4 py-2 text-center">
                       {invoice.inv_faktur || '-'}
                     </td>
-                    {/* Tax Date */}
                     <td className="px-4 py-2 text-center">
                       {formatDate(invoice.inv_faktur_date)}
                     </td>
-                    {/* Total DPP */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.total_dpp)}
                     </td>
-                    {/* Tax Base Amount */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.tax_base_amount)}
                     </td>
-                    {/* Tax Amount (11% preview) */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(
                         invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
                       )}
                     </td>
-                    {/* PPh Base Amount */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.pph_base_amount)}
                     </td>
-                    {/* PPh Amount */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.pph_amount)}
                     </td>
-                    {/* Total Amount */}
                     <td className="px-4 py-2 text-center">
                       {formatCurrency(invoice.total_amount)}
                     </td>
@@ -527,6 +517,40 @@ const InvoiceReportSup = () => {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Detail Modal */}
+      {detailModalOpen && detailInvoice && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-md shadow-lg max-w-lg w-full">
+            <h2 className="text-xl font-semibold mb-4">
+              Invoice Detail - {detailInvoice.inv_no}
+            </h2>
+            <div className="space-y-2">
+              <p>
+                <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name}
+              </p>
+              <p>
+                <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+              </p>
+              <p>
+                <strong>Status:</strong> {detailInvoice.status}
+              </p>
+              <p>
+                <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
+              </p>
+              {/* Add any other fields needed */}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={closeDetailModal}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -47,6 +47,10 @@ const InvoiceReport: React.FC = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [modalInvoiceNumber, setModalInvoiceNumber] = useState('');
 
+  // Detail modal states
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+
   const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>([]);
   const [searchSupplier, setSearchSupplier] = useState<string>('');
 
@@ -78,6 +82,7 @@ const InvoiceReport: React.FC = () => {
     const fetchBusinessPartners = async () => {
       const token = localStorage.getItem('access_token');
       if (!token) return;
+
       try {
         const response = await fetch(API_List_Partner_Admin(), {
           method: 'GET',
@@ -86,6 +91,7 @@ const InvoiceReport: React.FC = () => {
             'Content-Type': 'application/json',
           },
         });
+
         if (!response.ok) {
           throw new Error('Failed to fetch business partners');
         }
@@ -106,11 +112,7 @@ const InvoiceReport: React.FC = () => {
               adr_line_1: partner.adr_line_1,
             }));
           } else if (Array.isArray(result)) {
-            partnersList = result.map((partner: any) => ({
-              bp_code: partner.bp_code,
-              bp_name: partner.bp_name,
-              adr_line_1: partner.adr_line_1,
-            }));
+            partnersList = result;
           } else if (result.bp_code && result.bp_name) {
             partnersList = [
               {
@@ -426,6 +428,18 @@ const InvoiceReport: React.FC = () => {
   // If any 'New' is selected, hide checkboxes for 'In Process' that isn't already the selected one
   const hasSelectedNew = selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new');
 
+  // Click handler for showing invoice detail modal
+  const handleShowDetail = (invoice: Invoice) => {
+    setDetailInvoice(invoice);
+    setDetailModalOpen(true);
+  };
+
+  // Close detail modal
+  const closeDetailModal = () => {
+    setDetailInvoice(null);
+    setDetailModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Report" />
@@ -638,6 +652,9 @@ const InvoiceReport: React.FC = () => {
                   let showCheckbox = false;
 
                   // If there's already one 'In Process' chosen, only show its checkbox
+                  const inProcessSelected = selectedInvoices.find(
+                    (inv) => inv.status?.toLowerCase() === 'in process'
+                  );
                   if (inProcessSelected) {
                     // If this invoice is the chosen in-process invoice, show
                     showCheckbox =
@@ -647,7 +664,7 @@ const InvoiceReport: React.FC = () => {
                     // Hides 'In Process' checkboxes when 'New' is selected
                     showCheckbox = false;
                   } else if (invoiceStatusLower === 'new' || invoiceStatusLower === 'in process') {
-                    // Show if not restricted by the above conditions
+                    // Show if not restricted
                     showCheckbox = true;
                   }
 
@@ -662,12 +679,22 @@ const InvoiceReport: React.FC = () => {
                           />
                         ) : null}
                       </td>
-                      <td className="px-4 py-2 text-center">{invoice.inv_no || '-'}</td>
+                      {/* Clickable invoice number --> Open detail modal */}
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => handleShowDetail(invoice)}
+                          className="text-blue-600 underline"
+                        >
+                          {invoice.inv_no || '-'}
+                        </button>
+                      </td>
                       <td className="px-4 py-2 text-center">{formatDate(invoice.inv_date)}</td>
                       <td className="px-4 py-2 text-center">{formatDate(invoice.plan_date)}</td>
                       <td className="px-4 py-2 text-center">{formatDate(invoice.actual_date)}</td>
                       <td className="px-4 py-2 text-center">{invoice.status || '-'}</td>
-                      <td className="px-4 py-2 text-center">{invoice.receipt_number || '-'}</td>
+                      <td className="px-4 py-2 text-center">
+                        {invoice.receipt_number || '-'}
+                      </td>
                       <td className="px-4 py-2 text-center">{invoice.bp_code || '-'}</td>
                       <td className="px-4 py-2 text-center">{invoice.bp_name || '-'}</td>
                       <td className="px-4 py-2 text-center">{invoice.inv_faktur || '-'}</td>
@@ -715,6 +742,40 @@ const InvoiceReport: React.FC = () => {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Detail Modal */}
+      {detailModalOpen && detailInvoice && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-md shadow-lg max-w-lg w-full">
+            <h2 className="text-xl font-semibold mb-4">
+              Invoice Detail - {detailInvoice.inv_no}
+            </h2>
+            <div className="space-y-2">
+              <p>
+                <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name}
+              </p>
+              <p>
+                <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+              </p>
+              <p>
+                <strong>Status:</strong> {detailInvoice.status}
+              </p>
+              <p>
+                <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
+              </p>
+              {/* Add more fields as needed */}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={closeDetailModal}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Render the wizard modal here */}
       <InvoiceReportWizard
