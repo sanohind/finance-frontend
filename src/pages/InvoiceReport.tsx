@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
@@ -7,6 +7,7 @@ import {
   API_Inv_Header_Admin,
   API_List_Partner_Admin,
   API_Update_Status_To_In_Process_Finance,
+  API_Upload_Payment_Admin,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
 
@@ -43,6 +44,86 @@ interface BusinessPartner {
   adr_line_1: string;
 }
 
+const PaymentUploadModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  isUploading 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSubmit: (file: File) => void;
+  isUploading: boolean;
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (selectedFile) {
+      onSubmit(selectedFile);
+    } else {
+      toast.warning('Please select a PDF file');
+    }
+  };
+
+  // Reset selected file when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedFile(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-md shadow-lg w-96">
+        <h2 className="text-xl font-semibold mb-4">Upload Payment Document</h2>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload PDF Document
+          </label>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".pdf"
+            className="w-full border border-gray-300 rounded-md p-2"
+            disabled={isUploading}
+          />
+          {selectedFile && (
+            <p className="mt-1 text-sm text-gray-500">Selected: {selectedFile.name}</p>
+          )}
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            disabled={isUploading}
+            type="button"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={!selectedFile || isUploading}
+            type="button"
+          >
+            {isUploading ? 'Uploading...' : 'Upload'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const InvoiceReport: React.FC = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [modalInvoiceNumber, setModalInvoiceNumber] = useState('');
@@ -71,6 +152,10 @@ const InvoiceReport: React.FC = () => {
 
   // Allow multiple 'New' but only single 'In Process' or multiple 'Ready To Payment'
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
+  
+  // New state for payment upload modal
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const supplierOptions = businessPartners.map((bp) => ({
     value: bp.bp_code,
@@ -420,6 +505,102 @@ const InvoiceReport: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  // NEW: Post Invoice handler
+  const handlePostInvoice = () => {
+    const readyToPaymentInvoices = selectedInvoices.filter(
+      inv => inv.status?.toLowerCase() === 'ready to payment'
+    );
+    
+    if (readyToPaymentInvoices.length === 0) {
+      toast.warning('Please select invoices with "Ready To Payment" status');
+      return;
+    }
+    
+    // Open the payment upload modal
+    setPaymentModalOpen(true);
+  };
+
+  // NEW: Payment document upload handler
+  const handlePaymentUpload = async (file: File) => {
+    const readyToPaymentInvoices = selectedInvoices.filter(
+      inv => inv.status?.toLowerCase() === 'ready to payment'
+    );
+  
+    if (readyToPaymentInvoices.length === 0) {
+      toast.error('No eligible invoices selected');
+      return;
+    }
+  
+    setIsUploading(true);
+  
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        toast.error('Authentication token not found');
+        return;
+      }
+  
+      // Similar approach to InvoiceCreation - properly construct FormData for each invoice
+      for (const invoice of readyToPaymentInvoices) {
+        // Create a new FormData instance for each request
+        const formData = new FormData();
+        
+        // Append the file with the correct field name expected by your backend
+        formData.append('payment_file', file);
+        
+        // Construct the URL with the invoice number
+        const url = API_Upload_Payment_Admin(invoice.inv_no);
+        console.log('Upload URL:', url);
+  
+        // Use POST method for file uploads
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Do NOT set Content-Type when sending FormData
+          },
+          body: formData,
+        });
+  
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          let errorMessage = 'Failed to upload payment document';
+          
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If not JSON, use the text as is
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
+        }
+      }
+  
+      toast.success('Payment document uploaded successfully!');
+  
+      // Update local state to show invoices as Paid
+      const updatedData = data.map(inv => {
+        if (readyToPaymentInvoices.some(selected => selected.inv_no === inv.inv_no)) {
+          return { ...inv, status: 'Paid' };
+        }
+        return inv;
+      });
+  
+      setData(updatedData);
+      setFilteredData(updatedData);
+      setSelectedInvoices([]);
+      setPaymentModalOpen(false);
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Error uploading payment document');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
@@ -448,7 +629,6 @@ const InvoiceReport: React.FC = () => {
   const readyToPaymentSelectedList = selectedInvoices.filter(
     (inv) => inv.status?.toLowerCase() === 'ready to payment'
   );
-  const hasSelectedReadyToPayment = readyToPaymentSelectedList.length > 0;
 
   // Click handler for showing invoice detail modal
   const handleShowDetail = (invoice: Invoice) => {
@@ -611,9 +791,14 @@ const InvoiceReport: React.FC = () => {
               Verify
             </button>
             <button
-              className="bg-blue-900 text-sm text-white px-4 py-2 rounded hover:bg-blue-800 ml-4"
-              onClick={handleCancelInvoice}
+              className={`text-sm text-white px-4 py-2 rounded ml-4 ${
+                selectedInvoices.some(inv => inv.status?.toLowerCase() === 'ready to payment')
+                  ? 'bg-blue-900 hover:bg-blue-800'
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+              onClick={handlePostInvoice}
               type="button"
+              disabled={!selectedInvoices.some(inv => inv.status?.toLowerCase() === 'ready to payment')}
             >
               Post Invoice
             </button>
@@ -805,6 +990,14 @@ const InvoiceReport: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Payment Upload Modal */}
+      <PaymentUploadModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        onSubmit={handlePaymentUpload}
+        isUploading={isUploading}
+      />
 
       {/* Render the wizard modal here */}
       <InvoiceReportWizard

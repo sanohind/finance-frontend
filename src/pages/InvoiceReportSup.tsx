@@ -55,6 +55,10 @@ const InvoiceReportSup = () => {
   const [selectedRecords, setSelectedRecords] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
 
+  // Reason popup state
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [rejectedReason, setRejectedReason] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchInvoiceData = async () => {
       setIsLoading(true);
@@ -253,6 +257,24 @@ const InvoiceReportSup = () => {
     setDetailModalOpen(false);
   };
 
+  // Status color helper (same as ListProgress)
+  const getStatusColor = (status: string | null) => {
+    if (!status) return "bg-blue-400";
+    const s = status.toLowerCase();
+    if (s === "ready to payment") return "bg-green-400";
+    if (s === "rejected") return "bg-red-500";
+    if (s === "paid") return "bg-blue-900";
+    if (s === "in process") return "bg-yellow-300";
+    return "bg-blue-400";
+  };
+
+  // Show rejected reason popup
+  const handleShowRejectedReason = (reason: string | null) => {
+    if (!reason) return;
+    setRejectedReason(reason);
+    setShowReasonModal(true);
+  };
+
   return (
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Report" />
@@ -433,72 +455,88 @@ const InvoiceReportSup = () => {
                   </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((invoice, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        onChange={() => handleRecordSelection(invoice)}
-                      />
-                    </td>
-                    {/* Clickable invoice number to open detail modal */}
-                    <td className="px-4 py-2 text-center">
-                      <button
-                        onClick={() => handleShowDetail(invoice)}
-                        className="text-blue-600 underline"
-                      >
-                        {invoice.inv_no || '-'}
-                      </button>
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatDate(invoice.inv_date)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatDate(invoice.plan_date)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatDate(invoice.actual_date)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {invoice.status || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {invoice.receipt_number || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {invoice.bp_code || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {invoice.bp_name || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {invoice.inv_faktur || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatDate(invoice.inv_faktur_date)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.total_dpp)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.tax_base_amount)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(
-                        invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.pph_base_amount)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.pph_amount)}
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      {formatCurrency(invoice.total_amount)}
-                    </td>
-                  </tr>
-                ))
+                paginatedData.map((invoice, index) => {
+                  const status = invoice.status || "New";
+                  const statusColor = getStatusColor(status);
+                  return (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          onChange={() => handleRecordSelection(invoice)}
+                        />
+                      </td>
+                      {/* Clickable invoice number to open detail modal */}
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => handleShowDetail(invoice)}
+                          className="text-blue-600 underline"
+                        >
+                          {invoice.inv_no || '-'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatDate(invoice.inv_date)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatDate(invoice.plan_date)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatDate(invoice.actual_date)}
+                      </td>
+                      {/* Status with color and popup for Rejected */}
+                      <td className="px-4 py-2 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${statusColor} ${
+                            status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
+                          }`}
+                          onClick={() => {
+                            if (status.toLowerCase() === "rejected") {
+                              handleShowRejectedReason(invoice.reason);
+                            }
+                          }}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {invoice.receipt_number || '-'}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {invoice.bp_code || '-'}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {invoice.bp_name || '-'}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {invoice.inv_faktur || '-'}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatDate(invoice.inv_faktur_date)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.total_dpp)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.tax_base_amount)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(
+                          invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.pph_base_amount)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.pph_amount)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {formatCurrency(invoice.total_amount)}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={17} className="px-4 py-4 text-center text-gray-500">
@@ -548,6 +586,21 @@ const InvoiceReportSup = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Simple Popup for showing Rejected reason */}
+      {showReasonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded shadow-md text-center">
+            <p className="mb-4">Reason: {rejectedReason || '-'}</p>
+            <button
+              className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
+              onClick={() => setShowReasonModal(false)}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

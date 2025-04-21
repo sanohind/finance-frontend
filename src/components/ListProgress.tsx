@@ -44,14 +44,18 @@ const ListProgress: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const rowsPerPage = 15;
 
+  // Modal states for showing Rejected reason
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [rejectedReason, setRejectedReason] = useState<string | null>(null);
+
   // Function to format numbers to Indonesian Rupiah
   const formatToRupiah = (value: number | null): string => {
     if (value === null) return "-";
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
-      minimumFractionDigits: 2, // Ensure two decimal places
-      maximumFractionDigits: 2, // Ensure two decimal places
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
@@ -112,6 +116,13 @@ const ListProgress: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Show the Rejected reason in a simple modal
+  const handleShowRejectedReason = (reason: string | null) => {
+    if (!reason) return;
+    setRejectedReason(reason);
+    setShowReasonModal(true);
   };
 
   // Initial data fetch
@@ -256,7 +267,14 @@ const ListProgress: React.FC = () => {
                       <span
                         className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(
                           status
-                        )}`}
+                        )} ${
+                          status === "Rejected" ? "cursor-pointer" : ""
+                        }`}
+                        onClick={() => {
+                          if (status === "Rejected") {
+                            handleShowRejectedReason(invoice.reason);
+                          }
+                        }}
                       >
                         {status}
                       </span>
@@ -284,6 +302,21 @@ const ListProgress: React.FC = () => {
         currentPage={currentPage}
         onPageChange={setCurrentPage}
       />
+
+      {/* Simple Popup for showing Rejected reason */}
+      {showReasonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-9999">
+          <div className="bg-white p-4 rounded shadow-md text-center">
+            <p className="mb-4">Reason: {rejectedReason || '-'}</p>
+            <button
+              className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
+              onClick={() => setShowReasonModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
