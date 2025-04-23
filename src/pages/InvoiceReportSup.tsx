@@ -420,28 +420,28 @@ const InvoiceReportSup = () => {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
               <tr>
-                <th className="px-4 py-2 text-gray-700 text-center border w-10"></th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
+                <th className="px-3 py-2 text-gray-700 text-center border w-10"></th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Tax Base Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Tax Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">PPh Base Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Base Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Base Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
               </tr>
               <tr className="bg-gray-100 border">
                 <th colSpan={3}></th>
-                <th className="px-4 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
-                <th className="px-4 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 <th colSpan={11}></th>
               </tr>
             </thead>
@@ -459,14 +459,14 @@ const InvoiceReportSup = () => {
                   const statusColor = getStatusColor(status);
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         <input
                           type="checkbox"
                           onChange={() => handleRecordSelection(invoice)}
                         />
                       </td>
                       {/* Clickable invoice number to open detail modal */}
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleShowDetail(invoice)}
                           className="text-blue-600 underline"
@@ -474,17 +474,17 @@ const InvoiceReportSup = () => {
                           {invoice.inv_no || '-'}
                         </button>
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatDate(invoice.inv_date)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatDate(invoice.plan_date)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatDate(invoice.actual_date)}
                       </td>
                       {/* Status with color and popup for Rejected */}
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         <span
                           className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-white text-xs font-medium ${statusColor} ${
                             status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
@@ -498,36 +498,36 @@ const InvoiceReportSup = () => {
                           {status}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {invoice.receipt_number || '-'}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {invoice.bp_code || '-'}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {invoice.inv_faktur || '-'}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatDate(invoice.inv_faktur_date)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.total_dpp)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.tax_base_amount)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatCurrency(
                           invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
                         )}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_base_amount)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_amount)}
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.total_amount)}
                       </td>
                     </tr>
