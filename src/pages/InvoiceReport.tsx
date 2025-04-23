@@ -841,7 +841,6 @@ const InvoiceReport: React.FC = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
                 <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
                 <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
-                <th className="px-4 py-2 text-gray-700 text-center border min-w-[150px]">Supplier Name</th>
                 <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
                 <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
@@ -933,7 +932,7 @@ const InvoiceReport: React.FC = () => {
                       {/* Status with color and popup for Rejected */}
                       <td className="px-4 py-2 text-center">
                         <span
-                          className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-white text-xs font-medium ${statusColor} ${
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-white text-xs font-medium ${statusColor} ${
                             status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
                           }`}
                           onClick={() => {
@@ -949,7 +948,6 @@ const InvoiceReport: React.FC = () => {
                         {invoice.receipt_number || '-'}
                       </td>
                       <td className="px-4 py-2 text-center">{invoice.bp_code || '-'}</td>
-                      <td className="px-4 py-2 text-center">{invoice.bp_name || '-'}</td>
                       <td className="px-4 py-2 text-center">{invoice.inv_faktur || '-'}</td>
                       <td className="px-4 py-2 text-center">
                         {formatDate(invoice.inv_faktur_date)}
