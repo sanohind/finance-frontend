@@ -747,14 +747,14 @@ const InvoiceReport: React.FC = () => {
 
       <div className="flex justify-end items-center gap-4">
         <button
-          className="bg-purple-900 text-sm text-white px-4 py-2 rounded hover:bg-purple-800"
+          className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800"
           onClick={handleSearch}
           type="button"
         >
           Search
         </button>
         <button
-          className="bg-white text-sm text-black px-4 py-2 rounded border border-violet-800 hover:bg-gray-100"
+          className="bg-white text-sm text-black px-8 py-2 rounded border border-violet-800 hover:bg-gray-100"
           onClick={handleClear}
           type="button"
         >
@@ -821,7 +821,7 @@ const InvoiceReport: React.FC = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border">Supplier Name</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Number</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Tax Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Total DPP</th>
+                <th className="px-6 py-3 text-gray-700 text-center border">Total DPP</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">
                   Tax Base Amount
                 </th>

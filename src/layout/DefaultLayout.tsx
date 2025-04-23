@@ -22,7 +22,7 @@ const DefaultLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-violet-50"> {/* Added bg-red-50 */}
+    <div className="flex h-screen overflow-hidden bg-purple-50"> {/* Added bg-red-50 */}
       {/* Sidebar */}
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} role={userRole || ''} /> {/* Ensure role is a string */}
       

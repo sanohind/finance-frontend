@@ -159,14 +159,16 @@ const ListProgress: React.FC = () => {
     currentPage * rowsPerPage
   );
 
-  // Helper to get status color
-  const getStatusColor = (status: string) => {
-    if (status === "Ready To Payment") return "bg-green-400";
-    if (status === "Rejected") return "bg-red-500";
-    if (status === "Paid") return "bg-blue-900";
-    if (status === "In Process") return "bg-yellow-300";
-    return "bg-blue-400";
-  };
+ // Status color helper (same as ListProgress)
+ const getStatusColor = (status: string | null) => {
+  if (!status) return "bg-blue-300";
+  const s = status.toLowerCase();
+  if (s === "ready to payment") return "bg-green-600";
+  if (s === "rejected") return "bg-red-500";
+  if (s === "paid") return "bg-blue-800";
+  if (s === "in process") return "bg-yellow-300";
+  return "bg-blue-400";
+};
 
   return (
     <div className="bg-white rounded-lg p-6">
@@ -215,25 +217,25 @@ const ListProgress: React.FC = () => {
 
       {/* Table Section */}
       <div className="overflow-x-auto shadow-md rounded-lg border">
-        <table className="min-w-full divide-y divide-gray-200 text-center mx-auto">
+        <table className="min-w-full divide-y divide-gray-200 text-center">
           <thead className="bg-gray-100 uppercase">
             <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-4 py-3 text-sm font-semibold text-gray-600 border min-w-[50px]">
                 Invoice Number
               </th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
                 Supplier ID
               </th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
                 Doc Date
               </th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
                 Total Amount
               </th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
                 Process Status
               </th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
                 Payment Plan Date
               </th>
             </tr>

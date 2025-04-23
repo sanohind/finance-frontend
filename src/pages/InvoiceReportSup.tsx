@@ -49,7 +49,7 @@ const InvoiceReportSup = () => {
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [rowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(15);
 
   // Selection tracking
   const [selectedRecords, setSelectedRecords] = useState<number>(0);
@@ -259,11 +259,11 @@ const InvoiceReportSup = () => {
 
   // Status color helper (same as ListProgress)
   const getStatusColor = (status: string | null) => {
-    if (!status) return "bg-blue-400";
+    if (!status) return "bg-blue-300";
     const s = status.toLowerCase();
-    if (s === "ready to payment") return "bg-green-400";
+    if (s === "ready to payment") return "bg-green-600";
     if (s === "rejected") return "bg-red-500";
-    if (s === "paid") return "bg-blue-900";
+    if (s === "paid") return "bg-blue-800";
     if (s === "in process") return "bg-yellow-300";
     return "bg-blue-400";
   };
@@ -370,14 +370,14 @@ const InvoiceReportSup = () => {
       {/* Buttons */}
       <div className="flex justify-end items-center gap-4">
         <button
-          className="bg-purple-900 text-sm text-white px-4 py-2 rounded hover:bg-purple-800"
+          className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800"
           onClick={handleSearch}
           type="button"
         >
           Search
         </button>
         <button
-          className="bg-white text-sm text-black px-4 py-2 rounded border border-violet-800 hover:bg-gray-100"
+          className="bg-white text-sm text-black px-8 py-2 rounded border border-violet-800 hover:bg-gray-100"
           onClick={handleClear}
           type="button"
         >
@@ -420,29 +420,28 @@ const InvoiceReportSup = () => {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
               <tr>
-                <th className="px-4 py-2 text-gray-700 text-center border"></th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Invoice No</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Inv Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border" colSpan={2}>
+                <th className="px-4 py-2 text-gray-700 text-center border w-10"></th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Status</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Receipt No</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Supplier Code</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Supplier Name</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Tax Number</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Tax Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Total DPP</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Tax Base Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Tax Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">PPh Base Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">PPh Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Total Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Tax Base Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Tax Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">PPh Base Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
               </tr>
               <tr className="bg-gray-100 border">
                 <th colSpan={3}></th>
-                <th className="px-4 py-2 text-md text-gray-600 text-center border">Plan</th>
-                <th className="px-4 py-2 text-md text-gray-600 text-center border">Actual</th>
+                <th className="px-4 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
+                <th className="px-4 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 <th colSpan={11}></th>
               </tr>
             </thead>
@@ -487,7 +486,7 @@ const InvoiceReportSup = () => {
                       {/* Status with color and popup for Rejected */}
                       <td className="px-4 py-2 text-center">
                         <span
-                          className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${statusColor} ${
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-white text-xs font-medium ${statusColor} ${
                             status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
                           }`}
                           onClick={() => {
@@ -504,9 +503,6 @@ const InvoiceReportSup = () => {
                       </td>
                       <td className="px-4 py-2 text-center">
                         {invoice.bp_code || '-'}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {invoice.bp_name || '-'}
                       </td>
                       <td className="px-4 py-2 text-center">
                         {invoice.inv_faktur || '-'}
