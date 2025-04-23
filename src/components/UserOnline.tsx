@@ -75,19 +75,26 @@ const UserOnline: React.FC = () => {
                 toast.error('Authentication token not found');
                 return;
             }
-
-            const response = await fetch(`${API_User_Logout_Admin()}/${token_id}`, {
+    
+            // Log the URL we're calling to help debug
+            const url = API_User_Logout_Admin(); // Remove the token_id from URL
+            console.log('Attempting to logout user with URL:', url);
+    
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ token_id }), // Send token_id in the request body
             });
-
+    
             if (!response.ok) {
-                throw new Error('Failed to logout user');
+                const errorText = await response.text();
+                console.error('POST request failed:', response.status, errorText);
+                throw new Error(`Failed to logout user (status ${response.status})`);
             }
-
+    
             const result = await response.json();
             
             if (result.success) {
@@ -98,7 +105,7 @@ const UserOnline: React.FC = () => {
             }
         } catch (error) {
             console.error('Error logging out user:', error);
-            toast.error('Failed to logout user');
+            toast.error(`Failed to logout user: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
