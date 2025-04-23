@@ -368,7 +368,7 @@ const GrTracking = () => {
             <input
               type="text"
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs" // Original classes
-              placeholder="Enter GR/SA Number" // More descriptive placeholder
+              placeholder="----  ---------" // More descriptive placeholder
               value={filterParams.gr_no || ''} // Controlled input
               onChange={(e) => handleInputChange('gr_no', e.target.value)}
             />
@@ -380,7 +380,7 @@ const GrTracking = () => {
             <input
               type="text"
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs" // Original classes
-              placeholder="Enter Tax Number" // More descriptive placeholder
+              placeholder="----  ---------" // More descriptive placeholder
               value={filterParams.tax_number || ''} // Controlled input
               onChange={(e) => handleInputChange('tax_number', e.target.value)}
             />
@@ -430,7 +430,7 @@ const GrTracking = () => {
             <label className="w-1/4 text-sm font-medium text-gray-700">PO Number</label>
             <input
               type="text"
-              placeholder="Enter PO Number" // More descriptive placeholder
+              placeholder="----  ---------" // More descriptive placeholder
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs" // Original classes
               value={filterParams.po_no || ''} // Controlled input
               onChange={(e) => handleInputChange('po_no', e.target.value)}
@@ -442,7 +442,7 @@ const GrTracking = () => {
             <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Number</label>
             <input
               type="text"
-              placeholder="Enter Invoice Number" // More descriptive placeholder
+              placeholder="----  ---------" // More descriptive placeholder
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs" // Original classes
               value={filterParams.invoice_no || ''} // Controlled input
               onChange={(e) => handleInputChange('invoice_no', e.target.value)}
@@ -454,7 +454,7 @@ const GrTracking = () => {
             <label className="w-1/4 text-sm font-medium text-gray-700">Status</label>
             <input
               type="text"
-              placeholder="e.g., Yes, No" // More descriptive placeholder
+              placeholder="----  ---------" // More descriptive placeholder
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs" // Original classes
               value={filterParams.status || ''} // Controlled input
               onChange={(e) => handleInputChange('status', e.target.value)}
@@ -491,7 +491,7 @@ const GrTracking = () => {
             <label className="w-1/4 text-sm font-medium text-gray-700">DN Number</label>
             <input
               type="text"
-              placeholder="Enter DN Number" // More descriptive placeholder
+              placeholder="----  ---------" // More descriptive placeholder
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs" // Original classes
               value={filterParams.dn_number || ''} // Controlled input
               onChange={(e) => handleInputChange('dn_number', e.target.value)}
