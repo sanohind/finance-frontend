@@ -148,7 +148,7 @@ const InvoiceReport: React.FC = () => {
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [rowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(15);
 
   // Allow multiple 'New' but only single 'In Process' or multiple 'Ready To Payment'
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
@@ -156,6 +156,10 @@ const InvoiceReport: React.FC = () => {
   // New state for payment upload modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Reason popup state
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [rejectedReason, setRejectedReason] = useState<string | null>(null);
 
   const supplierOptions = businessPartners.map((bp) => ({
     value: bp.bp_code,
@@ -320,6 +324,24 @@ const InvoiceReport: React.FC = () => {
     setFilteredData(data);
     setCurrentPage(1);
     setSelectedInvoices([]);
+  };
+
+  // Status color helper (same as ListProgress)
+  const getStatusColor = (status: string | null) => {
+    if (!status) return "bg-blue-300";
+    const s = status.toLowerCase();
+    if (s === "ready to payment") return "bg-green-600";
+    if (s === "rejected") return "bg-red-500";
+    if (s === "paid") return "bg-blue-800";
+    if (s === "in process") return "bg-yellow-300";
+    return "bg-blue-400";
+  };
+  
+  // Show rejected reason popup
+  const handleShowRejectedReason = (reason: string | null) => {
+    if (!reason) return;
+    setRejectedReason(reason);
+    setShowReasonModal(true);
   };
 
   // --- MODIFIED: Multi-record selection logic for Ready To Payment ---
@@ -805,39 +827,40 @@ const InvoiceReport: React.FC = () => {
           </div>
         </div>
 
+        {/* Updated Table Design */}
         <div className="overflow-x-auto shadow-md border rounded-lg">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
               <tr>
-                <th className="px-4 py-2 text-gray-700 text-center border"></th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Invoice No</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Inv Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border" colSpan={2}>
+                <th className="px-4 py-2 text-gray-700 text-center border w-10"></th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Status</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Receipt No</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Supplier Code</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Supplier Name</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Tax Number</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Tax Date</th>
-                <th className="px-6 py-3 text-gray-700 text-center border">Total DPP</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[150px]">Supplier Name</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">
                   Tax Base Amount
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border">
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">
                   Tax Amount (11%)
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border">
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">
                   PPh Base Amount
                 </th>
-                <th className="px-4 py-2 text-gray-700 text-center border">PPh Amount</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Total Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
               </tr>
               <tr className="bg-gray-100 border">
                 <th colSpan={3}></th>
-                <th className="px-4 py-2 text-md text-gray-600 text-center border">Plan</th>
-                <th className="px-4 py-2 text-md text-gray-600 text-center border">Actual</th>
+                <th className="px-4 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
+                <th className="px-4 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 <th colSpan={11}></th>
               </tr>
             </thead>
@@ -855,6 +878,8 @@ const InvoiceReport: React.FC = () => {
                     (inv) => inv.inv_no === invoice.inv_no
                   );
                   const invoiceStatusLower = invoice.status?.toLowerCase();
+                  const status = invoice.status || "New";
+                  const statusColor = getStatusColor(status);
 
                   let showCheckbox = false;
 
@@ -905,7 +930,21 @@ const InvoiceReport: React.FC = () => {
                       <td className="px-4 py-2 text-center">{formatDate(invoice.inv_date)}</td>
                       <td className="px-4 py-2 text-center">{formatDate(invoice.plan_date)}</td>
                       <td className="px-4 py-2 text-center">{formatDate(invoice.actual_date)}</td>
-                      <td className="px-4 py-2 text-center">{invoice.status || '-'}</td>
+                      {/* Status with color and popup for Rejected */}
+                      <td className="px-4 py-2 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-white text-xs font-medium ${statusColor} ${
+                            status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
+                          }`}
+                          onClick={() => {
+                            if (status.toLowerCase() === "rejected") {
+                              handleShowRejectedReason(invoice.reason);
+                            }
+                          }}
+                        >
+                          {status}
+                        </span>
+                      </td>
                       <td className="px-4 py-2 text-center">
                         {invoice.receipt_number || '-'}
                       </td>
@@ -1005,6 +1044,21 @@ const InvoiceReport: React.FC = () => {
         onClose={() => setWizardOpen(false)}
         invoiceNumberProp={modalInvoiceNumber}
       />
+      
+      {/* Simple Popup for showing Rejected reason */}
+      {showReasonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded shadow-md text-center">
+            <p className="mb-4">Reason: {rejectedReason || '-'}</p>
+            <button
+              className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
+              onClick={() => setShowReasonModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
