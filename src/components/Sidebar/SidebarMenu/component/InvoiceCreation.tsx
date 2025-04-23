@@ -1,4 +1,4 @@
-import { FaFileInvoice } from "react-icons/fa";
+import { FaFileCirclePlus } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
 
 const InvoiceCreation = () => {
@@ -14,7 +14,7 @@ const InvoiceCreation = () => {
                     }`
                 }
             >
-                <FaFileInvoice className="fill-current" size={18} />
+                <FaFileCirclePlus className="fill-current" size={18} />
                 Invoice Creation
             </NavLink>
         </li>

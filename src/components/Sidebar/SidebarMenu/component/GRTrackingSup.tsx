@@ -1,4 +1,4 @@
-import { FaList } from "react-icons/fa";
+import { FaClipboardList } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 
 const GRTrackingSup = () => {
@@ -14,7 +14,7 @@ const GRTrackingSup = () => {
                     }`
                 }
             >
-                <FaList className="fill-current" size={18} />
+                <FaClipboardList className="fill-current" size={18} />
                 GR Tracking
             </NavLink>
         </li>
