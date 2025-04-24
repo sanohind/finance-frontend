@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
+import { Search, XCircle } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import { API_Inv_Header_Admin } from '../api/api';
@@ -369,18 +370,21 @@ const InvoiceReportSup = () => {
 
       {/* Buttons */}
       <div className="flex justify-end items-center gap-4">
-        <button
-          className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800"
-          onClick={handleSearch}
+        <button 
           type="button"
+          onClick={handleSearch}
+          className="flex items-center gap-2 bg-purple-900 text-sm text-white px-6 py-2 rounded shadow-md hover:bg-purple-800 disabled:opacity-50 transition"
         >
+          <Search className="w-4 h-4" />
           Search
         </button>
+
         <button
-          className="bg-white text-sm text-black px-8 py-2 rounded border border-violet-800 hover:bg-gray-100"
-          onClick={handleClear}
           type="button"
+          onClick={handleClear}
+          className="flex items-center gap-2 bg-red-700 text-sm text-white px-6 py-2 rounded border border-red-700 hover:bg-red-800 shadow-sm transition"
         >
+          <XCircle className="w-4 h-4 text-white" />
           Clear
         </button>
       </div>

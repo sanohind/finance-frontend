@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CalendarDays, Search, RotateCcw } from "lucide-react";
 import { toast } from 'react-toastify';
 import Pagination from "./Table/Pagination";
 import { API_Inv_Header_Admin } from '../api/api';
@@ -257,38 +258,53 @@ const ListProgress: React.FC = () => {
       {/* Filter & Search Section */}
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex items-end gap-4">
+          {/* From Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               From Date
             </label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="border rounded-lg px-3 py-2 mt-1 w-48"
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="peer border border-gray-300 rounded-md pl-10 pr-4 py-2 w-48 text-sm shadow-sm focus:ring-2 focus:ring-purple-600 focus:outline-none"
+              />
+              <CalendarDays className="w-5 h-5 text-gray-500 absolute left-3 top-2.5 pointer-events-none" />
+            </div>
           </div>
+
+          {/* To Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               To Date
             </label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="border rounded-lg px-3 py-2 mt-1 w-48"
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="peer border border-gray-300 rounded-md pl-10 pr-4 py-2 w-48 text-sm shadow-sm focus:ring-2 focus:ring-purple-600 focus:outline-none"
+              />
+              <CalendarDays className="w-5 h-5 text-gray-500 absolute left-3 top-2.5 pointer-events-none" />
+            </div>
           </div>
+
+          {/* Search Button */}
           <button
             onClick={handleSearch}
-            className="bg-purple-900 text-sm text-white px-6 py-2 rounded hover:bg-purple-800"
+            className="flex items-center gap-2 bg-purple-900 hover:bg-purple-800 transition-colors text-white text-sm px-5 py-2 rounded shadow-md"
           >
+            <Search className="w-4 h-4" />
             Search
           </button>
+
+          {/* Reset Button */}
           <button
             onClick={handleReset}
-            className="bg-red-700 text-sm text-white px-6 py-2 rounded hover:bg-gray-600"
+            className="flex items-center gap-2 bg-red-700 hover:bg-red-800 transition-colors text-white text-sm px-5 py-2 border border-red-500 rounded shadow-md"
           >
+            <RotateCcw className="w-4 h-4" />
             Reset
           </button>
         </div>

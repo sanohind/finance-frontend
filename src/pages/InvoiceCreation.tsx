@@ -4,6 +4,7 @@ import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import InvoiceCreationWizard from './InvoiceCreationWizard';
 import Select from "react-select";
+import { Search, XCircle } from "lucide-react";
 import { API_Inv_Line_Admin, API_List_Partner_Admin, API_Inv_Line_Outstanding } from '../api/api';
 
 interface BusinessPartner {
@@ -479,19 +480,22 @@ const InvoiceCreation = () => {
             </div>
           </form>
 
-          <div className="flex justify-end items-center gap-4 ">
+          <div className="flex justify-end items-center gap-4">
             <button 
               type="button"
-              className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800" 
               onClick={handleSearch}
+              className="flex items-center gap-2 bg-purple-900 text-sm text-white px-6 py-2 rounded shadow-md hover:bg-purple-800 disabled:opacity-50 transition"
             >
+              <Search className="w-4 h-4" />
               Search
             </button>
+
             <button
               type="button"
-              className="bg-white text-sm text-black px-8 py-2 rounded border border-purple-800 hover:bg-gray-100"
               onClick={handleClear}
+              className="flex items-center gap-2 bg-red-700 text-sm text-white px-6 py-2 rounded border border-red-700 hover:bg-red-800 shadow-sm transition"
             >
+              <XCircle className="w-4 h-4 text-white" />
               Clear
             </button>
           </div>
@@ -590,44 +594,44 @@ const InvoiceCreation = () => {
                         className="cursor-pointer"
                       />
                     </th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO No</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">BP ID</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">BP Name</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
-                    <th className="px-6 py-2 text-gray-700 text-center border">PO Type</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">PO Reference</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">PO Line</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">PO Sequence</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Sequence</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">BP ID</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">BP Name</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Currency</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Type</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Reference</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Line</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">PO Sequence</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Sequence</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Year</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Period</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Year</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Period</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Receipt No</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Line</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Line</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">GR No</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Packing Slip</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Packing Slip</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Item No</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">ICS Code</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">ICS Part</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">Part No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">ICS Code</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">ICS Part</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Part No</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Item Description</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Item Group</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Item Type</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Group</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Type</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Item Type Desc</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Request Qty</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Qty</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Approve Qty</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Request Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Approve Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Unit</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Receipt Amount</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Final Receipt</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Confirmed</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Unit Price</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Final Receipt</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Confirmed</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Invoice No</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Invoice Date</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Invoice Qty</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Invoice Qty</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Invoice Amount</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Supplier No</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[130px]">Due Date</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Due Date</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Created At</th>

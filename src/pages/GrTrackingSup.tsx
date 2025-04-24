@@ -1,3 +1,4 @@
+import { Search, XCircle } from "lucide-react";
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
@@ -1086,21 +1087,26 @@ const GrTrackingSup = () => {
         </div>
 
         <div className="my-6 flex flex-col md:flex-row md:items-center md:justify-between">
-          <div></div> {/* Empty div to keep buttons to the right */}
-          <div className="flex justify-end gap-4">
-            <button 
-              type="submit"
-              className="bg-purple-900 text-sm text-white px-8 py-2 rounded hover:bg-purple-800"
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              className="bg-white text-sm text-black px-8 py-2 rounded border border-purple-900 hover:bg-gray-100"
-              onClick={handleClear}
-            >
-              Clear
-            </button>
+        <div></div> {/* Empty div to keep buttons to the right */}
+        <div className="flex justify-end gap-4">
+          {/* Search Button */}
+          <button 
+            type="submit"
+            className="flex items-center gap-2 bg-purple-900 text-sm text-white px-6 py-2 rounded shadow-md hover:bg-purple-800 disabled:opacity-50 transition"
+          >
+            <Search className="w-4 h-4" />
+            Search
+          </button>
+
+          {/* Clear Button */}
+          <button
+            type="button"
+            className="flex items-center gap-2 bg-red-700 text-sm text-white px-6 py-2 rounded border border-red-700 hover:bg-red-800 shadow-sm transition"
+            onClick={handleClear}
+          >
+            <XCircle className="w-4 h-4 text-white" />
+            Clear
+          </button>
           </div>
         </div>
       </form>
