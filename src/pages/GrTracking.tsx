@@ -1091,16 +1091,14 @@ const GrTracking = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Final Receipt</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Confirmed</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Invoice No</th>
+                <th className="px-8 py-2 text-gray-700 text-center border">Supplier No</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Invoice Date</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Invoice Qty</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Invoice Amount</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Supplier No</th>
+                <th className="px-8 py-2 text-gray-700 text-center border">Invoice No</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[130px]">Due Date</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Created At</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Updated At</th>
               </tr>
               {/* Column filter inputs row */}
               <tr className="bg-gray-50">
@@ -1464,24 +1462,6 @@ const GrTracking = () => {
                     className="border rounded w-full px-2 py-1 text-xs text-center"
                   />
                 </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="date"
-                    placeholder="-"
-                    value={columnFilters.createdAtFilter}
-                    onChange={(e) => handleColumnFilterChange('createdAtFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="date"
-                    placeholder="-"
-                    value={columnFilters.updatedAtFilter}
-                    onChange={(e) => handleColumnFilterChange('updatedAtFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
               </tr>
             </thead>
             <tbody>
@@ -1538,8 +1518,6 @@ const GrTracking = () => {
                        <td className="px-3 py-2 text-center">{item.inv_due_date}</td>
                        <td className="px-3 py-2 text-center">{item.payment_doc}</td>
                        <td className="px-3 py-2 text-center">{item.payment_doc_date}</td>
-                       <td className="px-3 py-2 text-center">{item.created_at}</td>
-                       <td className="px-3 py-2 text-center">{item.updated_at}</td>
                     </tr>
                   ))
                 : (
