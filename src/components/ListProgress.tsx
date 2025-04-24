@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
-import SearchBar from '../components/Table/SearchBar';
 import Pagination from "./Table/Pagination";
 import { API_Inv_Header_Admin } from '../api/api';
 
@@ -33,11 +32,19 @@ interface Invoice {
   process_status?: "In Process" | "Rejected" | "Paid" | "Ready to Payment" | "New";
 }
 
+// Status options for dropdown
+const STATUS_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "new", label: "New" },
+  { value: "in process", label: "In Process" },
+  { value: "ready to payment", label: "Ready to Payment" },
+  { value: "paid", label: "Paid" },
+  { value: "rejected", label: "Rejected" }
+];
+
 const ListProgress: React.FC = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [searchSupplier, setSearchSupplier] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [data, setData] = useState<Invoice[]>([]);
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,6 +54,14 @@ const ListProgress: React.FC = () => {
   // Modal states for showing Rejected reason
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
+
+  // Table column filters
+  const [invoiceFilter, setInvoiceFilter] = useState<string>("");
+  const [supplierFilter, setSupplierFilter] = useState<string>("");
+  const [invoiceDateFilter, setInvoiceDateFilter] = useState<string>("");
+  const [totalAmountFilter, setTotalAmountFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [planDateFilter, setPlanDateFilter] = useState<string>("");
 
   // Function to format numbers to Indonesian Rupiah
   const formatToRupiah = (value: number | null): string => {
@@ -130,8 +145,8 @@ const ListProgress: React.FC = () => {
     fetchInvoiceData();
   }, []);
 
-  // Filter data based on search and date inputs
-  useEffect(() => {
+  // Apply top filters
+  const handleSearch = () => {
     let filtered = [...data];
 
     if (fromDate && toDate) {
@@ -143,32 +158,97 @@ const ListProgress: React.FC = () => {
 
     setFilteredData(filtered);
     setCurrentPage(1);
-  }, [fromDate, toDate, searchSupplier, searchQuery, data]);
+  };
 
-  const handleRefresh = () => {
+  // Reset all filters
+  const handleReset = () => {
     setFromDate("");
     setToDate("");
-    setSearchSupplier("");
-    setSearchQuery("");
-    fetchInvoiceData();
+    setInvoiceFilter("");
+    setSupplierFilter("");
+    setInvoiceDateFilter("");
+    setTotalAmountFilter("");
+    setStatusFilter("");
+    setPlanDateFilter("");
+    setFilteredData(data);
     setCurrentPage(1);
   };
+
+  // Apply column filters
+  useEffect(() => {
+    let filtered = [...data];
+
+    // Apply invoice number filter
+    if (invoiceFilter) {
+      filtered = filtered.filter(item => 
+        item.inv_no?.toLowerCase().includes(invoiceFilter.toLowerCase())
+      );
+    }
+
+    // Apply supplier filter
+    if (supplierFilter) {
+      filtered = filtered.filter(item => 
+        item.bp_code?.toLowerCase().includes(supplierFilter.toLowerCase())
+      );
+    }
+
+    // Apply invoice date filter
+    if (invoiceDateFilter) {
+      filtered = filtered.filter(item => 
+        item.inv_date?.includes(invoiceDateFilter)
+      );
+    }
+
+    // Apply total amount filter
+    if (totalAmountFilter) {
+      const filterAmount = parseFloat(totalAmountFilter);
+      if (!isNaN(filterAmount)) {
+        filtered = filtered.filter(item => {
+          // Use approximate comparison for floating point numbers
+          if (!item.total_amount) return false;
+          
+          // Check if the difference is very small (within 0.01 of the amount)
+          // or if the values are approximately equal
+          return Math.abs(item.total_amount - filterAmount) < 0.01 ||
+            // Alternative approach: check if the amount starts with the filter value as a string
+            item.total_amount.toString().includes(totalAmountFilter);
+        });
+      }
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(item => 
+        (item.process_status || item.status || "").toLowerCase() === statusFilter.toLowerCase()
+      );
+    }
+
+    // Apply payment plan date filter
+    if (planDateFilter) {
+      filtered = filtered.filter(item => 
+        item.plan_date?.includes(planDateFilter)
+      );
+    }
+
+    setFilteredData(filtered);
+    setCurrentPage(1);
+  }, [invoiceFilter, supplierFilter, invoiceDateFilter, totalAmountFilter, statusFilter, planDateFilter, data]);
 
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
- // Status color helper (same as ListProgress)
- const getStatusColor = (status: string | null) => {
-  if (!status) return "bg-blue-300";
-  const s = status.toLowerCase();
-  if (s === "ready to payment") return "bg-green-600";
-  if (s === "rejected") return "bg-red-500";
-  if (s === "paid") return "bg-blue-800";
-  if (s === "in process") return "bg-yellow-300";
-  return "bg-blue-400";
-};
+  // Status color helper
+  const getStatusColor = (status: string | null) => {
+    if (!status) return "bg-blue-300";
+    const s = status.toLowerCase();
+    if (s === "ready to payment") return "bg-green-600";
+    if (s === "rejected") return "bg-red-500";
+    if (s === "paid") return "bg-blue-800";
+    if (s === "in process") return "bg-yellow-300";
+    return "bg-blue-400";
+  };
 
   return (
     <div className="bg-white rounded-lg p-6">
@@ -200,18 +280,17 @@ const ListProgress: React.FC = () => {
             />
           </div>
           <button
-            onClick={handleRefresh}
-            className="bg-purple-900 text-sm text-white px-6 py-2 rounded hover:bg-purple-800 "
+            onClick={handleSearch}
+            className="bg-purple-900 text-sm text-white px-6 py-2 rounded hover:bg-purple-800"
           >
-            Refresh
+            Search
           </button>
-        </div>
-
-        <div className="flex items-end gap-4 mt-6 w-80">
-          <SearchBar
-            placeholder="Search Supplier Code/Name..."
-            onSearchChange={setSearchSupplier}
-          />
+          <button
+            onClick={handleReset}
+            className="bg-red-700 text-sm text-white px-6 py-2 rounded hover:bg-gray-600"
+          >
+            Reset
+          </button>
         </div>
       </div>
 
@@ -220,24 +299,86 @@ const ListProgress: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200 text-center">
           <thead className="bg-gray-100 uppercase">
             <tr>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 border min-w-[50px]">
+              <th className="px-4 py-3 text-sm font-semibold text-gray-600 border min-w-[150px]">
                 Invoice Number
               </th>
-              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border min-w-[120px]">
                 Supplier ID
               </th>
-              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
-                Doc Date
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border min-w-[150px]">
+                Invoice Date
               </th>
-              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border min-w-[150px]">
                 Total Amount
               </th>
-              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border min-w-[150px]">
                 Process Status
               </th>
-              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border">
+              <th className="px-3 py-3 text-sm font-semibold text-gray-600 border min-w-[150px]">
                 Payment Plan Date
               </th>
+            </tr>
+            {/* Filter inputs row */}
+            <tr>
+              <td className="px-2 py-2 border">
+                <input
+                  type="text"
+                  placeholder="-"
+                  value={invoiceFilter}
+                  onChange={(e) => setInvoiceFilter(e.target.value)}
+                  className="border rounded w-full px-2 py-1 text-sm text-center"
+                />
+              </td>
+              <td className="px-2 py-2 border">
+                <input
+                  type="text"
+                  placeholder="-"
+                  value={supplierFilter}
+                  onChange={(e) => setSupplierFilter(e.target.value)}
+                  className="border rounded w-full px-2 py-1 text-sm text-center"
+                />
+              </td>
+              <td className="px-2 py-2 border">
+                <input
+                  type="date"
+                  value={invoiceDateFilter}
+                  onChange={(e) => setInvoiceDateFilter(e.target.value)}
+                  className="border rounded w-full px-2 py-1 text-sm text-center"
+                />
+              </td>
+              <td className="px-2 py-2 border">
+                <div className="relative flex items-center">
+                  <span className="absolute left-2 text-gray-500 text-sm">Rp.</span>
+                  <input
+                    type="number"
+                    placeholder="-"
+                    value={totalAmountFilter}
+                    onChange={(e) => setTotalAmountFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                  />
+                </div>
+              </td>
+              <td className="px-2 py-2 border">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border rounded w-full px-2 py-1 text-sm text-center"
+                >
+                  {STATUS_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="px-2 py-2 border">
+                <input
+                  type="date"
+                  value={planDateFilter}
+                  onChange={(e) => setPlanDateFilter(e.target.value)}
+                  className="border rounded w-full px-2 py-1 text-sm text-center"
+                />
+              </td>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -267,13 +408,13 @@ const ListProgress: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span
-                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(
+                        className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-white text-xs font-medium ${getStatusColor(
                           status
                         )} ${
-                          status === "Rejected" ? "cursor-pointer" : ""
+                          status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
                         }`}
                         onClick={() => {
-                          if (status === "Rejected") {
+                          if (status.toLowerCase() === "rejected") {
                             handleShowRejectedReason(invoice.reason);
                           }
                         }}
