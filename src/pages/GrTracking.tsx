@@ -1028,31 +1028,6 @@ const GrTracking = () => {
           </div>
         </div>
 
-        {/* Row 4 - Tax Date */}
-        <div className='flex space-x-4'>
-          <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">Tax Date</label>
-            <div className="relative w-3/4">
-              <input
-                type="date"
-                name="tax_date"
-                className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-                value={filterParams.tax_date || ''}
-                onChange={(e) => handleInputChange('tax_date', e.target.value)}
-              />
-              {filterParams.tax_date && (
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => clearFilterField('tax_date')}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Action Buttons */}
         <div className="my-6 flex flex-col md:flex-row md:items-center md:justify-between">
           <div></div> {/* Empty div to keep buttons to the right */}
