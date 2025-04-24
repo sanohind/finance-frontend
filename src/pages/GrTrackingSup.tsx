@@ -973,9 +973,9 @@ const GrTrackingSup = () => {
             />
           </div>
 
-          <div className="flex w-2/3 items-center gap-2">
+          <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/6 text-sm font-medium text-gray-700">GR / SA Date</label>
-            <div className="flex w-5/6 space-x-2 items-center">
+            <div className="flex w-3/4 space-x-2 items-center">
               <div className="relative w-1/2">
                 <input
                   type="date" 

@@ -504,9 +504,9 @@ const InvoiceCreation = () => {
           <h3 className="text-xl font-semibold text-gray-700 mb-2">GR / SA Outstanding</h3>
           <div className="bg-white p-6 flex flex-wrap md:flex-nowrap justify-between gap-4">
             {/* Table Section */}
-            <div className="overflow-x-auto shadow-md border rounded-lg w-full md:w-2/3">
+            <div className="overflow-x-auto shadow-md border rounded-md w-full md:w-2/3">
               <table className="w-full text-md text-left">
-                <thead className="bg-gray-200">
+                <thead className="bg-gray-300">
                   <tr>
                     <th className="px-4 py-3 text-md text-gray-800 text-center border">Total Record(s)</th>
                     <th className="px-4 py-3 text-md text-gray-800 text-center border">Currency</th>

@@ -252,8 +252,8 @@ const ListProgress: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg p-6">
-      <h2 className="text-2xl font-semibold text-black mb-4">List Progress</h2>
+    <div className="bg-white rounded-lg p-4 ">
+      <h2 className="text-2xl font-semibold text-black mb-2 mt-0">List Progress</h2>
 
       {/* Filter & Search Section */}
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
@@ -424,7 +424,7 @@ const ListProgress: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span
-                        className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-white text-xs font-medium ${getStatusColor(
+                        className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-white text-xs font-medium ${getStatusColor(
                           status
                         )} ${
                           status.toLowerCase() === "rejected" ? "cursor-pointer" : ""

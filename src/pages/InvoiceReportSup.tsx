@@ -430,7 +430,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">Status</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>

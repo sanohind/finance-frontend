@@ -842,19 +842,19 @@ const InvoiceReport: React.FC = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">Status</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">Status</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">
                   Tax Base Amount
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">
                   Tax Amount (11%)
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">
                   PPh Base Amount
                 </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
