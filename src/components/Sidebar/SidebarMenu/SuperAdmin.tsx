@@ -1,9 +1,6 @@
 import Dashboard from './component/Dashboard';  // Ensure correct path
 import ListUser from './component/ListUser';  // Ensure correct path
 import AddUser from './component/AddUser';  // Ensure correct path
-import GRTracking from './component/GRTracking';  // Ensure correct path
-import InvoiceCreation from './component/InvoiceCreation';  // Ensure correct path
-import InvoiceReport from './component/InvoiceReport';
 
 export const SuperAdmin = () => {
     console.log("Rendering SuperAdmin Menu");
@@ -23,15 +20,6 @@ export const SuperAdmin = () => {
                 </li>
                 <li>
                     <AddUser />
-                </li>
-                <li>
-                    <GRTracking />
-                </li>
-                <li>
-                    <InvoiceCreation />
-                </li>
-                <li>
-                    <InvoiceReport />
                 </li>
             </ul>
         </div>
