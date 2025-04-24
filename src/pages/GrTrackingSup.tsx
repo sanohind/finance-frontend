@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
-import SearchBar from '../components/Table/SearchBar';
 import Pagination from '../components/Table/Pagination';
 import { API_Inv_Line_Admin, API_List_Partner_Admin } from '../api/api';
 import Select from "react-select";
@@ -1107,12 +1106,6 @@ const GrTrackingSup = () => {
       </form>
 
       <div className="bg-white p-6 space-y-6">
-        <div className="w-70 mb-4">
-          <SearchBar
-            placeholder="Search Supplier Code/Name..."
-            onSearchChange={setSearchSupplier}
-          />
-        </div>
         <div className="overflow-x-auto shadow-md border rounded-lg mb-6">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
