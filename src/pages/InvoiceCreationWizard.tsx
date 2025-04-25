@@ -22,7 +22,25 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
   const [taxCode, setTaxCode] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
   const [taxDate, setTaxDate] = useState('');
-  const [totalInvoiceAmount] = useState('');
+
+  // Form validation
+  const [taxNumberError, setTaxNumberError] = useState('');
+
+  // Add file validation function
+  const [fileError, setFileError] = useState<string>('');
+  
+  const validateFileType = (file: File | null): boolean => {
+    if (!file) return false;
+    
+    // Check if file is PDF
+    if (!file.type.includes('pdf')) {
+      setFileError('Only PDF files are allowed');
+      return false;
+    }
+    
+    setFileError('');
+    return true;
+  };
 
   // Individual file references (one-by-one)
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
@@ -212,9 +230,35 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
     0
   );
   const computedTaxAmount = computedTaxBase * 0.11;
+  const computedTotalInvoiceAmount = computedTaxBase + computedTaxAmount;
 
   const handleTaxCodeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setTaxCode(e.target.value);
+  };
+  
+  const validateTaxNumber = (value: string) => {
+    if (!value) {
+      setTaxNumberError('');
+      return;
+    }
+    
+    if (value.length !== 16) {
+      setTaxNumberError('Tax Number must be exactly 16 characters');
+    } else {
+      setTaxNumberError('');
+    }
+  };
+
+  // Check if step 1 form is valid
+  const isStep1Valid = () => {
+    return (
+      invoiceNumber.trim() !== '' &&
+      taxCode !== '' &&
+      invoiceDate.trim() !== '' &&
+      taxNumber.trim() !== '' &&
+      taxNumber.length === 16 &&
+      taxDate.trim() !== ''
+    );
   };
 
   // Step 1
@@ -225,7 +269,9 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
         <hr className="my-6 border-t-1 border-blue-900" />
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Invoice Number</label>
+            <label className="text-sm font-medium text-gray-700">
+              Invoice Number <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               placeholder="Enter Invoice Number"
@@ -235,7 +281,9 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Tax Code (PPN)</label>
+            <label className="text-sm font-medium text-gray-700">
+              Tax Code (PPN) <span className="text-red-500">*</span>
+            </label>
             <select
               className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={taxCode}
@@ -252,7 +300,9 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
         </div>
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Invoice Date</label>
+            <label className="text-sm font-medium text-gray-700">
+              Invoice Date <span className="text-red-500">*</span>
+            </label>
             <input
               type="date"
               className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -261,14 +311,26 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Tax Number</label>
+            <label className="text-sm font-medium text-gray-700">
+              Tax Number <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              placeholder="Enter Tax Number"
-              className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter Tax Number (16 digits)"
+              className={`w-full p-2 border ${
+                taxNumberError ? 'border-red-500' : 'border-blue-900'
+              } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500`}
               value={taxNumber}
-              onChange={(e) => setTaxNumber(e.target.value)}
+              maxLength={16}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTaxNumber(value);
+                validateTaxNumber(value);
+              }}
             />
+            {taxNumberError && (
+              <p className="text-sm text-red-500 mt-1">{taxNumberError}</p>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-8">
@@ -282,7 +344,9 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Tax Date</label>
+            <label className="text-sm font-medium text-gray-700">
+              Tax Date <span className="text-red-500">*</span>
+            </label>
             <input
               type="date"
               className="w-full p-2 border border-blue-900 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -307,7 +371,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
               type="text"
               readOnly
               className="w-full p-2 border border-blue-900 text-blue-900 rounded-md shadow-sm bg-blue-200"
-              value={totalInvoiceAmount}
+              value={taxCode ? formatToIDR(computedTotalInvoiceAmount) : ''}
             />
           </div>
         </div>
@@ -349,11 +413,17 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   type="file"
                   id="invoice_file"
                   className="hidden"
+                  accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    setInvoiceFile(file);
+                    if (validateFileType(file)) setInvoiceFile(file);
                   }}
                 />
+
+                {/* Display file error if any */}
+                {fileError && (
+                  <p className="text-xs text-red-500 mt-1 text-center">{fileError}</p>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-center">
                 <span className="text-sm text-purple-800 font-medium">Invoice</span>
@@ -390,9 +460,10 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   type="file"
                   id="fakturpajak_file"
                   className="hidden"
+                  accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    setFakturPajakFile(file);
+                    if (validateFileType(file)) setFakturPajakFile(file);
                   }}
                 />
               </td>
@@ -433,9 +504,10 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   type="file"
                   id="suratjalan_file"
                   className="hidden"
+                  accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    setSuratJalanFile(file);
+                    if (validateFileType(file)) setSuratJalanFile(file);
                   }}
                 />
               </td>
@@ -476,9 +548,10 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   type="file"
                   id="po_file"
                   className="hidden"
+                  accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    setPoFile(file);
+                    if (validateFileType(file)) setPoFile(file);
                   }}
                 />
               </td>
@@ -595,20 +668,22 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                 <button
                   onClick={() => setCurrentStep(currentStep + 1)}
                   disabled={
-                    currentStep === 2 &&
+                    (currentStep === 1 && !isStep1Valid()) ||
+                    (currentStep === 2 &&
                     (!invoiceFile ||
                       !fakturPajakFile ||
                       !suratJalanFile ||
                       !poFile ||
-                      !disclaimerAccepted)
+                      !disclaimerAccepted))
                   }
                   className={`px-6 py-2 rounded-md transition-colors ${
-                    currentStep === 2 &&
+                    (currentStep === 1 && !isStep1Valid()) ||
+                    (currentStep === 2 &&
                     (!invoiceFile ||
                       !fakturPajakFile ||
                       !suratJalanFile ||
                       !poFile ||
-                      !disclaimerAccepted)
+                      !disclaimerAccepted))
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-900 hover:bg-blue-800 text-white'
                   }`}

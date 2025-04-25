@@ -369,10 +369,10 @@ const GrTrackingSup = () => {
     // Filter for date range - directly use the state variables to ensure latest values
     if (grDateFrom && grDateTo) {
       filtered = filtered.filter(row => {
-        const receiptDate = row.actual_receipt_date;
-        return receiptDate && 
-          receiptDate >= grDateFrom && 
-          receiptDate <= grDateTo;
+        if (!row.actual_receipt_date) return false;
+        // Convert dates to YYYY-MM-DD format for proper comparison
+        const receiptDate = row.actual_receipt_date.split('T')[0];
+        return receiptDate >= grDateFrom && receiptDate <= grDateTo;
       });
     }
     
@@ -765,7 +765,10 @@ const GrTrackingSup = () => {
           // Apply date range filtering client-side to ensure it works
           if (grDateFrom && grDateTo) {
             invLineList = invLineList.filter((item: { actual_receipt_date: string }) => {
-              return item.actual_receipt_date >= grDateFrom && item.actual_receipt_date <= grDateTo;
+              if (!item.actual_receipt_date) return false;
+              // Convert dates to YYYY-MM-DD format for proper comparison
+              const receiptDate = item.actual_receipt_date.split('T')[0];
+              return receiptDate >= grDateFrom && receiptDate <= grDateTo;
             });
           }
           

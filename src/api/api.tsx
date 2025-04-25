@@ -44,6 +44,8 @@ export const API_Upload_Payment_Admin = (inv_no: string): string => `${API}${get
 export const API_Inv_Line_Admin = () => API + getRolePath() + `/inv-line`;
 export const API_Inv_Line_By_Inv_No_Admin = () => API + getRolePath() + `/inv-line/`;
 export const API_Inv_Line_Outstanding = () => API + getRolePath() + `/inv-line/outstanding/`;
+export const API_Inv_Line_Outstanding_Sup = () => API + getRolePath() + `/inv-line/outstanding`;
+
 
 // Document Streaming Admin
 export const API_Stream_File_Admin = () => API + getRolePath() + `/files/`;
