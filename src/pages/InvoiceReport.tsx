@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
 import { Search, XCircle } from 'lucide-react';
@@ -45,86 +45,6 @@ interface BusinessPartner {
   adr_line_1: string;
 }
 
-const PaymentUploadModal = ({ 
-  isOpen, 
-  onClose, 
-  onSubmit, 
-  isUploading 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  onSubmit: (file: File) => void;
-  isUploading: boolean;
-}) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = () => {
-    if (selectedFile) {
-      onSubmit(selectedFile);
-    } else {
-      toast.warning('Please select a PDF file');
-    }
-  };
-
-  // Reset selected file when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedFile(null);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-md shadow-lg w-96">
-        <h2 className="text-xl font-semibold mb-4">Upload Payment Document</h2>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload PDF Document
-          </label>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".pdf"
-            className="w-full border border-gray-300 rounded-md p-2"
-            disabled={isUploading}
-          />
-          {selectedFile && (
-            <p className="mt-1 text-sm text-gray-500">Selected: {selectedFile.name}</p>
-          )}
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-            disabled={isUploading}
-            type="button"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            disabled={!selectedFile || isUploading}
-            type="button"
-          >
-            {isUploading ? 'Uploading...' : 'Upload'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const InvoiceReport: React.FC = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [modalInvoiceNumber, setModalInvoiceNumber] = useState('');
@@ -144,6 +64,23 @@ const InvoiceReport: React.FC = () => {
   const [creationDate, setCreationDate] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
 
+  // Column filter states
+  const [invoiceNoFilter, setInvoiceNoFilter] = useState('');
+  const [invDateFilter, setInvDateFilter] = useState('');
+  const [planDateFilter, setPlanDateFilter] = useState('');
+  const [actualDateFilter, setActualDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [receiptNoFilter, setReceiptNoFilter] = useState('');
+  const [supplierCodeFilter, setSupplierCodeFilter] = useState('');
+  const [taxNumberFilter, setTaxNumberFilter] = useState('');
+  const [taxDateFilter, setTaxDateFilter] = useState('');
+  const [totalDppFilter, setTotalDppFilter] = useState('');
+  const [taxBaseFilter, setTaxBaseFilter] = useState('');
+  const [taxAmountFilter, setTaxAmountFilter] = useState('');
+  const [pphBaseFilter, setPphBaseFilter] = useState('');
+  const [pphAmountFilter, setPphAmountFilter] = useState('');
+  const [totalAmountFilter, setTotalAmountFilter] = useState('');
+
   // Data states
   const [data, setData] = useState<Invoice[]>([]);
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
@@ -154,13 +91,13 @@ const InvoiceReport: React.FC = () => {
   // Allow multiple 'New' but only single 'In Process' or multiple 'Ready To Payment'
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
   
-  // New state for payment upload modal
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  
   // Reason popup state
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
+
+  // --- Post Invoice Modal for Actual Date Input ---
+  const [actualDate, setActualDate] = useState<string>("");
+  const [postModalOpen, setPostModalOpen] = useState(false);
 
   const supplierOptions = businessPartners.map((bp) => ({
     value: bp.bp_code,
@@ -277,6 +214,139 @@ const InvoiceReport: React.FC = () => {
     fetchInvoiceData();
   }, []);
 
+  // Apply column filters
+  useEffect(() => {
+    let newFiltered = [...data];
+
+    // Apply all column filters
+    if (invoiceNoFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase())
+      );
+    }
+    if (invDateFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.inv_date?.includes(invDateFilter)
+      );
+    }
+    if (planDateFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.plan_date?.includes(planDateFilter)
+      );
+    }
+    if (actualDateFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.actual_date?.includes(actualDateFilter)
+      );
+    }
+    if (statusFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.status?.toLowerCase().includes(statusFilter.toLowerCase())
+      );
+    }
+    if (receiptNoFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.receipt_number?.toLowerCase().includes(receiptNoFilter.toLowerCase())
+      );
+    }
+    if (supplierCodeFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.bp_code?.toLowerCase().includes(supplierCodeFilter.toLowerCase())
+      );
+    }
+    if (taxNumberFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.inv_faktur?.toLowerCase().includes(taxNumberFilter.toLowerCase())
+      );
+    }
+    if (taxDateFilter) {
+      newFiltered = newFiltered.filter(item => 
+        item.inv_faktur_date?.includes(taxDateFilter)
+      );
+    }
+    if (totalDppFilter) {
+      const filterAmount = parseFloat(totalDppFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.total_dpp) return false;
+          return Math.abs(item.total_dpp - filterAmount) < 0.01 ||
+            item.total_dpp.toString().includes(totalDppFilter);
+        });
+      }
+    }
+    if (taxBaseFilter) {
+      const filterAmount = parseFloat(taxBaseFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.tax_base_amount) return false;
+          return Math.abs(item.tax_base_amount - filterAmount) < 0.01 ||
+            item.tax_base_amount.toString().includes(taxBaseFilter);
+        });
+      }
+    }
+    if (taxAmountFilter) {
+      const filterAmount = parseFloat(taxAmountFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.tax_base_amount) return false;
+          const taxAmount = item.tax_base_amount * 0.11;
+          return Math.abs(taxAmount - filterAmount) < 0.01 ||
+            taxAmount.toString().includes(taxAmountFilter);
+        });
+      }
+    }
+    if (pphBaseFilter) {
+      const filterAmount = parseFloat(pphBaseFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.pph_base_amount) return false;
+          return Math.abs(item.pph_base_amount - filterAmount) < 0.01 ||
+            item.pph_base_amount.toString().includes(pphBaseFilter);
+        });
+      }
+    }
+    if (pphAmountFilter) {
+      const filterAmount = parseFloat(pphAmountFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.pph_amount) return false;
+          return Math.abs(item.pph_amount - filterAmount) < 0.01 ||
+            item.pph_amount.toString().includes(pphAmountFilter);
+        });
+      }
+    }
+    if (totalAmountFilter) {
+      const filterAmount = parseFloat(totalAmountFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.total_amount) return false;
+          return Math.abs(item.total_amount - filterAmount) < 0.01 ||
+            item.total_amount.toString().includes(totalAmountFilter);
+        });
+      }
+    }
+
+    setFilteredData(newFiltered);
+    setCurrentPage(1);
+  }, [
+    data, 
+    invoiceNoFilter, 
+    invDateFilter, 
+    planDateFilter, 
+    actualDateFilter, 
+    statusFilter, 
+    receiptNoFilter, 
+    supplierCodeFilter,
+    taxNumberFilter,
+    taxDateFilter,
+    totalDppFilter,
+    taxBaseFilter,
+    taxAmountFilter,
+    pphBaseFilter,
+    pphAmountFilter,
+    totalAmountFilter
+  ]);
+
   const handleSearch = () => {
     let newFiltered = [...data];
 
@@ -322,6 +392,24 @@ const InvoiceReport: React.FC = () => {
     setPaymentPlanningDate('');
     setCreationDate('');
     setInvoiceDate('');
+    
+    // Clear column filters
+    setInvoiceNoFilter('');
+    setInvDateFilter('');
+    setPlanDateFilter('');
+    setActualDateFilter('');
+    setStatusFilter('');
+    setReceiptNoFilter('');
+    setSupplierCodeFilter('');
+    setTaxNumberFilter('');
+    setTaxDateFilter('');
+    setTotalDppFilter('');
+    setTaxBaseFilter('');
+    setTaxAmountFilter('');
+    setPphBaseFilter('');
+    setPphAmountFilter('');
+    setTotalAmountFilter('');
+    
     setFilteredData(data);
     setCurrentPage(1);
     setSelectedInvoices([]);
@@ -345,79 +433,49 @@ const InvoiceReport: React.FC = () => {
     setShowReasonModal(true);
   };
 
-  // --- MODIFIED: Multi-record selection logic for Ready To Payment ---
+  // --- MODIFIED: Multi-record selection logic ---
   const handleRecordSelection = (invoice: Invoice) => {
     const exists = selectedInvoices.find((inv) => inv.inv_no === invoice.inv_no);
     const invoiceStatusLower = invoice.status?.toLowerCase();
 
     // If user clicks a row that's already selected, just toggle it off:
     if (exists) {
-      setSelectedInvoices((prev) => prev.filter((inv) => inv.inv_no !== invoice.inv_no));
+      setSelectedInvoices([]);
       return;
     }
 
-    // Allow selecting multiple "Ready To Payment" if all selected are "Ready To Payment"
-    if (invoiceStatusLower === 'ready to payment') {
-      // If there are already selected invoices and any of them is not "Ready To Payment", replace selection
-      if (
-        selectedInvoices.length > 0 &&
-        !selectedInvoices.every((inv) => inv.status?.toLowerCase() === 'ready to payment')
-      ) {
-        setSelectedInvoices([invoice]);
-        return;
-      }
-      // Otherwise, add to selection
-      setSelectedInvoices((prev) => [...prev, invoice]);
-      return;
-    }
-
-    // If the invoice is 'New' but there's already an 'In Process' or 'Ready To Payment' selected, clear selection first
+    // For "New", "In Process", or "Ready To Payment" status, only allow selecting ONE at a time
     if (
-      invoiceStatusLower === 'new' &&
-      (selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'in process') ||
-        selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'ready to payment'))
+      invoiceStatusLower === 'new' ||
+      invoiceStatusLower === 'in process' ||
+      invoiceStatusLower === 'ready to payment'
     ) {
       setSelectedInvoices([invoice]);
-      return;
     }
-
-    // If the invoice is 'In Process' but there's already a 'New' or 'Ready To Payment' selected, clear selection first
-    if (
-      invoiceStatusLower === 'in process' &&
-      (selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new') ||
-        selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'ready to payment'))
-    ) {
-      setSelectedInvoices([invoice]);
-      return;
-    }
-
-    // Otherwise, add it
-    setSelectedInvoices((prev) => [...prev, invoice]);
   };
 
   const handleVerify = async () => {
     if (selectedInvoices.length === 0) {
-      toast.warning('Please select at least one invoice');
+      toast.warning('Please select one invoice');
       return;
     }
 
-    const newInvoices = selectedInvoices.filter((inv) => inv.status?.toLowerCase() === 'new');
-    const inProcessInvoices = selectedInvoices.filter(
-      (inv) => inv.status?.toLowerCase() === 'in process'
-    );
+    const selectedInvoice = selectedInvoices[0];
+    const selectedStatus = selectedInvoice.status?.toLowerCase();
 
-    // If all selected are 'New', do a bulk update to 'In Process'
-    if (newInvoices.length === selectedInvoices.length) {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          toast.error('No access token found');
-          return;
-        }
+    // If the selected invoice is 'New' or 'In Process', open the wizard
+    if (selectedStatus === 'new' || selectedStatus === 'in process') {
+      // If 'New', update to 'In Process' first (keep your previous logic)
+      if (selectedStatus === 'new') {
+        try {
+          const token = localStorage.getItem('access_token');
+          if (!token) {
+            toast.error('No access token found');
+            return;
+          }
 
-        for (const invoice of newInvoices) {
           const response = await fetch(
-            API_Update_Status_To_In_Process_Finance() + `/${invoice.inv_no}`,
+            API_Update_Status_To_In_Process_Finance() + `/${selectedInvoice.inv_no}`,
             {
               method: 'PUT',
               headers: {
@@ -427,39 +485,38 @@ const InvoiceReport: React.FC = () => {
               body: JSON.stringify({ status: 'In Process' }),
             }
           );
-          if (!response.ok) {
-            throw new Error(`Failed to update invoice ${invoice.inv_no}`);
-          }
-        }
 
-        toast.success('All selected invoices updated to "In Process"!');
-        // Update local data
-        const updatedData = data.map((inv) => {
-          if (selectedInvoices.find((selInv) => selInv.inv_no === inv.inv_no)) {
-            return { ...inv, status: 'In Process' };
+          if (!response.ok) {
+            throw new Error(`Failed to update invoice ${selectedInvoice.inv_no}`);
           }
-          return inv;
-        });
-        setData(updatedData);
-        setFilteredData(updatedData);
-        setSelectedInvoices([]);
-      } catch (err: any) {
-        toast.error(err.message || 'Error updating invoice(s) status');
+
+          toast.success('Invoice updated to "In Process"!');
+
+          // Update local data
+          const updatedData = data.map((inv) => {
+            if (inv.inv_no === selectedInvoice.inv_no) {
+              return { ...inv, status: 'In Process' };
+            }
+            return inv;
+          });
+
+          setData(updatedData);
+          setFilteredData(updatedData);
+        } catch (err: any) {
+          toast.error(err.message || 'Error updating invoice status');
+          return;
+        }
       }
-    }
-    // If all selected are 'In Process' and only one record is selected, open the wizard
-    else if (
-      inProcessInvoices.length === selectedInvoices.length &&
-      selectedInvoices.length === 1
-    ) {
-      setModalInvoiceNumber(inProcessInvoices[0].inv_no);
+      // Open the wizard with the invoice number (for both 'new' and 'in process')
+      setModalInvoiceNumber(selectedInvoice.inv_no);
       setWizardOpen(true);
+      return;
     }
-    // Otherwise, it's mixed or more than one 'In Process' selected
-    else {
-      toast.warning(
-        'Mixed statuses selected or more than one "In Process" invoice selected. Please re-check.'
-      );
+    // If selected invoice is 'Ready To Payment', allow posting it
+    else if (selectedStatus === 'ready to payment') {
+      // This will be handled by the Post Invoice button
+    } else {
+      toast.warning('Selected invoice status cannot be processed');
     }
   };
 
@@ -528,99 +585,52 @@ const InvoiceReport: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // NEW: Post Invoice handler
+  // --- Post Invoice handler ---
   const handlePostInvoice = () => {
     const readyToPaymentInvoices = selectedInvoices.filter(
       inv => inv.status?.toLowerCase() === 'ready to payment'
     );
-    
     if (readyToPaymentInvoices.length === 0) {
       toast.warning('Please select invoices with "Ready To Payment" status');
       return;
     }
-    
-    // Open the payment upload modal
-    setPaymentModalOpen(true);
+    setPostModalOpen(true);
   };
 
-  // NEW: Payment document upload handler
-  const handlePaymentUpload = async (file: File) => {
+  const handleSubmitActualDate = async () => {
     const readyToPaymentInvoices = selectedInvoices.filter(
       inv => inv.status?.toLowerCase() === 'ready to payment'
     );
-  
-    if (readyToPaymentInvoices.length === 0) {
-      toast.error('No eligible invoices selected');
+    if (!actualDate) {
+      toast.error('Please select an Actual Date');
       return;
     }
-  
-    setIsUploading(true);
-  
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
         toast.error('Authentication token not found');
         return;
       }
-  
-      // Similar approach to InvoiceCreation - properly construct FormData for each invoice
       for (const invoice of readyToPaymentInvoices) {
-        // Create a new FormData instance for each request
-        const formData = new FormData();
-        
-        // Append the file with the correct field name expected by your backend
-        formData.append('payment_file', file);
-        
-        // Construct the URL with the invoice number
-        const url = API_Upload_Payment_Admin(invoice.inv_no);
-        console.log('Upload URL:', url);
-  
-        // Use POST method for file uploads
-        const response = await fetch(url, {
+        const response = await fetch(API_Upload_Payment_Admin(invoice.inv_no), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
-            // Do NOT set Content-Type when sending FormData
+            'Content-Type': 'application/json',
           },
-          body: formData,
+          body: JSON.stringify({ actual_date: actualDate }),
         });
-  
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Error response:', errorText);
-          let errorMessage = 'Failed to upload payment document';
-          
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.message || errorMessage;
-          } catch (e) {
-            // If not JSON, use the text as is
-            errorMessage = errorText || errorMessage;
-          }
-          
-          throw new Error(errorMessage);
+          throw new Error(errorText || 'Failed to update actual date');
         }
       }
-  
-      toast.success('Payment document uploaded successfully!');
-  
-      // Update local state to show invoices as Paid
-      const updatedData = data.map(inv => {
-        if (readyToPaymentInvoices.some(selected => selected.inv_no === inv.inv_no)) {
-          return { ...inv, status: 'Paid' };
-        }
-        return inv;
-      });
-  
-      setData(updatedData);
-      setFilteredData(updatedData);
+      toast.success('Actual date updated successfully!');
+      setPostModalOpen(false);
       setSelectedInvoices([]);
-      setPaymentModalOpen(false);
+      // Optionally refresh data here
     } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(error.message || 'Error uploading payment document');
-    } finally {
-      setIsUploading(false);
+      toast.error(error.message || 'Error updating actual date');
     }
   };
 
@@ -643,15 +653,6 @@ const InvoiceReport: React.FC = () => {
     if (!amount) return '-';
     return `Rp ${amount.toLocaleString()},00`;
   };
-
-  // --- MODIFIED: Checkbox visibility logic for Ready To Payment ---
-  const inProcessSelected = selectedInvoices.find(
-    (inv) => inv.status?.toLowerCase() === 'in process'
-  );
-  const hasSelectedNew = selectedInvoices.some((inv) => inv.status?.toLowerCase() === 'new');
-  const readyToPaymentSelectedList = selectedInvoices.filter(
-    (inv) => inv.status?.toLowerCase() === 'ready to payment'
-  );
 
   // Click handler for showing invoice detail modal
   const handleShowDetail = (invoice: Invoice) => {
@@ -866,6 +867,164 @@ const InvoiceReport: React.FC = () => {
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 <th colSpan={11}></th>
               </tr>
+              {/* Filter inputs row */}
+              <tr className="bg-gray-50 border">
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={invoiceNoFilter}
+                    onChange={(e) => setInvoiceNoFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={invDateFilter}
+                    onChange={(e) => setInvDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={planDateFilter}
+                    onChange={(e) => setPlanDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={actualDateFilter}
+                    onChange={(e) => setActualDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  >
+                    <option value="">All</option>
+                    <option value="new">New</option>
+                    <option value="in process">In Process</option>
+                    <option value="ready to payment">Ready to Payment</option>
+                    <option value="paid">Paid</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={receiptNoFilter}
+                    onChange={(e) => setReceiptNoFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={supplierCodeFilter}
+                    onChange={(e) => setSupplierCodeFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={taxNumberFilter}
+                    onChange={(e) => setTaxNumberFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={taxDateFilter}
+                    onChange={(e) => setTaxDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={totalDppFilter}
+                      onChange={(e) => setTotalDppFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={taxBaseFilter}
+                      onChange={(e) => setTaxBaseFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={taxAmountFilter}
+                      onChange={(e) => setTaxAmountFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={pphBaseFilter}
+                      onChange={(e) => setPphBaseFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={pphAmountFilter}
+                      onChange={(e) => setPphAmountFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={totalAmountFilter}
+                      onChange={(e) => setTotalAmountFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+              </tr>
             </thead>
 
             <tbody>
@@ -887,27 +1046,23 @@ const InvoiceReport: React.FC = () => {
                   let showCheckbox = false;
 
                   // --- MODIFIED LOGIC FOR CHECKBOX VISIBILITY ---
-                  if (readyToPaymentSelectedList.length > 0) {
-                    // Only show checkbox for "Ready To Payment" invoices if all selected are "Ready To Payment"
-                    showCheckbox =
-                      invoiceStatusLower === 'ready to payment' &&
-                      (readyToPaymentSelectedList.length === 0 ||
-                        readyToPaymentSelectedList.some((inv) => inv.inv_no === invoice.inv_no));
-                  } else if (inProcessSelected) {
-                    showCheckbox =
-                      inProcessSelected.inv_no === invoice.inv_no &&
-                      invoiceStatusLower === 'in process';
-                  } else if (
-                    hasSelectedNew &&
-                    (invoiceStatusLower === 'in process' || invoiceStatusLower === 'ready to payment')
-                  ) {
+                  // Show checkboxes for "New", "In Process", or "Ready To Payment" statuses
+                  if (invoiceStatusLower === 'new' || invoiceStatusLower === 'in process') {
+                    // For "New" or "In Process" status, show checkbox only if no other of the same is selected or this is the selected one
+                    const hasSelected = selectedInvoices.some(
+                      inv => inv.status?.toLowerCase() === invoiceStatusLower
+                    );
+                    showCheckbox = !hasSelected || isSelected;
+                  } else if (invoiceStatusLower === 'ready to payment') {
+                    // For "Ready To Payment" status, show checkbox only if no other
+                    // "Ready to Payment" is selected or this is the selected one
+                    const hasSelectedReadyToPayment = selectedInvoices.some(
+                      inv => inv.status?.toLowerCase() === 'ready to payment'
+                    );
+                    showCheckbox = !hasSelectedReadyToPayment || isSelected;
+                  } else {
+                    // For all other statuses (Rejected, Paid), don't show checkbox
                     showCheckbox = false;
-                  } else if (
-                    invoiceStatusLower === 'new' ||
-                    invoiceStatusLower === 'in process' ||
-                    invoiceStatusLower === 'ready to payment'
-                  ) {
-                    showCheckbox = true;
                   }
 
                   return (
@@ -1032,14 +1187,6 @@ const InvoiceReport: React.FC = () => {
         </div>
       )}
 
-      {/* Payment Upload Modal */}
-      <PaymentUploadModal
-        isOpen={paymentModalOpen}
-        onClose={() => setPaymentModalOpen(false)}
-        onSubmit={handlePaymentUpload}
-        isUploading={isUploading}
-      />
-
       {/* Render the wizard modal here */}
       <InvoiceReportWizard
         isOpen={wizardOpen}
@@ -1058,6 +1205,40 @@ const InvoiceReport: React.FC = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Post Invoice Modal for Actual Date */}
+      {postModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-md shadow-lg w-96">
+            <h2 className="text-xl font-semibold mb-4">Set Actual Date</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Actual Date</label>
+              <input
+                type="date"
+                value={actualDate}
+                onChange={e => setActualDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setPostModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitActualDate}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                type="button"
+              >
+                Submit
+              </button>
+            </div>
           </div>
         </div>
       )}
