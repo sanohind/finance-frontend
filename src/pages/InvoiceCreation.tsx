@@ -4,7 +4,7 @@ import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import InvoiceCreationWizard from './InvoiceCreationWizard';
 import { Search, XCircle } from "lucide-react";
-import { API_Inv_Line_Admin, API_List_Partner_Admin } from '../api/api';
+import { API_Inv_Line_Create_Invoice_Admin, API_List_Partner_Admin } from '../api/api';
 import Select from "react-select";
 
 interface BusinessPartner {
@@ -354,7 +354,7 @@ const InvoiceCreation = () => {
         .filter(([_, value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
-      const baseUrl = `${API_Inv_Line_Admin()}/${selectedSupplier}`;
+      const baseUrl = `${API_Inv_Line_Create_Invoice_Admin()}/${selectedSupplier}`;
       const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
       const response = await fetch(url, {
         method: 'GET',

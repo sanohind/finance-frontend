@@ -11,6 +11,7 @@ import {
   API_Upload_Payment_Admin,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
+import * as XLSX from 'xlsx';
 
 interface Invoice {
   inv_no: string;
@@ -550,6 +551,17 @@ const InvoiceReport: React.FC = () => {
       'PPh Amount',
       'Total Amount',
     ];
+    const bpAdrMap = businessPartners.reduce((acc, bp) => {
+      acc[bp.bp_code] = bp.adr_line_1;
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Helper to format as Rp string
+    const formatRp = (amount: number | null) => {
+      if (!amount) return '-';
+      return `Rp ${amount.toLocaleString('id-ID')},00`;
+    };
+
     const rows = filteredData.map((inv) => [
       inv.inv_no || '-',
       inv.inv_date || '-',
@@ -558,31 +570,51 @@ const InvoiceReport: React.FC = () => {
       inv.status || '-',
       inv.receipt_number || '-',
       inv.bp_code || '-',
-      inv.bp_name || '-',
+      bpAdrMap[inv.bp_code || ''] || '-',
       inv.inv_faktur || '-',
       inv.inv_faktur_date || '-',
-      inv.total_dpp?.toString() || '-',
-      inv.tax_base_amount?.toString() || '-',
-      inv.tax_base_amount ? (inv.tax_base_amount * 0.11).toString() : '0',
-      inv.pph_base_amount?.toString() || '-',
-      inv.pph_amount?.toString() || '-',
-      inv.total_amount?.toString() || '-',
+      inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
+      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
+      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
+      inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
+      inv.pph_amount != null ? formatRp(inv.pph_amount) : '-',
+      inv.total_amount != null ? formatRp(inv.total_amount) : '-',
     ]);
 
-    const csvHeader = headers.join(',') + '\n';
-    const csvBody = rows.map((row) => row.join(',')).join('\n');
-    const csvContent = csvHeader + csvBody;
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 40 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 26 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 22 },
+    ];
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    // Apply currency format to relevant columns (Total DPP, Tax Base Amount, Tax Amount, PPh Base Amount, PPh Amount, Total Amount)
+    // These are columns 11-16 (0-based: 10-15)
+    for (let r = 1; r <= filteredData.length; r++) {
+      for (let c of [10, 11, 12, 13, 14, 15]) {
+        const cellRef = XLSX.utils.encode_cell({ r, c });
+        if (ws[cellRef]) {
+          ws[cellRef].z = '\"Rp\" #,##0.00'; // Custom format string
+        }
+      }
+    }
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Invoice_Report.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Invoice Report');
+    XLSX.writeFile(wb, 'Invoice_Report.xlsx');
   };
 
   // --- Post Invoice handler ---

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { Search, XCircle } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
-import { API_Inv_Header_Admin } from '../api/api';
+import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected } from '../api/api';
+import * as XLSX from 'xlsx';
 
 interface Invoice {
   inv_no: string;
@@ -52,13 +53,16 @@ const InvoiceReportSup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rowsPerPage] = useState(15);
 
-  // Selection tracking
-  const [selectedRecords, setSelectedRecords] = useState<number>(0);
-  const [totalAmount, setTotalAmount] = useState<number>(0);
-
   // Reason popup state
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
+
+  // State for selected invoice (only one allowed)
+  const [selectedInvoiceNo, setSelectedInvoiceNo] = useState<string | null>(null);
+  // State for reason input modal
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   useEffect(() => {
     const fetchInvoiceData = async () => {
@@ -156,11 +160,6 @@ const InvoiceReportSup = () => {
     setCurrentPage(1);
   };
 
-  const handleRecordSelection = (record: Invoice) => {
-    setSelectedRecords((prev) => prev + 1);
-    setTotalAmount((prev) => prev + (record.total_amount || 0));
-  };
-
   const handleDownloadAttachment = () => {
     if (!filteredData.length) {
       toast.warn('No data available to download');
@@ -195,37 +194,55 @@ const InvoiceReportSup = () => {
       inv.status || '-',
       inv.receipt_number || '-',
       inv.bp_code || '-',
-      inv.bp_name || '-',
+      inv.bp_name || '-', // Supplier Name as bp_name
       inv.inv_faktur || '-',
       inv.inv_faktur_date || '-',
-      inv.total_dpp?.toString() || '-',
-      inv.tax_base_amount?.toString() || '-',
-      inv.tax_base_amount ? (inv.tax_base_amount * 0.11).toString() : '0',
-      inv.pph_base_amount?.toString() || '-',
-      inv.pph_amount?.toString() || '-',
-      inv.total_amount?.toString() || '-',
+      inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
+      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
+      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
+      inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
+      inv.pph_amount != null ? formatRp(inv.pph_amount) : '-',
+      inv.total_amount != null ? formatRp(inv.total_amount) : '-',
     ]);
 
-    const csvHeader = headers.join(',') + '\n';
-    const csvBody = rows.map((row) => row.join(',')).join('\n');
-    const csvContent = csvHeader + csvBody;
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Invoice_Report.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 40 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 26 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 22 },
+    ];
+    // Apply currency format to relevant columns (Total DPP, Tax Base Amount, Tax Amount, PPh Base Amount, PPh Amount, Total Amount)
+    for (let r = 1; r <= filteredData.length; r++) {
+      for (let c of [10, 11, 12, 13, 14, 15]) {
+        const cellRef = XLSX.utils.encode_cell({ r, c });
+        if (ws[cellRef]) {
+          ws[cellRef].z = '"Rp" #,##0.00';
+        }
+      }
+    }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Invoice Report');
+    XLSX.writeFile(wb, 'Invoice_Report.xlsx');
   };
 
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  // Helper to format as Rp string
+  const formatRp = (amount: number | null) => {
+    if (!amount) return '-';
+    return `Rp ${amount.toLocaleString('id-ID')},00`;
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -236,26 +253,61 @@ const InvoiceReportSup = () => {
       return dateString;
     }
   };
-
   const formatCurrency = (amount: number | null) => {
     if (!amount) return '-';
-    return `Rp ${amount.toLocaleString()},00`;
+    return `Rp ${amount.toLocaleString('id-ID')},00`;
   };
 
-  function handleCancelInvoice(): void {
-    toast.info('Invoice cancelled');
-  }
-
-  // Show detail
-  const handleShowDetail = (invoice: Invoice) => {
-    setDetailInvoice(invoice);
-    setDetailModalOpen(true);
+  // Cancel/Reject Invoice logic
+  const handleCancelInvoice = () => {
+    if (!selectedInvoiceNo) {
+      toast.warning('Please select one invoice with status "New" to cancel.');
+      return;
+    }
+    setShowRejectInput(true);
   };
 
-  // Close modal
-  const closeDetailModal = () => {
-    setDetailInvoice(null);
-    setDetailModalOpen(false);
+  // Submit rejection
+  const handleSubmitReject = async () => {
+    if (!rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection.');
+      return;
+    }
+    setRejectLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(
+        API_Update_Inv_Header_Rejected() + `/${selectedInvoiceNo}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'Rejected', reason: rejectReason }),
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to reject invoice');
+      }
+      toast.success('Invoice rejected successfully!');
+      // Update local data
+      const updatedData = data.map((inv) =>
+        inv.inv_no === selectedInvoiceNo
+          ? { ...inv, status: 'Rejected', reason: rejectReason }
+          : inv
+      );
+      setData(updatedData);
+      setFilteredData(updatedData);
+      setSelectedInvoiceNo(null);
+      setShowRejectInput(false);
+      setRejectReason('');
+    } catch (err: any) {
+      toast.error(err.message || 'Error rejecting invoice');
+    } finally {
+      setRejectLoading(false);
+    }
   };
 
   // Status color helper (same as ListProgress)
@@ -274,6 +326,24 @@ const InvoiceReportSup = () => {
     if (!reason) return;
     setRejectedReason(reason);
     setShowReasonModal(true);
+  };
+
+  // Add paginatedData for pagination
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // Show detail modal for invoice
+  const handleShowDetail = (invoice: Invoice) => {
+    setDetailInvoice(invoice);
+    setDetailModalOpen(true);
+  };
+
+  // Close detail modal
+  const closeDetailModal = () => {
+    setDetailInvoice(null);
+    setDetailModalOpen(false);
   };
 
   return (
@@ -449,7 +519,6 @@ const InvoiceReportSup = () => {
                 <th colSpan={11}></th>
               </tr>
             </thead>
-
             <tbody>
               {isLoading ? (
                 <tr>
@@ -458,16 +527,28 @@ const InvoiceReportSup = () => {
                   </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((invoice, index) => {
+                paginatedData.map((invoice: Invoice, index: number) => {
                   const status = invoice.status || "New";
                   const statusColor = getStatusColor(status);
+                  // Only show checkbox for 'New' status
+                  const isNew = status.toLowerCase() === 'new';
+                  const isChecked = selectedInvoiceNo === invoice.inv_no;
+                  // Only show checkbox if no selection or this is the selected one
+                  const showCheckbox = isNew && (!selectedInvoiceNo || isChecked);
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       <td className="px-6 py-4 text-center">
-                        <input
-                          type="checkbox"
-                          onChange={() => handleRecordSelection(invoice)}
-                        />
+                        {showCheckbox ? (
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() =>
+                              isChecked
+                                ? setSelectedInvoiceNo(null)
+                                : setSelectedInvoiceNo(invoice.inv_no)
+                            }
+                          />
+                        ) : null}
                       </td>
                       {/* Clickable invoice number to open detail modal */}
                       <td className="px-6 py-4 text-center">
@@ -559,14 +640,21 @@ const InvoiceReportSup = () => {
       {/* Detail Modal */}
       {detailModalOpen && detailInvoice && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-md shadow-lg max-w-lg w-full">
+          <div className="bg-white p-6 rounded-md shadow-lg max-w-3xl w-full">
             <h2 className="text-xl font-semibold mb-4">
               Invoice Detail - {detailInvoice.inv_no}
             </h2>
-            <div className="space-y-2">
-              <p>
-                <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name}
-              </p>
+            <div className="space-y-2 mb-4">
+              {/* Supplier address if available */}
+              {(() => {
+                // Try to find supplier address from bp_code if available in data
+                // If you have businessPartners data, you can use it here. Otherwise, fallback to bp_name.
+                return (
+                  <p>
+                    <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name || "-"}
+                  </p>
+                );
+              })()}
               <p>
                 <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
               </p>
@@ -576,7 +664,39 @@ const InvoiceReportSup = () => {
               <p>
                 <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
               </p>
-              {/* Add any other fields needed */}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Invoice Lines</h3>
+              {Array.isArray((detailInvoice as any).inv_lines) && (detailInvoice as any).inv_lines.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-200 text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-2 border">GR No</th>
+                        <th className="px-3 py-2 border">PO No</th>
+                        <th className="px-3 py-2 border">Part No</th>
+                        <th className="px-3 py-2 border">Item Description</th>
+                        <th className="px-3 py-2 border">Receipt Amount</th>
+                        <th className="px-3 py-2 border">Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(detailInvoice as any).inv_lines.map((line: any) => (
+                        <tr key={line.inv_line_id}>
+                          <td className="px-3 py-2 border text-center">{line.gr_no}</td>
+                          <td className="px-3 py-2 border text-center">{line.po_no}</td>
+                          <td className="px-3 py-2 border text-center">{line.part_no}</td>
+                          <td className="px-3 py-2 border">{line.item_desc}</td>
+                          <td className="px-3 py-2 border text-right">{line.receipt_amount}</td>
+                          <td className="px-3 py-2 border text-center">{line.unit}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500">No line items found.</div>
+              )}
             </div>
             <div className="flex justify-end mt-4">
               <button
@@ -601,6 +721,40 @@ const InvoiceReportSup = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Reason Modal */}
+      {showRejectInput && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Reject Invoice</h2>
+            <label className="block mb-2 text-sm font-medium text-gray-700">Reason for rejection</label>
+            <textarea
+              className="w-full border border-gray-300 rounded p-2 mb-4"
+              rows={3}
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="Enter reason..."
+              disabled={rejectLoading}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                onClick={() => setShowRejectInput(false)}
+                disabled={rejectLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={handleSubmitReject}
+                disabled={rejectLoading}
+              >
+                {rejectLoading ? 'Rejecting...' : 'Submit'}
+              </button>
+            </div>
           </div>
         </div>
       )}

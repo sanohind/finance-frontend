@@ -38,10 +38,12 @@ export const API_Inv_Header_By_Bp_Code_Admin = () => API + getRolePath() + `/inv
 export const API_Create_Inv_Header_Admin = () => API + getRolePath() + `/inv-header/store`;
 export const API_Inv_Header_By_Inv_No_Admin = () => API + getRolePath() + `/inv-header/detail/`;
 export const API_Update_Inv_Header_Admin = () => API + getRolePath() + `/inv-header/`;
+export const API_Update_Inv_Header_Rejected = () => API + getRolePath() + `/inv-header/reject`;
 export const API_Update_In_Process_Admin = () => API + getRolePath() + `/inv-header/`;
 export const API_Upload_Payment_Admin = (inv_no: string): string => `${API}${getRolePath()}/inv-header/upload-payment/${inv_no}`;
 // Invoice Lines Admin
 export const API_Inv_Line_Admin = () => API + getRolePath() + `/inv-line`;
+export const API_Inv_Line_Create_Invoice_Admin = () => API + getRolePath() + `/inv-line/invoice`;
 export const API_Inv_Line_By_Inv_No_Admin = () => API + getRolePath() + `/inv-line/`;
 export const API_Inv_Line_Outstanding = () => API + getRolePath() + `/inv-line/outstanding/`;
 export const API_Inv_Line_Outstanding_Sup = () => API + getRolePath() + `/inv-line/outstanding`;
