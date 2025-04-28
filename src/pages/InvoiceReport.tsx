@@ -1156,14 +1156,19 @@ const InvoiceReport: React.FC = () => {
       {/* Detail Modal */}
       {detailModalOpen && detailInvoice && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-md shadow-lg max-w-lg w-full">
+          <div className="bg-white p-6 rounded-md shadow-lg max-w-3xl w-full">
             <h2 className="text-xl font-semibold mb-4">
               Invoice Detail - {detailInvoice.inv_no}
             </h2>
-            <div className="space-y-2">
-              <p>
-                <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name}
-              </p>
+            <div className="space-y-2 mb-4">
+              {(() => {
+                const partner = businessPartners.find(bp => bp.bp_code === detailInvoice.bp_code);
+                return (
+                  <p>
+                    <strong>Supplier:</strong> {detailInvoice.bp_code} — {partner ? partner.adr_line_1 : "-"}
+                  </p>
+                );
+              })()}
               <p>
                 <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
               </p>
@@ -1173,7 +1178,39 @@ const InvoiceReport: React.FC = () => {
               <p>
                 <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
               </p>
-              {/* Add more fields as needed */}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Invoice Lines</h3>
+              {Array.isArray((detailInvoice as any).inv_lines) && (detailInvoice as any).inv_lines.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-200 text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-2 border">GR No</th>
+                        <th className="px-3 py-2 border">PO No</th>
+                        <th className="px-3 py-2 border">Part No</th>
+                        <th className="px-3 py-2 border">Item Description</th>
+                        <th className="px-3 py-2 border">Receipt Amount</th>
+                        <th className="px-3 py-2 border">Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(detailInvoice as any).inv_lines.map((line: any) => (
+                        <tr key={line.inv_line_id}>
+                          <td className="px-3 py-2 border text-center">{line.gr_no}</td>
+                          <td className="px-3 py-2 border text-center">{line.po_no}</td>
+                          <td className="px-3 py-2 border text-center">{line.part_no}</td>
+                          <td className="px-3 py-2 border">{line.item_desc}</td>
+                          <td className="px-3 py-2 border text-right">{line.receipt_amount}</td>
+                          <td className="px-3 py-2 border text-center">{line.unit}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500">No line items found.</div>
+              )}
             </div>
             <div className="flex justify-end mt-4">
               <button

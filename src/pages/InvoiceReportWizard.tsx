@@ -4,9 +4,8 @@ import LogoIcon from '/images/Logo-sanoh.png';
 import { toast } from 'react-toastify';
 import {
   API_Update_Inv_Header_Admin,
-  API_Inv_Line_By_Inv_No_Admin,
   API_Pph,
-  API_Inv_Header_By_Inv_No_Admin, // <-- Add this import
+  API_Inv_Header_By_Inv_No_Admin,
 } from '../api/api';
 
 // Interface(s)
@@ -41,7 +40,10 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
   const [taxNumber, setTaxNumber] = useState('');
   const [taxDate, setTaxDate] = useState('');
   const [taxBaseAmount, setTaxBaseAmount] = useState<number>(0);
-  const [taxCode, setTaxCode] = useState('');
+  // Tax code is fixed to id=1, description="11%"
+  const TAX_CODE_DESC = '11%';
+  // Remove taxCode state, use fixed value
+  // const [taxCode, setTaxCode] = useState('');
   const [taxAmount, setTaxAmount] = useState<number>(0);
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0);
   const [planDate, setPlanDate] = useState('');
@@ -54,7 +56,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
 
   // ---------- Invoice line items ----------
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
-  const [invLineRemove, setInvLineRemove] = useState<(string | number)[]>([]);
 
   // Pagination for line items
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,6 +99,11 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
     }
   }, [invoiceNumberProp, isOpen]);
 
+  // Calculate tax amount as 11% of tax base amount
+  useEffect(() => {
+    setTaxAmount(Math.round(taxBaseAmount * 0.11));
+  }, [taxBaseAmount]);
+
   // Fetch invoice data when invoiceNumberProp changes
   useEffect(() => {
     if (!invoiceNumberProp) return;
@@ -119,32 +125,22 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
           const data = headerData.data || {};
           setInvoiceNumber(data.inv_no || '');
           setInvoiceDate(data.inv_date || '');
-          setTaxNumber(data.tax_no || '');
-          setTaxDate(data.tax_date || '');
-          setTaxCode(data.tax_code || '');
+          setTaxNumber(data.inv_faktur || '');
+          setTaxDate(data.inv_faktur_date || '');
           setTaxBaseAmount(data.tax_base_amount || 0);
-          setTaxAmount(data.tax_amount || 0);
           setTotalInvoiceAmount(data.total_invoice_amount || 0);
           setPlanDate(data.plan_date || '');
           setPphBaseAmount(data.pph_base_amount ? String(data.pph_base_amount) : '');
           setPphAmount(data.pph_amount ? String(data.pph_amount) : '');
-          // DO NOT setPphCode here (leave it for user selection)
+          // Set line items from inv_lines in header response
+          setLineItems(Array.isArray(data.inv_lines) ? data.inv_lines.map((item: any) => ({
+            id: item.inv_line_id || item.id || '',
+            gr_no: item.gr_no || '',
+            item_desc: item.item_desc || '',
+            receipt_amount: item.receipt_amount || 0,
+          })) : []);
         } else {
           toast.error('Failed to fetch invoice header');
-        }
-
-        // --- Fetch line items as before ---
-        const response = await fetch(
-          API_Inv_Line_By_Inv_No_Admin() + invoiceNumberProp,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (response.ok) {
-          const result = await response.json();
-          if (Array.isArray(result.data)) {
-            setLineItems(result.data);
-          }
         }
       } catch (err) {
         toast.error('Failed to fetch invoice data');
@@ -154,23 +150,25 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
   }, [invoiceNumberProp]);
 
   // Number formatting
-  const formatNumber = (val: string | number) => {
+  const formatRupiah = (val: string | number) => {
     if (!val) return '';
     const num = Number(String(val).replace(/[^0-9]/g, ''));
     if (isNaN(num)) return '';
-    return new Intl.NumberFormat('id-ID').format(num);
-  };
-
-  // Remove a line from the local UI list and store ID
-  const handleRemoveLine = (lineId: string | number) => {
-    setLineItems((old) => old.filter((item) => item.id !== lineId));
-    setInvLineRemove((prev) => [...prev, lineId]);
+    return 'Rp ' + num.toLocaleString('id-ID');
   };
 
   // Render table for line items
   const renderLineItemsTable = () => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     const displayed = lineItems.slice(startIndex, startIndex + rowsPerPage);
+
+    function formatNumber(receipt_amount: number): React.ReactNode {
+      return receipt_amount.toLocaleString('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 2,
+      });
+    }
 
     return (
       <div className="mb-6 mt-6">
@@ -186,7 +184,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 <th className="border px-2 py-3 text-sm font-semibold uppercase">
                   Receipt Amount
                 </th>
-                <th className="border px-2 py-3 text-sm font-semibold uppercase">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -195,14 +192,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                   <td className="border px-3 py-2 text-center">{item.gr_no}</td>
                   <td className="border px-3 py-2 text-center">{item.item_desc}</td>
                   <td className="border px-3 py-2 text-center">{formatNumber(item.receipt_amount)}</td>
-                  <td className="border px-3 py-2 text-center">
-                    <button
-                      className="bg-red-500 text-white px-2 py-1 rounded"
-                      onClick={() => handleRemoveLine(item.id)}
-                    >
-                      Remove
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -236,244 +225,256 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
     );
   };
 
-  // Step 1: Main Form
-  const renderMainForm = () => (
-    <div className="space-y-4">
-      <h2 className="text-lg font-medium text-gray-900">Invoice Data Update Form</h2>
-      <hr className="my-4 border-t-1 border-blue-900" />
+  // Validation for required fields (move to component scope)
+  const pphCodeError = !pphCode;
+  const pphBaseAmountError = !pphBaseAmount || isNaN(Number(pphBaseAmount));
+  const planDateError = !planDate;
+  const disclaimerError = !disclaimerAccepted;
+  const isFormValid = !pphCodeError && !pphBaseAmountError && !planDateError && !disclaimerError;
 
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Invoice Number</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-            readOnly
-          />
+  // Step 1: Main Form (now includes all sections in order)
+  const renderMainForm = () => {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-medium text-gray-900">Invoice Data Update Form</h2>
+        <hr className="my-4 border-t-1 border-blue-900" />
+
+        {/* Main Form Fields */}
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Invoice Number</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md"
+              value={invoiceNumber}
+              readOnly
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Tax Code (PPN)</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
+              value={TAX_CODE_DESC}
+              readOnly
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Tax Code (PPN)</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={taxCode}
-            onChange={(e) => setTaxCode(e.target.value)}
-          />
+
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Invoice Date</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-blue-900 rounded-md"
+              value={invoiceDate}
+              readOnly
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Tax Number</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md"
+              value={taxNumber}
+              readOnly
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Tax Base Amount</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
+              readOnly
+              value={formatRupiah(taxBaseAmount)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Tax Date</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-blue-900 rounded-md"
+              value={taxDate}
+              readOnly
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Tax Amount</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
+              readOnly
+              value={formatRupiah(taxAmount)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="pphCode" className="text-sm font-medium text-gray-700">
+              PPh Code <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="pphCode"
+              className={`w-full p-2 border rounded-md bg-white ${pphCodeError ? 'border-red-500' : 'border-blue-900'}`}
+              value={pphCode}
+              onChange={(e) => setPphCode(e.target.value)}
+            >
+              <option value="">Select PPh Code...</option>
+              {pphList.map((item) => (
+                <option key={item.pph_id} value={item.pph_id}>
+                  {item.pph_description}
+                </option>
+              ))}
+            </select>
+            {pphCodeError && <span className="text-xs text-red-500">PPh Code is required.</span>}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label htmlFor="pphBaseAmount" className="text-sm font-medium text-gray-700">
+              PPh Base Amount <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="pphBaseAmount"
+              type="text"
+              className={`w-full p-2 border rounded-md ${pphBaseAmountError ? 'border-red-500' : 'border-blue-900'}`}
+              value={pphBaseAmount}
+              onChange={(e) => setPphBaseAmount(e.target.value)}
+              placeholder="Masukkan PPh Base Amount"
+            />
+            {pphBaseAmountError && <span className="text-xs text-red-500">PPh Base Amount is required and must be a number.</span>}
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Plan Date <span className="text-red-500">*</span></label>
+            <input
+              type="date"
+              className={`w-full p-2 border rounded-md ${planDateError ? 'border-red-500' : 'border-blue-900'}`}
+              value={planDate}
+              onChange={(e) => setPlanDate(e.target.value)}
+            />
+            {planDateError && <span className="text-xs text-red-500">Plan Date is required.</span>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label htmlFor="pphAmount" className="text-sm font-medium text-gray-700">
+              PPh Amount
+            </label>
+            <input
+              id="pphAmount"
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md bg-blue-100 text-blue-900"
+              value={formatRupiah(pphAmount)}
+              readOnly
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Total Invoice Amount</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
+              readOnly
+              value={formatRupiah(totalInvoiceAmount)}
+            />
+          </div>
+        </div>
+
+        {/* Divider before line items table */}
+        <hr className="my-6 border-t-2 border-purple-300" />
+
+        {/* Render line items table */}
+        {lineItems.length > 0 && renderLineItemsTable()}
+
+        {/* Divider before document section */}
+        <hr className="my-6 border-t-2 border-purple-300" />
+
+        {/* Document upload section (inline, not as a function) */}
+        <div className="space-y-6">
+          <h2 className="text-lg font-medium text-gray-900">Attach Documents (Dummy)</h2>
+          <div className="overflow-hidden rounded-lg border-y border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-purple-800">
+                <tr>
+                  <th className="w-24 px-6 py-3 text-center text-sm font-semibold text-white uppercase">
+                    Action
+                  </th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-white uppercase">
+                    Document Type
+                  </th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-white uppercase">
+                    File Name
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {documents.map((doc, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.current[index]?.click()}
+                        className="bg-blue-800 text-white px-2 py-1 rounded"
+                      >
+                        Upload
+                      </button>
+                      <input
+                        type="file"
+                        ref={(el) => {
+                          fileInputRefs.current[index] = el;
+                        }}
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const updatedDocs = [...documents];
+                            updatedDocs[index] = {
+                              ...updatedDocs[index],
+                              fileName: e.target.files[0].name,
+                            };
+                            setDocuments(updatedDocs);
+                          }
+                        }}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {doc.type}
+                      {doc.required && !doc.fileName && (
+                        <span className="text-red-500 ml-1">(Required)</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center italic text-gray-600">
+                      {doc.fileName || 'No file selected'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={disclaimerAccepted}
+                onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-800">Invoice Submission Disclaimer Statement <span className="text-red-500">*</span></span>
+            </label>
+            {disclaimerError && (
+              <span className="text-xs text-red-500">You must accept the disclaimer to proceed.</span>
+            )}
+          </div>
         </div>
       </div>
+    );
+  };
 
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Invoice Date</label>
-          <input
-            type="date"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={invoiceDate}
-            onChange={(e) => setInvoiceDate(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Tax Number</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={taxNumber}
-            onChange={(e) => setTaxNumber(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Tax Base Amount</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
-            readOnly
-            value={taxBaseAmount.toLocaleString('id-ID')}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Tax Date</label>
-          <input
-            type="date"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={taxDate}
-            onChange={(e) => setTaxDate(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Tax Amount</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
-            readOnly
-            value={taxAmount.toLocaleString('id-ID')}
-          />
-        </div>
-        {/* Updated PPh Code select: now uses pphList */}
-        <div className="space-y-2">
-          <label htmlFor="pphCode" className="text-sm font-medium text-gray-700">
-            PPh Code
-          </label>
-          <select
-            id="pphCode"
-            className="w-full p-2 border border-blue-900 rounded-md bg-white"
-            value={pphCode}
-            onChange={(e) => setPphCode(e.target.value)}
-          >
-            <option value="">Select PPh Code...</option>
-            {pphList.map((item) => (
-              <option key={item.pph_id} value={item.pph_id}>
-                {item.pph_description}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label htmlFor="pphBaseAmount" className="text-sm font-medium text-gray-700">
-            PPh Base Amount
-          </label>
-          <input
-            id="pphBaseAmount"
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={pphBaseAmount}
-            onChange={(e) => setPphBaseAmount(e.target.value)}
-            placeholder="Masukkan PPh Base Amount"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Plan Date</label>
-          <input
-            type="date"
-            className="w-full p-2 border border-blue-900 rounded-md"
-            value={planDate}
-            onChange={(e) => setPlanDate(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label htmlFor="pphAmount" className="text-sm font-medium text-gray-700">
-            PPh Amount
-          </label>
-          <input
-            id="pphAmount"
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md bg-blue-100 text-blue-900"
-            value={formatNumber(pphAmount)}
-            readOnly
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Total Invoice Amount</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
-            readOnly
-            value={totalInvoiceAmount.toLocaleString('id-ID')}
-          />
-        </div>
-      </div>
-
-      {/* Render line items table */}
-      {lineItems.length > 0 && renderLineItemsTable()}
-    </div>
-  );
-
-  // Step 2: Attach Documents (Dummy, no changes except removing "Change")
-  const renderAttachDocuments = () => (
-    <div className="space-y-6">
-      <h2 className="text-lg font-medium text-gray-900">Attach Documents (Dummy)</h2>
-      <div className="overflow-hidden rounded-lg border-y border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-purple-800">
-            <tr>
-              <th className="w-24 px-6 py-3 text-center text-sm font-semibold text-white uppercase">
-                Action
-              </th>
-              <th className="px-6 py-3 text-center text-sm font-semibold text-white uppercase">
-                Document Type
-              </th>
-              <th className="px-6 py-3 text-center text-sm font-semibold text-white uppercase">
-                File Name
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {documents.map((doc, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 text-center">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRefs.current[index]?.click()}
-                    className="bg-blue-800 text-white px-2 py-1 rounded"
-                  >
-                    Upload
-                  </button>
-                  <input
-                    type="file"
-                    ref={(el) => {
-                      fileInputRefs.current[index] = el;
-                    }}
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const updatedDocs = [...documents];
-                        updatedDocs[index] = {
-                          ...updatedDocs[index],
-                          fileName: e.target.files[0].name,
-                        };
-                        setDocuments(updatedDocs);
-                      }
-                    }}
-                    accept=".pdf,.jpg,.jpeg,.png"
-                  />
-                </td>
-                <td className="px-6 py-4 text-center">
-                  {doc.type}
-                  {doc.required && !doc.fileName && (
-                    <span className="text-red-500 ml-1">(Required)</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-center italic text-gray-600">
-                  {doc.fileName || 'No file selected'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={disclaimerAccepted}
-            onChange={(e) => setDisclaimerAccepted(e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
-          />
-          <span className="text-sm text-gray-800">Invoice Submission Disclaimer Statement</span>
-        </label>
-        {!disclaimerAccepted && currentStep === 2 && (
-          <p className="text-xs text-red-500 mt-1">
-            You must accept the disclaimer to proceed.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-
-  // Step 3: Terms & Conditions plus final submission
+  // Step 2: Terms & Conditions plus final submission
   const renderTermsAndConditions = () => (
     <div>
       <h2 className="text-lg font-medium text-gray-900 mb-4">Terms & Conditions (Dummy)</h2>
@@ -517,7 +518,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 const bodyData = {
                   pph_id,
                   pph_base_amount: numericPphBase,
-                  inv_line_remove: invLineRemove,
                   status: 'Ready To Payment',
                   plan_date: planDate,
                   reason: '',
@@ -581,7 +581,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 try {
                   // No pph_id, pph_base_amount, or plan_date for Rejected
                   const bodyData = {
-                    inv_line_remove: invLineRemove,
                     status: 'Rejected',
                     reason: rejectReason,
                   };
@@ -633,19 +632,11 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
       case 1:
         return renderMainForm();
       case 2:
-        return renderAttachDocuments();
-      case 3:
         return renderTermsAndConditions();
       default:
         return null;
     }
   };
-
-  // Checks for Step 2
-  const requiredDocsUploaded = documents
-    .filter((doc) => doc.required)
-    .every((doc) => !!doc.fileName);
-  const canProceedFromStep2 = requiredDocsUploaded && disclaimerAccepted;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
@@ -670,24 +661,12 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
         </div>
 
         {/* Footer with navigation */}
-        {currentStep < 3 && (
+        {currentStep < 2 && (
           <div className="p-4 border-t flex justify-end gap-3 sticky bottom-0 bg-gray-50 z-10 rounded-b-lg">
-            {currentStep > 1 && (
-              <button
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-md text-sm"
-              >
-                Previous
-              </button>
-            )}
             <button
               onClick={() => setCurrentStep(currentStep + 1)}
-              disabled={currentStep === 2 && !canProceedFromStep2}
-              className={`px-6 py-2 rounded-md text-sm ${
-                currentStep === 2 && !canProceedFromStep2
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-900 hover:bg-blue-800 text-white'
-              }`}
+              className={`px-6 py-2 rounded-md text-sm bg-blue-900 hover:bg-blue-800 text-white ${!isFormValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!isFormValid}
             >
               Next
             </button>

@@ -1,77 +1,94 @@
+import { API_Inv_Line_By_Inv_No_Admin } from '../api/api';
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-interface InvoiceData {
-  inv_no: string | string[];
-  doc_date: string;
-  bp_code: string;
-  bp_name: string;
-  currency: string;
-  total_invoice_amount: number;
-  amount_before_tax: number;
-  invoice_status: string;
-  progress_status: string;
-  payment_plan_date: string;
-  payment_actual_date: string;
-  tax_number: string;
-  tax_amount: number;
+interface InvoiceLine {
+  inv_line_id: string;
+  gr_no: string;
+  item_desc: string;
+  receipt_amount: number;
+  unit: string;
+  po_no: string;
+  part_no: string;
+  // Add more fields as needed
 }
 
 const InvoiceDetail = () => {
   const router = useRouter();
   const { invoiceNumber } = router.query;
-  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [lineItems, setLineItems] = useState<InvoiceLine[]>([]);
+  const [lineLoading, setLineLoading] = useState(true);
 
   useEffect(() => {
     if (invoiceNumber) {
-      // Simulasi fetching data invoice berdasarkan invoiceNumber
-      setTimeout(() => {
-        setInvoiceData({
-          inv_no: invoiceNumber,
-          doc_date: "2025-02-24",
-          bp_code: "SUP123",
-          bp_name: "PT Supplier Jaya",
-          currency: "USD",
-          total_invoice_amount: 5000,
-          amount_before_tax: 4500,
-          invoice_status: "Pending",
-          progress_status: "Verification",
-          payment_plan_date: "2025-03-01",
-          payment_actual_date: "-",
-          tax_number: "TX123456",
-          tax_amount: 500,
-        });
-        setLoading(false);
-      }, 1000);
+      const fetchLines = async () => {
+        setLineLoading(true);
+        try {
+          const token = localStorage.getItem('access_token');
+          const res = await fetch(
+            API_Inv_Line_By_Inv_No_Admin() + invoiceNumber,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (res.ok) {
+            const result = await res.json();
+            let lines: InvoiceLine[] = [];
+            if (Array.isArray(result.data)) {
+              lines = result.data;
+            } else if (result.data && typeof result.data === 'object') {
+              lines = Object.values(result.data);
+            }
+            setLineItems(lines);
+          } else {
+            setLineItems([]);
+          }
+        } catch {
+          setLineItems([]);
+        } finally {
+          setLineLoading(false);
+        }
+      };
+      fetchLines();
     }
   }, [invoiceNumber]);
 
-  if (loading) {
-    return <div className="text-center mt-10">Loading...</div>;
-  }
-
-  if (!invoiceData) {
-    return <div className="text-center mt-10">Invoice not found</div>;
-  }
-
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-      <h2 className="text-2xl font-bold text-gray-700 mb-4">Invoice Detail</h2>
-      <div className="grid grid-cols-2 gap-4 text-gray-600">
-        <p><strong>Invoice Number:</strong> {invoiceData.inv_no}</p>
-        <p><strong>Invoice Date:</strong> {invoiceData.doc_date}</p>
-        <p><strong>Supplier Code:</strong> {invoiceData.bp_code}</p>
-        <p><strong>Supplier Name:</strong> {invoiceData.bp_name}</p>
-        <p><strong>Currency:</strong> {invoiceData.currency}</p>
-        <p><strong>Total Invoice Amount:</strong> {invoiceData.total_invoice_amount.toLocaleString()}</p>
-        <p><strong>Amount Before Tax:</strong> {invoiceData.amount_before_tax.toLocaleString()}</p>
-        <p><strong>Invoice Status:</strong> {invoiceData.invoice_status}</p>
-        <p><strong>Progress Status:</strong> {invoiceData.progress_status}</p>
-        <p><strong>Payment Plan Date:</strong> {invoiceData.payment_plan_date}</p>
-        <p><strong>Payment Actual Date:</strong> {invoiceData.payment_actual_date}</p>
-        <p><strong>Tax Number:</strong> {invoiceData.tax_number}</p>
-        <p><strong>Tax Amount:</strong> {invoiceData.tax_amount.toLocaleString()}</p>
+      <h2 className="text-2xl font-bold text-gray-700 mb-4">Invoice Line Detail</h2>
+      <div className="mt-8">
+        {lineLoading ? (
+          <div className="text-center text-gray-500">Loading line items...</div>
+        ) : lineItems.length === 0 ? (
+          <div className="text-center text-gray-500">No line items found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-200 text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-3 py-2 border">GR No</th>
+                  <th className="px-3 py-2 border">PO No</th>
+                  <th className="px-3 py-2 border">Part No</th>
+                  <th className="px-3 py-2 border">Item Description</th>
+                  <th className="px-3 py-2 border">Receipt Amount</th>
+                  <th className="px-3 py-2 border">Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItems.map((line) => (
+                  <tr key={line.inv_line_id}>
+                    <td className="px-3 py-2 border text-center">{line.gr_no}</td>
+                    <td className="px-3 py-2 border text-center">{line.po_no}</td>
+                    <td className="px-3 py-2 border text-center">{line.part_no}</td>
+                    <td className="px-3 py-2 border">{line.item_desc}</td>
+                    <td className="px-3 py-2 border text-right">{line.receipt_amount?.toLocaleString()}</td>
+                    <td className="px-3 py-2 border text-center">{line.unit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
       <button
         className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
