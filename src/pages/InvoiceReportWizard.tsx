@@ -1,11 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AiFillFilePdf } from 'react-icons/ai';
 import LogoIcon from '/images/Logo-sanoh.png';
 import { toast } from 'react-toastify';
 import {
   API_Update_Inv_Header_Admin,
   API_Pph,
   API_Inv_Header_By_Inv_No_Admin,
+   API_Stream_File_Invoice,
+  API_Stream_File_Faktur,
+  API_Stream_File_Suratjalan,
+  API_Stream_File_PO,
 } from '../api/api';
 
 // Interface(s)
@@ -63,13 +68,12 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
   const totalPages = Math.ceil(lineItems.length / rowsPerPage);
 
   // Attach Documents (dummy)
-  const [documents, setDocuments] = useState([
+  const [documents] = useState([
     { type: 'Invoice *', fileName: 'Invoice.pdf', required: true },
     { type: 'Tax Invoice *', fileName: 'FakturPajak.pdf', required: true },
     { type: 'Delivery Note *', fileName: 'SuratJalan.pdf', required: true },
     { type: 'Purchase Order *', fileName: 'PurchaseOrder.pdf', required: true },
   ]);
-  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const [rejectMode, setRejectMode] = useState(false);
@@ -395,63 +399,62 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
 
         {/* Document upload section (inline, not as a function) */}
         <div className="space-y-6">
-          <h2 className="text-lg font-medium text-gray-900">Attach Documents (Dummy)</h2>
+          <h2 className="text-lg font-medium text-gray-900">Attach Documents</h2>
           <div className="overflow-hidden rounded-lg border-y border-gray-200">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-purple-800">
                 <tr>
-                  <th className="w-24 px-6 py-3 text-center text-sm font-semibold text-white uppercase">
-                    Action
-                  </th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-white uppercase">
                     Document Type
                   </th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-white uppercase">
-                    File Name
+                    File
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {documents.map((doc, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRefs.current[index]?.click()}
-                        className="bg-blue-800 text-white px-2 py-1 rounded"
-                      >
-                        Upload
-                      </button>
-                      <input
-                        type="file"
-                        ref={(el) => {
-                          fileInputRefs.current[index] = el;
-                        }}
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            const updatedDocs = [...documents];
-                            updatedDocs[index] = {
-                              ...updatedDocs[index],
-                              fileName: e.target.files[0].name,
-                            };
-                            setDocuments(updatedDocs);
-                          }
-                        }}
-                        accept=".pdf,.jpg,.jpeg,.png"
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {doc.type}
-                      {doc.required && !doc.fileName && (
-                        <span className="text-red-500 ml-1">(Required)</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center italic text-gray-600">
-                      {doc.fileName || 'No file selected'}
-                    </td>
-                  </tr>
-                ))}
+                {documents.map((doc, index) => {
+                  let apiFn = null;
+                  let filePrefix = '';
+                  if (doc.type.toLowerCase().includes('invoice')) {
+                    apiFn = API_Stream_File_Invoice;
+                    filePrefix = 'INVOICE_';
+                  } else if (doc.type.toLowerCase().includes('tax')) {
+                    apiFn = API_Stream_File_Faktur;
+                    filePrefix = 'FAKTURPAJAK_';
+                  } else if (doc.type.toLowerCase().includes('delivery')) {
+                    apiFn = API_Stream_File_Suratjalan;
+                    filePrefix = 'SURATJALAN_';
+                  } else if (doc.type.toLowerCase().includes('purchase')) {
+                    apiFn = API_Stream_File_PO;
+                    filePrefix = 'PO_';
+                  }
+                  return (
+                    <tr key={index}>
+                      <td className="px-6 py-4 text-center">
+                        {doc.type}
+                        {doc.required && !doc.fileName && (
+                          <span className="text-red-500 ml-1">(Required)</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {apiFn && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!invoiceNumberProp) return;
+                              const url = `${apiFn()}/${filePrefix}${invoiceNumberProp}.pdf`;
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                            }}
+                            title={`View ${doc.type} PDF`}
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

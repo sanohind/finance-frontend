@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { Search, XCircle } from 'lucide-react';
+import { AiFillFilePdf } from 'react-icons/ai';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
-import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected } from '../api/api';
+import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected, API_Stream_File_Invoice, API_Stream_File_Faktur, API_Stream_File_Suratjalan, API_Stream_File_PO } from '../api/api';
 import * as XLSX from 'xlsx';
 
 interface Invoice {
@@ -45,6 +46,23 @@ const InvoiceReportSup = () => {
   const [paymentPlanningDate, setPaymentPlanningDate] = useState('');
   const [creationDate, setCreationDate] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
+
+  // Column filter states
+  const [invoiceNoFilter, setInvoiceNoFilter] = useState('');
+  const [invDateFilter, setInvDateFilter] = useState('');
+  const [planDateFilter, setPlanDateFilter] = useState('');
+  const [actualDateFilter, setActualDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [receiptNoFilter, setReceiptNoFilter] = useState('');
+  const [supplierCodeFilter, setSupplierCodeFilter] = useState('');
+  const [taxNumberFilter, setTaxNumberFilter] = useState('');
+  const [taxDateFilter, setTaxDateFilter] = useState('');
+  const [totalDppFilter, setTotalDppFilter] = useState('');
+  const [taxBaseFilter, setTaxBaseFilter] = useState('');
+  const [taxAmountFilter, setTaxAmountFilter] = useState('');
+  const [pphBaseFilter, setPphBaseFilter] = useState('');
+  const [pphAmountFilter, setPphAmountFilter] = useState('');
+  const [totalAmountFilter, setTotalAmountFilter] = useState('');
 
   // Data states
   const [data, setData] = useState<Invoice[]>([]);
@@ -110,6 +128,112 @@ const InvoiceReportSup = () => {
 
     fetchInvoiceData();
   }, []);
+
+  // Apply column filters
+  useEffect(() => {
+    let newFiltered = [...data];
+    if (invoiceNoFilter) {
+      newFiltered = newFiltered.filter(item => item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase()));
+    }
+    if (invDateFilter) {
+      newFiltered = newFiltered.filter(item => item.inv_date?.includes(invDateFilter));
+    }
+    if (planDateFilter) {
+      newFiltered = newFiltered.filter(item => item.plan_date?.includes(planDateFilter));
+    }
+    if (actualDateFilter) {
+      newFiltered = newFiltered.filter(item => item.actual_date?.includes(actualDateFilter));
+    }
+    if (statusFilter) {
+      newFiltered = newFiltered.filter(item => item.status?.toLowerCase().includes(statusFilter.toLowerCase()));
+    }
+    if (receiptNoFilter) {
+      newFiltered = newFiltered.filter(item => item.receipt_number?.toLowerCase().includes(receiptNoFilter.toLowerCase()));
+    }
+    if (supplierCodeFilter) {
+      newFiltered = newFiltered.filter(item => item.bp_code?.toLowerCase().includes(supplierCodeFilter.toLowerCase()));
+    }
+    if (taxNumberFilter) {
+      newFiltered = newFiltered.filter(item => item.inv_faktur?.toLowerCase().includes(taxNumberFilter.toLowerCase()));
+    }
+    if (taxDateFilter) {
+      newFiltered = newFiltered.filter(item => item.inv_faktur_date?.includes(taxDateFilter));
+    }
+    if (totalDppFilter) {
+      const filterAmount = parseFloat(totalDppFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.total_dpp) return false;
+          return Math.abs(item.total_dpp - filterAmount) < 0.01 || item.total_dpp.toString().includes(totalDppFilter);
+        });
+      }
+    }
+    if (taxBaseFilter) {
+      const filterAmount = parseFloat(taxBaseFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.tax_base_amount) return false;
+          return Math.abs(item.tax_base_amount - filterAmount) < 0.01 || item.tax_base_amount.toString().includes(taxBaseFilter);
+        });
+      }
+    }
+    if (taxAmountFilter) {
+      const filterAmount = parseFloat(taxAmountFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.tax_base_amount) return false;
+          const taxAmount = item.tax_base_amount * 0.11;
+          return Math.abs(taxAmount - filterAmount) < 0.01 || taxAmount.toString().includes(taxAmountFilter);
+        });
+      }
+    }
+    if (pphBaseFilter) {
+      const filterAmount = parseFloat(pphBaseFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.pph_base_amount) return false;
+          return Math.abs(item.pph_base_amount - filterAmount) < 0.01 || item.pph_base_amount.toString().includes(pphBaseFilter);
+        });
+      }
+    }
+    if (pphAmountFilter) {
+      const filterAmount = parseFloat(pphAmountFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.pph_amount) return false;
+          return Math.abs(item.pph_amount - filterAmount) < 0.01 || item.pph_amount.toString().includes(pphAmountFilter);
+        });
+      }
+    }
+    if (totalAmountFilter) {
+      const filterAmount = parseFloat(totalAmountFilter);
+      if (!isNaN(filterAmount)) {
+        newFiltered = newFiltered.filter(item => {
+          if (!item.total_amount) return false;
+          return Math.abs(item.total_amount - filterAmount) < 0.01 || item.total_amount.toString().includes(totalAmountFilter);
+        });
+      }
+    }
+    setFilteredData(newFiltered);
+    setCurrentPage(1);
+  }, [
+    data,
+    invoiceNoFilter,
+    invDateFilter,
+    planDateFilter,
+    actualDateFilter,
+    statusFilter,
+    receiptNoFilter,
+    supplierCodeFilter,
+    taxNumberFilter,
+    taxDateFilter,
+    totalDppFilter,
+    taxBaseFilter,
+    taxAmountFilter,
+    pphBaseFilter,
+    pphAmountFilter,
+    totalAmountFilter
+  ]);
 
   const handleSearch = () => {
     let newFiltered = [...data];
@@ -500,6 +624,10 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
+                {/* Document column with 4 sub-columns */}
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[300px]" colSpan={4}>
+                  Document
+                </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">Status</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
@@ -516,13 +644,181 @@ const InvoiceReportSup = () => {
                 <th colSpan={3}></th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
+                {/* Document sub-columns */}
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">INVOICE</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
                 <th colSpan={11}></th>
+              </tr>
+              {/* Filter inputs row (skip Document columns) */}
+              <tr className="bg-gray-50 border">
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={invoiceNoFilter}
+                    onChange={(e) => setInvoiceNoFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={invDateFilter}
+                    onChange={(e) => setInvDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={planDateFilter}
+                    onChange={(e) => setPlanDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={actualDateFilter}
+                    onChange={(e) => setActualDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                {/* No filter inputs for Document columns */}
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  >
+                    <option value="">All</option>
+                    <option value="new">New</option>
+                    <option value="in process">In Process</option>
+                    <option value="ready to payment">Ready to Payment</option>
+                    <option value="paid">Paid</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={receiptNoFilter}
+                    onChange={(e) => setReceiptNoFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={supplierCodeFilter}
+                    onChange={(e) => setSupplierCodeFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={taxNumberFilter}
+                    onChange={(e) => setTaxNumberFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={taxDateFilter}
+                    onChange={(e) => setTaxDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={totalDppFilter}
+                      onChange={(e) => setTotalDppFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={taxBaseFilter}
+                      onChange={(e) => setTaxBaseFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={taxAmountFilter}
+                      onChange={(e) => setTaxAmountFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={pphBaseFilter}
+                      onChange={(e) => setPphBaseFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={pphAmountFilter}
+                      onChange={(e) => setPphAmountFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-1 border">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <input
+                      type="number"
+                      placeholder="-"
+                      value={totalAmountFilter}
+                      onChange={(e) => setTotalAmountFilter(e.target.value)}
+                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
+                    />
+                  </div>
+                </td>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={17} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>
@@ -567,6 +863,55 @@ const InvoiceReportSup = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         {formatDate(invoice.actual_date)}
+                      </td>
+                      {/* Document sub-columns (PDF icon with streaming using API_Stream_File_* variables, no token needed) */}
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View Invoice PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View Faktur PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View Surat Jalan PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_PO()}/PO_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View PO PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
                       </td>
                       {/* Status with color and popup for Rejected */}
                       <td className="px-6 py-4 text-center">
@@ -620,7 +965,7 @@ const InvoiceReportSup = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={17} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
                     No data available.
                   </td>
                 </tr>

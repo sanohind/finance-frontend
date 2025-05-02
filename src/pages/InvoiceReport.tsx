@@ -9,9 +9,14 @@ import {
   API_List_Partner_Admin,
   API_Update_Status_To_In_Process_Finance,
   API_Upload_Payment_Admin,
+  API_Stream_File_Invoice,
+  API_Stream_File_Faktur,
+  API_Stream_File_Suratjalan,
+  API_Stream_File_PO,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
 import * as XLSX from 'xlsx';
+import { AiFillFilePdf } from 'react-icons/ai';
 
 interface Invoice {
   inv_no: string;
@@ -875,6 +880,10 @@ const InvoiceReport: React.FC = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
+                {/* Document column with 4 sub-columns */}
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[300px]" colSpan={4}>
+                  Document
+                </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">Status</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
@@ -897,9 +906,14 @@ const InvoiceReport: React.FC = () => {
                 <th colSpan={3}></th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
+                {/* Document sub-columns */}
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">INVOICE</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
                 <th colSpan={11}></th>
               </tr>
-              {/* Filter inputs row */}
+              {/* Filter inputs row (skip Document columns) */}
               <tr className="bg-gray-50 border">
                 <td className="px-2 py-1 border"></td>
                 <td className="px-2 py-1 border">
@@ -935,6 +949,11 @@ const InvoiceReport: React.FC = () => {
                     className="border rounded w-full px-2 py-1 text-sm text-center"
                   />
                 </td>
+                {/* No filter inputs for Document columns */}
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border"></td>
                 <td className="px-2 py-1 border">
                   <select
                     value={statusFilter}
@@ -1120,6 +1139,55 @@ const InvoiceReport: React.FC = () => {
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_date)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.plan_date)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.actual_date)}</td>
+                      {/* Document sub-columns (PDF icon with streaming using API_Stream_File_* variables, no token needed) */}
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View Invoice PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View Faktur PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View Surat Jalan PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${API_Stream_File_PO()}/PO_${invoice.inv_no}.pdf`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          title="View PO PDF"
+                        >
+                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                        </button>
+                      </td>
                       {/* Status with color and popup for Rejected */}
                       <td className="px-6 py-4 text-center">
                         <span

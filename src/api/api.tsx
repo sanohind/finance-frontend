@@ -48,9 +48,11 @@ export const API_Inv_Line_By_Inv_No_Admin = () => API + getRolePath() + `/inv-li
 export const API_Inv_Line_Outstanding = () => API + getRolePath() + `/inv-line/outstanding/`;
 export const API_Inv_Line_Outstanding_Sup = () => API + getRolePath() + `/inv-line/outstanding`;
 
-
-// Document Streaming Admin
-export const API_Stream_File_Admin = () => API + getRolePath() + `/files/`;
+// Document Streaming (public storage URL, no /api/)
+export const API_Stream_File_Invoice = () => API  + '/stream/invoices';
+export const API_Stream_File_Faktur = () => API  + '/stream/faktur';
+export const API_Stream_File_Suratjalan = () => API  + '/stream/suratjalan';
+export const API_Stream_File_PO = () => API  + '/stream/po';
 
 // Finance API
 export const API_Inv_Header_Finance = () => API + getRolePath() + `/inv-header`;
