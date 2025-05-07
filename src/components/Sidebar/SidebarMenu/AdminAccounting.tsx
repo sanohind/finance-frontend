@@ -1,4 +1,5 @@
 import Dashboard from "./component/Dashboard";
+import News from "./component/News";
 import GRTracking from "./component/GRTracking";
 import InvoiceCreation from "./component/InvoiceCreation";
 import InvoiceReport from "./component/InvoiceReport";
@@ -14,6 +15,9 @@ export const AdminAccounting = () => {
                 <ul className="mb-6 flex flex-col gap-1.5">
                     <li>
                     <Dashboard />
+                    </li>
+                    <li>
+                    <News />
                     </li>
                     <li>
                     <GRTracking />

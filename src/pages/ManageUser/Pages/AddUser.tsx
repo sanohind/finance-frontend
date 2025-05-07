@@ -135,7 +135,9 @@ const AddUser = () => {
 
       const result = await response.json();
 
-      if (response.ok && result.status) {
+      console.log(result); // Add this to inspect the response
+
+      if (response.ok && result.message === 'User created') {
         toast.success('User successfully created!');
         resetForm();
       } else {

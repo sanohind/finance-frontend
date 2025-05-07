@@ -13,7 +13,13 @@ export interface User {
     last_update: string;
 }
 
-const UserOnline: React.FC = () => {
+interface UserOnlineProps {
+    onlineUsers: any[];
+    handleLogoutUser: (token_id: string) => Promise<void>;
+    getRoleName: (roleId: string) => string;
+  }
+
+const UserOnline: React.FC<UserOnlineProps> = () => {
     const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     // Get current user's username for highlighting

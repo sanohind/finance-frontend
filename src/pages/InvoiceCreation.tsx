@@ -31,6 +31,7 @@ interface FilterParams {
 export interface GrSaRecord {
   inv_line_id: string;
   po_no: string;
+  gr_no: string; // Moved here
   bp_id: string;
   bp_name: string;
   currency: string;
@@ -44,7 +45,6 @@ export interface GrSaRecord {
   actual_receipt_period: string;
   receipt_no: string;
   receipt_line: string;
-  gr_no: string;
   packing_slip: string;
   item_no: string;
   ics_code: string;
@@ -89,6 +89,7 @@ const InvoiceCreation = () => {
   // Add column filter state and outstanding state
   const [columnFilters, setColumnFilters] = useState({
     poNoFilter: '',
+    grNoFilter: '', // Moved here
     bpIdFilter: '',
     bpNameFilter: '',
     currencyFilter: '',
@@ -102,7 +103,6 @@ const InvoiceCreation = () => {
     receiptPeriodFilter: '',
     receiptNoFilter: '',
     receiptLineFilter: '',
-    grNoFilter: '',
     packingSlipFilter: '',
     itemNoFilter: '',
     icsCodeFilter: '',
@@ -257,6 +257,7 @@ const InvoiceCreation = () => {
     const hasFilters = Object.values(columnFilters).some(value => value !== '');
     if (!hasFilters) return filtered;
     if (columnFilters.poNoFilter) filtered = filtered.filter(item => item.po_no?.toLowerCase().includes(columnFilters.poNoFilter.toLowerCase()));
+    if (columnFilters.grNoFilter) filtered = filtered.filter(item => item.gr_no?.toLowerCase().includes(columnFilters.grNoFilter.toLowerCase())); // Moved here
     if (columnFilters.bpIdFilter) filtered = filtered.filter(item => item.bp_id?.toLowerCase().includes(columnFilters.bpIdFilter.toLowerCase()));
     if (columnFilters.bpNameFilter) filtered = filtered.filter(item => item.bp_name?.toLowerCase().includes(columnFilters.bpNameFilter.toLowerCase()));
     if (columnFilters.currencyFilter) filtered = filtered.filter(item => item.currency?.toLowerCase().includes(columnFilters.currencyFilter.toLowerCase()));
@@ -270,7 +271,6 @@ const InvoiceCreation = () => {
     if (columnFilters.receiptPeriodFilter) filtered = filtered.filter(item => item.actual_receipt_period?.toLowerCase().includes(columnFilters.receiptPeriodFilter.toLowerCase()));
     if (columnFilters.receiptNoFilter) filtered = filtered.filter(item => item.receipt_no?.toLowerCase().includes(columnFilters.receiptNoFilter.toLowerCase()));
     if (columnFilters.receiptLineFilter) filtered = filtered.filter(item => item.receipt_line?.toLowerCase().includes(columnFilters.receiptLineFilter.toLowerCase()));
-    if (columnFilters.grNoFilter) filtered = filtered.filter(item => item.gr_no?.toLowerCase().includes(columnFilters.grNoFilter.toLowerCase()));
     if (columnFilters.packingSlipFilter) filtered = filtered.filter(item => item.packing_slip?.toLowerCase().includes(columnFilters.packingSlipFilter.toLowerCase()));
     if (columnFilters.itemNoFilter) filtered = filtered.filter(item => item.item_no?.toLowerCase().includes(columnFilters.itemNoFilter.toLowerCase()));
     if (columnFilters.icsCodeFilter) filtered = filtered.filter(item => item.ics_code?.toLowerCase().includes(columnFilters.icsCodeFilter.toLowerCase()));
@@ -419,6 +419,7 @@ const InvoiceCreation = () => {
     setSelectedSupplier('');
     setColumnFilters({
       poNoFilter: '',
+      grNoFilter: '', // Moved here
       bpIdFilter: '',
       bpNameFilter: '',
       currencyFilter: '',
@@ -432,7 +433,6 @@ const InvoiceCreation = () => {
       receiptPeriodFilter: '',
       receiptNoFilter: '',
       receiptLineFilter: '',
-      grNoFilter: '',
       packingSlipFilter: '',
       itemNoFilter: '',
       icsCodeFilter: '',
@@ -778,6 +778,7 @@ const InvoiceCreation = () => {
                       />
                     </th>
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">GR No</th> {/* Moved here */}
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">BP ID</th>
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">BP Name</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
@@ -791,7 +792,6 @@ const InvoiceCreation = () => {
                     <th className="px-4 py-2 text-gray-700 text-center border">Receipt Period</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Receipt No</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Receipt Line</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">GR No</th>
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Packing Slip</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Item No</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">ICS Code</th>
@@ -822,6 +822,7 @@ const InvoiceCreation = () => {
                   <tr className="bg-gray-50">
                     <td className="px-2 py-2 border"></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poNoFilter} onChange={e => handleColumnFilterChange('poNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.grNoFilter} onChange={e => handleColumnFilterChange('grNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td> {/* Moved here */}
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.bpIdFilter} onChange={e => handleColumnFilterChange('bpIdFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.bpNameFilter} onChange={e => handleColumnFilterChange('bpNameFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.currencyFilter} onChange={e => handleColumnFilterChange('currencyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
@@ -835,7 +836,6 @@ const InvoiceCreation = () => {
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptPeriodFilter} onChange={e => handleColumnFilterChange('receiptPeriodFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptNoFilter} onChange={e => handleColumnFilterChange('receiptNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptLineFilter} onChange={e => handleColumnFilterChange('receiptLineFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.grNoFilter} onChange={e => handleColumnFilterChange('grNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.packingSlipFilter} onChange={e => handleColumnFilterChange('packingSlipFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemNoFilter} onChange={e => handleColumnFilterChange('itemNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.icsCodeFilter} onChange={e => handleColumnFilterChange('icsCodeFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
@@ -882,6 +882,7 @@ const InvoiceCreation = () => {
                           />
                         </td>
                         <td className="px-3 py-2 text-center">{item.po_no}</td>
+                        <td className="px-3 py-2 text-center">{item.gr_no}</td> {/* Moved here */}
                         <td className="px-3 py-2 text-center">{item.bp_id}</td>
                         <td className="px-3 py-2 text-center">{item.bp_name}</td>
                         <td className="px-3 py-2 text-center">{item.currency}</td>
@@ -895,7 +896,6 @@ const InvoiceCreation = () => {
                         <td className="px-3 py-2 text-center">{item.actual_receipt_period}</td>
                         <td className="px-3 py-2 text-center">{item.receipt_no}</td>
                         <td className="px-3 py-2 text-center">{item.receipt_line}</td>
-                        <td className="px-3 py-2 text-center">{item.gr_no}</td>
                         <td className="px-3 py-2 text-center">{item.packing_slip}</td>
                         <td className="px-3 py-2 text-center">{item.item_no}</td>
                         <td className="px-3 py-2 text-center">{item.ics_code}</td>

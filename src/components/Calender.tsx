@@ -9,10 +9,10 @@ const localizer = momentLocalizer(moment);
 
 interface Event {
   title: string;
-  start: Date;
-  end: Date;
-  type: string;
-  bp_code?: string;
+  description: string;
+  start_date: Date;
+  end_date: Date;
+  document: string;
 }
 
 interface CalendarProps {
@@ -20,22 +20,44 @@ interface CalendarProps {
   defaultView?: typeof Views[keyof typeof Views];
 }
 
-const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }) => {
+const CustomToolbar = (toolbar: any) => {
+  return (
+    <div className="rbc-toolbar">
+      <div className="rbc-btn-group">
+        <button type="button" onClick={() => toolbar.onNavigate('PREV')}>
+          &#8592;
+        </button>
+        <button type="button" onClick={() => toolbar.onNavigate('TODAY')}>
+          Today
+        </button>
+        <button type="button" onClick={() => toolbar.onNavigate('NEXT')}>
+          &#8594;
+        </button>
+      </div>
+      <span className="rbc-toolbar-label">{toolbar.label}</span>
+    </div>
+  );
+};
+
+const Calendar: React.FC<CalendarProps> = ({ events }) => {
   const navigate = useNavigate();
 
   const onSelectEventHandler = (event: Event) => {
     Swal.fire({
       icon: 'info',
-      title: event.bp_code ? `${event.title} | ${event.bp_code}` : event.title,
+      title: event.title,
       html: `
       <div>
         <p>
-          Start Date: <strong>${moment(event.start).format('MMMM D, YYYY')}</strong>
+          Description: <strong>${event.description}</strong>
         </p>
         <p>
-          End Date: <strong>${moment(event.end).format('MMMM D, YYYY')}</strong>
+          Start Date: <strong>${moment(event.start_date).format('MMMM D, YYYY')}</strong>
         </p>
-        <p>Type: <strong>${event.type}</strong></p>
+        <p>
+          End Date: <strong>${moment(event.end_date).format('MMMM D, YYYY')}</strong>
+        </p>
+        <p>Document: <strong>${event.document}</strong></p>
       </div>
       `,
       confirmButtonColor: '#1e3a8a',
@@ -45,31 +67,14 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
       cancelButtonColor: '#dc2626',
     }).then((result) => {
       if (result.isConfirmed) {
-        if (event.type === 'PO') {
-          navigate(`/purchase-order-detail?noPO=${event.title.split(': ')[1]}`);
-        } else if (event.type === 'DN') {
-          navigate(`/delivery-note-detail-edit?noDN=${event.title.split(': ')[1]}`);
-        } else if (event.type === 'DN History') {
-          navigate(`/delivery-note-detail?noDN=${event.title.split(': ')[1]}`);
-        }
+        navigate(`/document-detail?doc=${event.document}`);
       }
-
     });
   };
 
-  const eventStyleGetter = (event: Event) => {
-    let backgroundColor = '#039BE5'; // Default blue color like Google Calendar
-
-    if (event.type === 'PO') {
-      backgroundColor = '#1E3A8A'; // Blue-900 for Purchase Orders
-    } else if (event.type === 'DN') {
-      backgroundColor = '#DC2626'; 
-    } else if (event.type === 'DN History') {
-      backgroundColor = '#059669';
-    }
-
+  const eventStyleGetter = () => {
     const style = {
-      backgroundColor,
+      backgroundColor: '#1E3A8A',
       borderRadius: '4px',
       color: 'white',
       border: 'none',
@@ -92,13 +97,20 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
       `${moment(start).format('MMM D')} – ${moment(end).format('MMM D, YYYY')}`,
   };
 
+  const mappedEvents = events.map((event) => ({
+    ...event,
+    start: event.start_date,
+    end: event.end_date,
+    allDay: true,
+  }));
+
   return (
     <div className="w-full max-w-full rounded-lg bg-white shadow-md">
       <BigCalendar
         localizer={localizer}
-        events={events}
-        defaultView={defaultView}
-        views={['month', 'week', 'day']}
+        events={mappedEvents}
+        defaultView={Views.MONTH}
+        views={['month']}
         startAccessor="start"
         endAccessor="end"
         style={{
@@ -108,6 +120,9 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
         eventPropGetter={eventStyleGetter}
         onSelectEvent={onSelectEventHandler}
         toolbar={true}
+        components={{
+          toolbar: CustomToolbar,
+        }}
         formats={formats}
         popup
         selectable
@@ -116,16 +131,32 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
       <style>
         {`
           .custom-calendar .rbc-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 1rem;
             margin-bottom: 1rem;
           }
-          .custom-calendar .rbc-toolbar-label {
+          .custom-calendar .rbc-btn-group {
+            display: flex;
+            justify-content: flex-start;
+          }
+          .custom-calendar .rbc-toolbar .rbc-toolbar-label {
+            flex: 6;
+            text-align: center;
             font-size: 1.75rem;
             font-weight: 700;
             color: #111827;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             padding: 12px 0;
+          }
+          .custom-calendar .rbc-toolbar .rbc-btn-group + .rbc-toolbar-label {
+            margin-left: 0;
+          }
+          .custom-calendar .rbc-toolbar .rbc-btn-group:last-child {
+            flex: 1;
+            justify-content: flex-end;
           }
           .custom-calendar .rbc-toolbar button {
             background: #ffffff;
@@ -136,7 +167,7 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
             font-weight: 500;
             border-radius: 6px;
             transition: all 0.2s ease;
-            shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
           }
           .custom-calendar .rbc-toolbar button.rbc-active,
           .custom-calendar .rbc-toolbar button:focus,
@@ -144,7 +175,7 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
             background: #1e3a8a;
             color: white;
             border-color: #1e3a8a;
-            shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
           }
           .custom-calendar .rbc-header {
             padding: 14px;
@@ -194,47 +225,47 @@ const Calendar: React.FC<CalendarProps> = ({ events, defaultView = Views.MONTH }
           }
 
           .custom-calendar .rbc-overlay {
-      max-height: 200px;
-      overflow-y: auto;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      background: white;
-      width: 300px;
-    }
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: white;
+            width: 300px;
+          }
 
-    .custom-calendar .rbc-overlay-header {
-      font-weight: 600;
-      padding: 8px;
-      border-bottom: 1px solid #e5e7eb;
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 1;
-    }
+          .custom-calendar .rbc-overlay-header {
+            font-weight: 600;
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+          }
 
-    .custom-calendar .rbc-overlay > .rbc-event {
-      margin: 8px 0;
-    }
+          .custom-calendar .rbc-overlay > .rbc-event {
+            margin: 8px 0;
+          }
 
-    /* Scrollbar styling */
-    .custom-calendar .rbc-overlay::-webkit-scrollbar {
-      width: 6px;
-    }
+          /* Scrollbar styling */
+          .custom-calendar .rbc-overlay::-webkit-scrollbar {
+            width: 6px;
+          }
 
-    .custom-calendar .rbc-overlay::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 3px;
-    }
+          .custom-calendar .rbc-overlay::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+          }
 
-    .custom-calendar .rbc-overlay::-webkit-scrollbar-thumb {
-      background: #888;
-      border-radius: 3px;
-    }
+          .custom-calendar .rbc-overlay::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+          }
 
-    .custom-calendar .rbc-overlay::-webkit-scrollbar-thumb:hover {
-      background: #555;
-    }
+          .custom-calendar .rbc-overlay::-webkit-scrollbar-thumb:hover {
+            background: #555;
+          }
         `}
       </style>
     </div>

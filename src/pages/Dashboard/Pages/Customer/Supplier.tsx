@@ -1,9 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
-import { API_Dashboard } from '../../../../api/api';
+import { API_Dashboard, API_Get_News } from '../../../../api/api';
 import CardDataStats from '../../../../components/CardDataStats';
 import ListProgress from '../../../../components/ListProgress';
 import { FaFileInvoice, FaHourglassHalf, FaTimesCircle, FaMoneyCheckAlt, FaMoneyBillWave } from "react-icons/fa";
+import Calendar from '../../../../components/Calender';
+import moment from 'moment'; // Import moment
+
+// Define the structure of an event for the Calendar
+interface CalendarEvent {
+  title: string;
+  description: string;
+  start_date: Date;
+  end_date: Date;
+  document: string;
+}
 
 const DashboardSupplier: React.FC = () => {
   // State for invoice stats
@@ -12,6 +23,7 @@ const DashboardSupplier: React.FC = () => {
   const [rejectedInvoice, setRejectedInvoice] = useState('0');
   const [readyToPaymentInvoice, setReadyToPaymentInvoice] = useState('0');
   const [paidInvoice, setPaidInvoice] = useState('0');
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]); // State for calendar events
 
   // Fetch supplier dashboard data
   const fetchDashboardData = async () => {
@@ -50,8 +62,99 @@ const DashboardSupplier: React.FC = () => {
     }
   };
 
+  // Fetch news events for the calendar
+  const fetchNewsEvents = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(API_Get_News(), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('API_Get_News response result:', JSON.stringify(result, null, 2)); // Added for debugging
+
+        let newsDataArray: any[] | null = null;
+
+        if (Array.isArray(result)) {
+          newsDataArray = result;
+        } else if (result && Array.isArray(result.data)) {
+          newsDataArray = result.data;
+        }
+
+        if (newsDataArray) {
+          const fetchedEvents = newsDataArray.map((newsItem: any) => {
+            const rawStartDateString = newsItem.start_date;
+            const rawEndDateString = newsItem.end_date;
+
+            let startDate: Date;
+            let endDate: Date;
+
+            if (rawStartDateString && moment(rawStartDateString).isValid()) {
+              startDate = moment(rawStartDateString).toDate();
+            } else {
+              console.warn('Invalid or missing start_date from API:', rawStartDateString, 'for item:', newsItem.title);
+              startDate = moment().toDate(); // Fallback to now
+            }
+
+            if (rawEndDateString && moment(rawEndDateString).isValid()) {
+              endDate = moment(rawEndDateString).toDate();
+            } else {
+              console.warn('Invalid or missing end_date from API:', rawEndDateString, 'for item:', newsItem.title);
+              endDate = moment(startDate).add(1, 'days').toDate(); // Fallback to start_date + 1 day
+            }
+
+            if (moment(endDate).isBefore(moment(startDate))) {
+              console.warn('End_date was before start_date for item:', newsItem.title, 'Adjusting end_date.');
+              endDate = moment(startDate).add(1, 'days').toDate();
+            }
+
+            return {
+              title: newsItem.title || 'No Title',
+              description: newsItem.description || 'No Description',
+              start_date: startDate,
+              end_date: endDate,
+              document: newsItem.document || newsItem.id?.toString() || '',
+            };
+          });
+          console.log('Processed calendar events:', fetchedEvents); // Added for debugging
+          setCalendarEvents(fetchedEvents);
+        } else {
+          const errorMessage = result?.message || 'News data is not in the expected format or is empty.';
+          toast.error(`Error processing news events: ${errorMessage}`);
+          setCalendarEvents([]);
+        }
+      } else {
+        let errorMessage = `Failed to fetch news events: ${response.status}`;
+        try {
+          const errorResult = await response.json();
+          if (errorResult && errorResult.message) {
+            errorMessage = errorResult.message;
+          }
+        } catch (e) {
+          // Ignore if parsing error response fails
+        }
+        toast.error(errorMessage);
+        setCalendarEvents([]);
+      }
+    } catch (error) {
+      console.error('Catch block error fetching news:', error); // Added for debugging
+      if (error instanceof Error) {
+        toast.error(`Error fetching news events: ${error.message}`);
+      } else {
+        toast.error('An unknown error occurred while fetching news events');
+      }
+      setCalendarEvents([]);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
+    fetchNewsEvents(); // Fetch news events
     // Optionally, you can refresh the data periodically:
     // const intervalId = setInterval(fetchDashboardData, 5000);
     // return () => clearInterval(intervalId);
@@ -112,6 +215,9 @@ const DashboardSupplier: React.FC = () => {
           <FaMoneyBillWave className="fill-blue-800 dark:fill-white" size={24} />
         </CardDataStats>
       </div>
+
+      {/* Calendar before ListProgress */}
+      <Calendar events={calendarEvents} />
 
       {/* List Progress untuk Invoice */}
       <div className="bg-white p-4 md:p-2 rounded-lg shadow">

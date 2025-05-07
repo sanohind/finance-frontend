@@ -200,8 +200,11 @@ const InvoiceReportSup = () => {
       const filterAmount = parseFloat(pphAmountFilter);
       if (!isNaN(filterAmount)) {
         newFiltered = newFiltered.filter(item => {
-          if (!item.pph_amount) return false;
-          return Math.abs(item.pph_amount - filterAmount) < 0.01 || item.pph_amount.toString().includes(pphAmountFilter);
+          const dbPphAmount = item.pph_amount || 0;
+          const dbPphBaseAmount = item.pph_base_amount || 0;
+          const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
+          return Math.abs(calculatedPphAmount - filterAmount) < 0.01 ||
+            calculatedPphAmount.toString().includes(pphAmountFilter);
         });
       }
     }
@@ -310,24 +313,30 @@ const InvoiceReportSup = () => {
       'PPh Amount',
       'Total Amount',
     ];
-    const rows = filteredData.map((inv) => [
-      inv.inv_no || '-',
-      inv.inv_date || '-',
-      inv.plan_date || '-',
-      inv.actual_date || '-',
-      inv.status || '-',
-      inv.receipt_number || '-',
-      inv.bp_code || '-',
-      inv.bp_name || '-', // Supplier Name as bp_name
-      inv.inv_faktur || '-',
-      inv.inv_faktur_date || '-',
-      inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
-      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
-      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
-      inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
-      inv.pph_amount != null ? formatRp(inv.pph_amount) : '-',
-      inv.total_amount != null ? formatRp(inv.total_amount) : '-',
-    ]);
+    const rows = filteredData.map((inv) => {
+      const dbPphAmountExcel = inv.pph_amount || 0;
+      const dbPphBaseAmountExcel = inv.pph_base_amount || 0;
+      const calculatedPphAmountExcel = dbPphAmountExcel - dbPphBaseAmountExcel;
+
+      return [
+        inv.inv_no || '-',
+        inv.inv_date || '-',
+        inv.plan_date || '-',
+        inv.actual_date || '-',
+        inv.status || '-',
+        inv.receipt_number || '-',
+        inv.bp_code || '-',
+        inv.bp_name || '-', // Supplier Name as bp_name
+        inv.inv_faktur || '-',
+        inv.inv_faktur_date || '-',
+        inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
+        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
+        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
+        inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
+        formatRp(calculatedPphAmountExcel),
+        inv.total_amount != null ? formatRp(inv.total_amount) : '-',
+      ];
+    });
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = [
@@ -602,7 +611,7 @@ const InvoiceReportSup = () => {
               onClick={handleDownloadAttachment}
               type="button"
             >
-              Download Attachment
+              Download Report
             </button>
             <button
               className="bg-blue-900 text-sm text-white px-4 py-2 rounded hover:bg-blue-800 ml-4"
@@ -831,6 +840,11 @@ const InvoiceReportSup = () => {
                   const isChecked = selectedInvoiceNo === invoice.inv_no;
                   // Only show checkbox if no selection or this is the selected one
                   const showCheckbox = isNew && (!selectedInvoiceNo || isChecked);
+
+                  const dbPphAmount = invoice.pph_amount || 0;
+                  const dbPphBaseAmount = invoice.pph_base_amount || 0;
+                  const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
+
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       <td className="px-6 py-4 text-center">
@@ -955,7 +969,7 @@ const InvoiceReportSup = () => {
                         {formatCurrency(invoice.pph_base_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.pph_amount)}
+                        {formatCurrency(calculatedPphAmount)}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.total_amount)}

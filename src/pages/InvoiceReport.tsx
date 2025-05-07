@@ -315,9 +315,12 @@ const InvoiceReport: React.FC = () => {
       const filterAmount = parseFloat(pphAmountFilter);
       if (!isNaN(filterAmount)) {
         newFiltered = newFiltered.filter(item => {
-          if (!item.pph_amount) return false;
-          return Math.abs(item.pph_amount - filterAmount) < 0.01 ||
-            item.pph_amount.toString().includes(pphAmountFilter);
+          if (!item.pph_base_amount) return false;
+          const dbPphAmount = item.pph_amount || 0;
+          const dbPphBaseAmount = item.pph_base_amount || 0;
+          const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
+          return Math.abs(calculatedPphAmount - filterAmount) < 0.01 ||
+            calculatedPphAmount.toString().includes(pphAmountFilter);
         });
       }
     }
@@ -553,7 +556,7 @@ const InvoiceReport: React.FC = () => {
       'Tax Base Amount',
       'Tax Amount (Preview 11%)',
       'PPh Base Amount',
-      'PPh Amount',
+      'PPh Amount', // Header remains the same
       'Total Amount',
     ];
     const bpAdrMap = businessPartners.reduce((acc, bp) => {
@@ -562,29 +565,40 @@ const InvoiceReport: React.FC = () => {
     }, {} as Record<string, string>);
 
     // Helper to format as Rp string
-    const formatRp = (amount: number | null) => {
-      if (!amount) return '-';
-      return `Rp ${amount.toLocaleString('id-ID')},00`;
+    const formatRp = (amount: number | null | undefined) => {
+      if (amount === null || amount === undefined || isNaN(Number(amount))) return '-';
+      return Number(amount).toLocaleString('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     };
 
-    const rows = filteredData.map((inv) => [
-      inv.inv_no || '-',
-      inv.inv_date || '-',
-      inv.plan_date || '-',
-      inv.actual_date || '-',
-      inv.status || '-',
-      inv.receipt_number || '-',
-      inv.bp_code || '-',
-      bpAdrMap[inv.bp_code || ''] || '-',
-      inv.inv_faktur || '-',
-      inv.inv_faktur_date || '-',
-      inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
-      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
-      inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
-      inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
-      inv.pph_amount != null ? formatRp(inv.pph_amount) : '-',
-      inv.total_amount != null ? formatRp(inv.total_amount) : '-',
-    ]);
+    const rows = filteredData.map((inv) => {
+      const dbPphAmountExcel = inv.pph_amount || 0;
+      const dbPphBaseAmountExcel = inv.pph_base_amount || 0;
+      const calculatedPphAmountExcel = dbPphAmountExcel - dbPphBaseAmountExcel;
+
+      return [
+        inv.inv_no || '-',
+        inv.inv_date || '-',
+        inv.plan_date || '-',
+        inv.actual_date || '-',
+        inv.status || '-',
+        inv.receipt_number || '-',
+        inv.bp_code || '-',
+        bpAdrMap[inv.bp_code || ''] || '-',
+        inv.inv_faktur || '-',
+        inv.inv_faktur_date || '-',
+        inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
+        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
+        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
+        inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
+        formatRp(calculatedPphAmountExcel),
+        inv.total_amount != null ? formatRp(inv.total_amount) : '-',
+      ];
+    });
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = [
@@ -686,9 +700,16 @@ const InvoiceReport: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number | null) => {
-    if (!amount) return '-';
-    return `Rp ${amount.toLocaleString()},00`;
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined || isNaN(Number(amount))) {
+      return '-';
+    }
+    return Number(amount).toLocaleString('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   // Click handler for showing invoice detail modal
@@ -845,7 +866,7 @@ const InvoiceReport: React.FC = () => {
               onClick={handleDownloadAttachment}
               type="button"
             >
-              Download Attachment
+              Download Report
             </button>
             <button
               className="bg-green-600 text-sm text-white px-4 py-2 rounded hover:bg-green-500 ml-4"
@@ -1081,7 +1102,7 @@ const InvoiceReport: React.FC = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={17} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={20} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan if needed */}
                     Loading...
                   </td>
                 </tr>
@@ -1096,25 +1117,23 @@ const InvoiceReport: React.FC = () => {
 
                   let showCheckbox = false;
 
-                  // --- MODIFIED LOGIC FOR CHECKBOX VISIBILITY ---
-                  // Show checkboxes for "New", "In Process", or "Ready To Payment" statuses
                   if (invoiceStatusLower === 'new' || invoiceStatusLower === 'in process') {
-                    // For "New" or "In Process" status, show checkbox only if no other of the same is selected or this is the selected one
                     const hasSelected = selectedInvoices.some(
                       inv => inv.status?.toLowerCase() === invoiceStatusLower
                     );
                     showCheckbox = !hasSelected || isSelected;
                   } else if (invoiceStatusLower === 'ready to payment') {
-                    // For "Ready To Payment" status, show checkbox only if no other
-                    // "Ready to Payment" is selected or this is the selected one
                     const hasSelectedReadyToPayment = selectedInvoices.some(
                       inv => inv.status?.toLowerCase() === 'ready to payment'
                     );
                     showCheckbox = !hasSelectedReadyToPayment || isSelected;
                   } else {
-                    // For all other statuses (Rejected, Paid), don't show checkbox
                     showCheckbox = false;
                   }
+
+                  const dbPphAmount = invoice.pph_amount || 0;
+                  const dbPphBaseAmount = invoice.pph_base_amount || 0;
+                  const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
 
                   return (
                     <tr key={invoice.inv_no} className="border-b hover:bg-gray-50">
@@ -1127,116 +1146,87 @@ const InvoiceReport: React.FC = () => {
                           />
                         ) : null}
                       </td>
-                      {/* Clickable invoice number --> Open detail modal */}
                       <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleShowDetail(invoice)}
                           className="text-blue-600 underline"
                         >
-                          {invoice.inv_no || '-'}
+                          {invoice.inv_no}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_date)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.plan_date)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.actual_date)}</td>
-                      {/* Document sub-columns (PDF icon with streaming using API_Stream_File_* variables, no token needed) */}
                       <td className="px-6 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_no}.pdf`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }}
-                          title="View Invoice PDF"
-                        >
-                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
-                        </button>
+                        {invoice.inv_no && (
+                          <button
+                            onClick={() => window.open(`${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            title="View Invoice PDF"
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_no}.pdf`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }}
-                          title="View Faktur PDF"
-                        >
-                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
-                        </button>
+                        {invoice.inv_no && (
+                          <button
+                            onClick={() => window.open(`${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            title="View Faktur Pajak PDF"
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_no}.pdf`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }}
-                          title="View Surat Jalan PDF"
-                        >
-                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
-                        </button>
+                        {invoice.inv_no && (
+                          <button
+                            onClick={() => window.open(`${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            title="View Surat Jalan PDF"
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${API_Stream_File_PO()}/PO_${invoice.inv_no}.pdf`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }}
-                          title="View PO PDF"
-                        >
-                          <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
-                        </button>
+                        {invoice.inv_no && (
+                          <button
+                            onClick={() => window.open(`${API_Stream_File_PO()}/PO_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            title="View Purchase Order PDF"
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        )}
                       </td>
-                      {/* Status with color and popup for Rejected */}
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-white text-xs font-medium ${statusColor} ${
-                            status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
+                          className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${statusColor} ${
+                            invoice.status?.toLowerCase() === 'rejected' ? 'cursor-pointer hover:underline' : ''
                           }`}
-                          onClick={() => {
-                            if (status.toLowerCase() === "rejected") {
-                              handleShowRejectedReason(invoice.reason);
-                            }
-                          }}
+                          onClick={() => invoice.status?.toLowerCase() === 'rejected' && handleShowRejectedReason(invoice.reason)}
                         >
                           {status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        {invoice.receipt_number || '-'}
-                      </td>
+                      <td className="px-6 py-4 text-center">{invoice.receipt_number || '-'}</td>
                       <td className="px-6 py-4 text-center">{invoice.bp_code || '-'}</td>
                       <td className="px-6 py-4 text-center">{invoice.inv_faktur || '-'}</td>
+                      <td className="px-6 py-4 text-center">{formatDate(invoice.inv_faktur_date)}</td>
+                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_dpp)}</td>
+                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.tax_base_amount)}</td>
                       <td className="px-6 py-4 text-center">
-                        {formatDate(invoice.inv_faktur_date)}
+                        {formatCurrency(invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : null)}
                       </td>
+                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.pph_base_amount)}</td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.total_dpp)}
+                        {formatCurrency(calculatedPphAmount)}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.tax_base_amount)}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {formatCurrency(
-                          invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.pph_base_amount)}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.pph_amount)}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.total_amount)}
-                      </td>
+                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_amount)}</td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={17} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={20} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan if needed */}
                     No data available.
                   </td>
                 </tr>

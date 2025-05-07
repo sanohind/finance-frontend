@@ -30,6 +30,7 @@ interface FilterParams {
 
 interface GrTrackingSup {
   po_no: string;
+  gr_no: string;
   bp_id: string;
   bp_name: string;
   currency: string;
@@ -43,7 +44,6 @@ interface GrTrackingSup {
   actual_receipt_period: string;
   receipt_no: string;
   receipt_line: string;
-  gr_no: string;
   packing_slip: string;
   item_no: string;
   ics_code: string;
@@ -76,6 +76,7 @@ interface GrTrackingSup {
 // Table column filter interface
 interface ColumnFilters {
   poNoFilter: string;
+  grNoFilter: string;
   bpIdFilter: string;
   bpNameFilter: string;
   currencyFilter: string;
@@ -87,7 +88,6 @@ interface ColumnFilters {
   receiptPeriodFilter: string;
   receiptNoFilter: string;
   receiptLineFilter: string;
-  grNoFilter: string;
   packingSlipFilter: string;
   itemNoFilter: string;
   icsCodeFilter: string;
@@ -136,6 +136,7 @@ const GrTrackingSup = () => {
   // Column filters state with empty initial values
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
     poNoFilter: '',
+    grNoFilter: '',
     bpIdFilter: '',
     bpNameFilter: '',
     currencyFilter: '',
@@ -147,7 +148,6 @@ const GrTrackingSup = () => {
     receiptPeriodFilter: '',
     receiptNoFilter: '',
     receiptLineFilter: '',
-    grNoFilter: '',
     packingSlipFilter: '',
     itemNoFilter: '',
     icsCodeFilter: '',
@@ -427,6 +427,13 @@ const GrTrackingSup = () => {
       );
     }
     
+    // Filter by GR No
+    if (columnFilters.grNoFilter) {
+      filtered = filtered.filter(item => 
+        item.gr_no?.toLowerCase().includes(columnFilters.grNoFilter.toLowerCase())
+      );
+    }
+    
     // Filter by BP ID
     if (columnFilters.bpIdFilter) {
       filtered = filtered.filter(item => 
@@ -501,13 +508,6 @@ const GrTrackingSup = () => {
     if (columnFilters.receiptLineFilter) {
       filtered = filtered.filter(item => 
         item.receipt_line?.toLowerCase().includes(columnFilters.receiptLineFilter.toLowerCase())
-      );
-    }
-    
-    // Filter by GR No
-    if (columnFilters.grNoFilter) {
-      filtered = filtered.filter(item => 
-        item.gr_no?.toLowerCase().includes(columnFilters.grNoFilter.toLowerCase())
       );
     }
     
@@ -818,6 +818,7 @@ const GrTrackingSup = () => {
     // Reset column filters
     setColumnFilters({
       poNoFilter: '',
+      grNoFilter: '',
       bpIdFilter: '',
       bpNameFilter: '',
       currencyFilter: '',
@@ -829,7 +830,6 @@ const GrTrackingSup = () => {
       receiptPeriodFilter: '',
       receiptNoFilter: '',
       receiptLineFilter: '',
-      grNoFilter: '',
       packingSlipFilter: '',
       itemNoFilter: '',
       icsCodeFilter: '',
@@ -1120,6 +1120,7 @@ const GrTrackingSup = () => {
             <thead className="bg-gray-100 uppercase">
               <tr>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO No</th>
+                <th className="px-8 py-2 text-gray-700 text-center border">GR No</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">BP ID</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">BP Name</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
@@ -1131,7 +1132,6 @@ const GrTrackingSup = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border">Receipt Period</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Receipt No</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Receipt Line</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">GR No</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Packing Slip</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Item No</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">ICS Code</th>
@@ -1166,6 +1166,15 @@ const GrTrackingSup = () => {
                     placeholder="-"
                     value={columnFilters.poNoFilter}
                     onChange={(e) => handleColumnFilterChange('poNoFilter', e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-xs text-center"
+                  />
+                </td>
+                <td className="px-2 py-2 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={columnFilters.grNoFilter}
+                    onChange={(e) => handleColumnFilterChange('grNoFilter', e.target.value)}
                     className="border rounded w-full px-2 py-1 text-xs text-center"
                   />
                 </td>
@@ -1265,15 +1274,6 @@ const GrTrackingSup = () => {
                     placeholder="-"
                     value={columnFilters.receiptLineFilter}
                     onChange={(e) => handleColumnFilterChange('receiptLineFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.grNoFilter}
-                    onChange={(e) => handleColumnFilterChange('grNoFilter', e.target.value)}
                     className="border rounded w-full px-2 py-1 text-xs text-center"
                   />
                 </td>
@@ -1515,8 +1515,9 @@ const GrTrackingSup = () => {
                 </tr>
               ) : filteredData.length > 0 ? (
                 paginatedData.map((item, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
+                  <tr key={`${item.gr_no}-${item.po_line}-${index}`} className="border-b hover:bg-gray-50 text-sm">
                     <td className="px-3 py-2 text-center">{item.po_no}</td>
+                    <td className="px-3 py-2 text-center">{item.gr_no}</td>
                     <td className="px-3 py-2 text-center">{item.bp_id}</td>
                     <td className="px-3 py-2 text-center">{item.bp_name}</td>
                     <td className="px-3 py-2 text-center">{item.currency}</td>
@@ -1528,7 +1529,6 @@ const GrTrackingSup = () => {
                     <td className="px-3 py-2 text-center">{item.actual_receipt_period}</td>
                     <td className="px-3 py-2 text-center">{item.receipt_no}</td>
                     <td className="px-3 py-2 text-center">{item.receipt_line}</td>
-                    <td className="px-3 py-2 text-center">{item.gr_no}</td>
                     <td className="px-3 py-2 text-center">{item.packing_slip}</td>
                     <td className="px-3 py-2 text-center">{item.item_no}</td>
                     <td className="px-3 py-2 text-center">{item.ics_code}</td>

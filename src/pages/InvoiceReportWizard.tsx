@@ -7,7 +7,7 @@ import {
   API_Update_Inv_Header_Admin,
   API_Pph,
   API_Inv_Header_By_Inv_No_Admin,
-   API_Stream_File_Invoice,
+  API_Stream_File_Invoice,
   API_Stream_File_Faktur,
   API_Stream_File_Suratjalan,
   API_Stream_File_PO,
@@ -47,8 +47,6 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
   const [taxBaseAmount, setTaxBaseAmount] = useState<number>(0);
   // Tax code is fixed to id=1, description="11%"
   const TAX_CODE_DESC = '11%';
-  // Remove taxCode state, use fixed value
-  // const [taxCode, setTaxCode] = useState('');
   const [taxAmount, setTaxAmount] = useState<number>(0);
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0);
   const [planDate, setPlanDate] = useState('');
@@ -108,6 +106,28 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
     setTaxAmount(Math.round(taxBaseAmount * 0.11));
   }, [taxBaseAmount]);
 
+  // Effect to calculate PPh Amount and update Total Invoice Amount for preview
+  useEffect(() => {
+    const numericPphBaseAmount = parseFloat(String(pphBaseAmount).replace(/[^0-9.]/g, '')) || 0;
+    let pphRate = 0;
+    const pphId = Number(pphCode);
+
+    // Determine PPh rate based on pph_id
+    if (pphId === 1) pphRate = 0.02; // INCOME TAX 2%
+    else if (pphId === 2) pphRate = 0.04; // INCOME TAX 4%
+    else if (pphId === 3) pphRate = 0.15; // INCOME TAX 15%
+    else if (pphId === 4) pphRate = 0.0; // INCOME TAX 0%
+    // else, pphRate remains 0, or you could fetch from pphList if it contained rates
+
+    const calculatedPphAmount = numericPphBaseAmount * pphRate;
+    setPphAmount(calculatedPphAmount.toFixed(2)); // Store as string with 2 decimal places
+
+    // Recalculate total invoice amount for preview: (DPP + PPN) - PPh
+    // taxBaseAmount is DPP, taxAmount is PPN (calculated as 11% of taxBaseAmount)
+    const newTotalInvoiceAmount = taxBaseAmount + taxAmount - calculatedPphAmount;
+    setTotalInvoiceAmount(newTotalInvoiceAmount);
+  }, [pphCode, pphBaseAmount, taxBaseAmount, taxAmount, pphList]);
+
   // Fetch invoice data when invoiceNumberProp changes
   useEffect(() => {
     if (!invoiceNumberProp) return;
@@ -132,17 +152,28 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
           setTaxNumber(data.inv_faktur || '');
           setTaxDate(data.inv_faktur_date || '');
           setTaxBaseAmount(data.tax_base_amount || 0);
-          setTotalInvoiceAmount(data.total_invoice_amount || 0);
+          setTotalInvoiceAmount(data.total_invoice_amount || 0); // Initial total from API
           setPlanDate(data.plan_date || '');
+          // Set PPh Code if available from data
+          if (data.pph_id) {
+            setPphCode(String(data.pph_id));
+          } else {
+            setPphCode(''); // Reset if not in data
+          }
           setPphBaseAmount(data.pph_base_amount ? String(data.pph_base_amount) : '');
-          setPphAmount(data.pph_amount ? String(data.pph_amount) : '');
+          // pphAmount and final totalInvoiceAmount will be set by the calculation useEffect
+
           // Set line items from inv_lines in header response
-          setLineItems(Array.isArray(data.inv_lines) ? data.inv_lines.map((item: any) => ({
-            id: item.inv_line_id || item.id || '',
-            gr_no: item.gr_no || '',
-            item_desc: item.item_desc || '',
-            receipt_amount: item.receipt_amount || 0,
-          })) : []);
+          setLineItems(
+            Array.isArray(data.inv_lines)
+              ? data.inv_lines.map((item: any) => ({
+                  id: item.inv_line_id || item.id || '',
+                  gr_no: item.gr_no || '',
+                  item_desc: item.item_desc || '',
+                  receipt_amount: item.receipt_amount || 0,
+                }))
+              : []
+          );
         } else {
           toast.error('Failed to fetch invoice header');
         }
@@ -155,10 +186,27 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
 
   // Number formatting
   const formatRupiah = (val: string | number) => {
-    if (!val) return '';
-    const num = Number(String(val).replace(/[^0-9]/g, ''));
-    if (isNaN(num)) return '';
-    return 'Rp ' + num.toLocaleString('id-ID');
+    if (val === null || val === undefined || val === '') return ''; // Handle empty, null, or undefined
+    let num: number;
+
+    if (typeof val === 'string') {
+      // Clean the string: allow digits and one decimal point.
+      // This regex keeps only digits and the first decimal point encountered.
+      const cleanedString = val.replace(/[^\d.]/g, '');
+      num = parseFloat(cleanedString);
+    } else {
+      num = val; // It's already a number
+    }
+
+    if (isNaN(num)) return ''; // If parsing failed or was already NaN
+
+    // Format as IDR currency, always showing two decimal places
+    return num.toLocaleString('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   // Render table for line items
@@ -168,9 +216,9 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
 
     function formatNumber(receipt_amount: number): React.ReactNode {
       return receipt_amount.toLocaleString('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 2,
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 2,
       });
     }
 
@@ -195,7 +243,9 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 <tr key={item.id}>
                   <td className="border px-3 py-2 text-center">{item.gr_no}</td>
                   <td className="border px-3 py-2 text-center">{item.item_desc}</td>
-                  <td className="border px-3 py-2 text-center">{formatNumber(item.receipt_amount)}</td>
+                  <td className="border px-3 py-2 text-center">
+                    {formatNumber(item.receipt_amount)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -238,6 +288,26 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
 
   // Step 1: Main Form (now includes all sections in order)
   const renderMainForm = () => {
+    const getPphDescription = (pphId: string | number): string => {
+      const id = Number(pphId);
+      switch (id) {
+        case 1:
+          return 'INCOME TAX 2%';
+        case 2:
+          return 'INCOME TAX 4%';
+        case 3:
+          return 'INCOME TAX 15%';
+        case 4:
+          return 'INCOME TAX 0%';
+        default:
+          // Fallback to original description if no match or find from pphList
+          const pphItem = pphList.find(
+            (item) => item.pph_id.toString() === pphId.toString()
+          );
+          return pphItem ? pphItem.pph_description : 'Unknown PPh Code';
+      }
+    };
+
     return (
       <div className="space-y-4">
         <h2 className="text-lg font-medium text-gray-900">Invoice Data Update Form</h2>
@@ -323,18 +393,22 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
             </label>
             <select
               id="pphCode"
-              className={`w-full p-2 border rounded-md bg-white ${pphCodeError ? 'border-red-500' : 'border-blue-900'}`}
+              className={`w-full p-2 border rounded-md bg-white ${
+                pphCodeError ? 'border-red-500' : 'border-blue-900'
+              }`}
               value={pphCode}
               onChange={(e) => setPphCode(e.target.value)}
             >
               <option value="">Select PPh Code...</option>
               {pphList.map((item) => (
                 <option key={item.pph_id} value={item.pph_id}>
-                  {item.pph_description}
+                  {getPphDescription(item.pph_id)}
                 </option>
               ))}
             </select>
-            {pphCodeError && <span className="text-xs text-red-500">PPh Code is required.</span>}
+            {pphCodeError && (
+              <span className="text-xs text-red-500">PPh Code is required.</span>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-8">
@@ -345,22 +419,34 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
             <input
               id="pphBaseAmount"
               type="text"
-              className={`w-full p-2 border rounded-md ${pphBaseAmountError ? 'border-red-500' : 'border-blue-900'}`}
+              className={`w-full p-2 border rounded-md ${
+                pphBaseAmountError ? 'border-red-500' : 'border-blue-900'
+              }`}
               value={pphBaseAmount}
               onChange={(e) => setPphBaseAmount(e.target.value)}
               placeholder="Masukkan PPh Base Amount"
             />
-            {pphBaseAmountError && <span className="text-xs text-red-500">PPh Base Amount is required and must be a number.</span>}
+            {pphBaseAmountError && (
+              <span className="text-xs text-red-500">
+                PPh Base Amount is required and must be a number.
+              </span>
+            )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Plan Date <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-gray-700">
+              Plan Date <span className="text-red-500">*</span>
+            </label>
             <input
               type="date"
-              className={`w-full p-2 border rounded-md ${planDateError ? 'border-red-500' : 'border-blue-900'}`}
+              className={`w-full p-2 border rounded-md ${
+                planDateError ? 'border-red-500' : 'border-blue-900'
+              }`}
               value={planDate}
               onChange={(e) => setPlanDate(e.target.value)}
             />
-            {planDateError && <span className="text-xs text-red-500">Plan Date is required.</span>}
+            {planDateError && (
+              <span className="text-xs text-red-500">Plan Date is required.</span>
+            )}
           </div>
         </div>
 
@@ -373,7 +459,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
               id="pphAmount"
               type="text"
               className="w-full p-2 border border-blue-900 rounded-md bg-blue-100 text-blue-900"
-              value={formatRupiah(pphAmount)}
+              value={formatRupiah(pphAmount)} // Display calculated PPh Amount
               readOnly
             />
           </div>
@@ -383,7 +469,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
               type="text"
               className="w-full p-2 border border-blue-900 rounded-md bg-blue-100"
               readOnly
-              value={formatRupiah(totalInvoiceAmount)}
+              value={formatRupiah(totalInvoiceAmount)} // Display recalculated Total Invoice Amount
             />
           </div>
         </div>
@@ -466,10 +552,15 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 onChange={(e) => setDisclaimerAccepted(e.target.checked)}
                 className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-800">Invoice Submission Disclaimer Statement <span className="text-red-500">*</span></span>
+              <span className="text-sm text-gray-800">
+                Invoice Submission Disclaimer Statement{' '}
+                <span className="text-red-500">*</span>
+              </span>
             </label>
             {disclaimerError && (
-              <span className="text-xs text-red-500">You must accept the disclaimer to proceed.</span>
+              <span className="text-xs text-red-500">
+                You must accept the disclaimer to proceed.
+              </span>
             )}
           </div>
         </div>
@@ -517,7 +608,9 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
               }
               try {
                 const pph_id = parseInt(pphCode, 10) || 0;
-                const numericPphBase = parseFloat(pphBaseAmount.replace(/[^0-9.]/g, '')) || 0;
+                const numericPphBase = parseFloat(
+                  pphBaseAmount.replace(/[^0-9.]/g, '')
+                ) || 0;
                 const bodyData = {
                   pph_id,
                   pph_base_amount: numericPphBase,
@@ -668,7 +761,9 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
           <div className="p-4 border-t flex justify-end gap-3 sticky bottom-0 bg-gray-50 z-10 rounded-b-lg">
             <button
               onClick={() => setCurrentStep(currentStep + 1)}
-              className={`px-6 py-2 rounded-md text-sm bg-blue-900 hover:bg-blue-800 text-white ${!isFormValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-6 py-2 rounded-md text-sm bg-blue-900 hover:bg-blue-800 text-white ${
+                !isFormValid ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
               disabled={!isFormValid}
             >
               Next

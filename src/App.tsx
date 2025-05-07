@@ -12,6 +12,7 @@ import { AuthProvider } from './pages/Authentication/AuthContext';
 import GrTracking from './pages/GrTracking';
 import GrTrackingSup from './pages/GrTrackingSup';
 import InvoiceCreation from './pages/InvoiceCreation';
+import News from './pages/News';
 import InvoiceCreationSup from './pages/InvoiceCreationSup';
 import InvoiceReport from './pages/InvoiceReport';
 import InvoiceReportSup from './pages/InvoiceReportSup';
@@ -49,6 +50,15 @@ const App = () => {
               element={
                 <ProtectedRoute allowedRoles={['1','2','3']}>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/news"
+              element={
+                <ProtectedRoute allowedRoles={['2']}>
+                  <News />
                 </ProtectedRoute>
               }
             />

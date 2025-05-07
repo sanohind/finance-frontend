@@ -167,7 +167,7 @@ const EditUser = () => {
       });
 
       const result = await response.json();
-      if (response.ok && result.status) {
+      if (response.ok && (result.status || result.message === 'User updated')) {
         toast.success('User successfully updated!');
         setTimeout(() => navigate('/list-user'), 1000);
       } else {

@@ -32,6 +32,13 @@ export const API_Update_User_Admin = () => API + getRolePath() + '/update/';
 export const API_Delete_User_Admin = () => API + getRolePath() + `/delete/`;
 export const API_Update_Status_Admin = () => API + getRolePath() + `/status/`;
 
+// News and Manage News
+export const API_Get_News = () => API + getRolePath() + '/news';
+export const API_Create_News_Admin = () => API + getRolePath() + '/news/store';
+export const API_Get_News_Edit_Admin = () => API + getRolePath() + '/news/edit';
+export const API_Update_News_Admin = () => API + getRolePath() + '/news/update';
+export const API_Delete_News_Admin = () => API + getRolePath() + '/news/delete';
+
 // Invoice Management Admin
 export const API_Inv_Header_Admin = () => API + getRolePath() + `/inv-header`;
 export const API_Inv_Header_By_Bp_Code_Admin = () => API + getRolePath() + `/inv-header/bp-code/`;
