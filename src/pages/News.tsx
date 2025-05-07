@@ -4,7 +4,8 @@ import Button from '../components/Forms/Button';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { API_Get_News, API_Create_News_Admin, API_Get_News_Edit_Admin, API_Update_News_Admin, API_Delete_News_Admin } from '../api/api';
+import { API_Get_News, API_Create_News_Admin, API_Get_News_Edit_Admin, API_Update_News_Admin, API_Delete_News_Admin, API_Stream_News_Admin } from '../api/api';
+import { AiFillFilePdf } from 'react-icons/ai';
 
 interface NewsItem {
   id: string;
@@ -243,6 +244,56 @@ const News: React.FC = () => {
     }
   };
 
+  const handleStreamDocument = async (documentPath: string) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      toast.error('Authentication token not found.');
+      return;
+    }
+
+    const filename = documentPath.includes('/') ? documentPath.substring(documentPath.lastIndexOf('/') + 1) : documentPath;
+
+    try {
+      toast.info('Fetching document...', { autoClose: 2000 });
+      const response = await fetch(`${API_Stream_News_Admin()}/${filename}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        let errorText = `Failed to stream document. Status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.message) {
+            errorText = errorData.message;
+          } else {
+            const textError = await response.text();
+            if (textError) errorText = textError;
+          }
+        } catch (e) {
+          try {
+            const textError = await response.text();
+            if (textError) errorText = textError;
+          } catch (textEx) {
+          }
+        }
+        throw new Error(errorText);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const newWindow = window.open(url, '_blank');
+      if (!newWindow) {
+        toast.error("Failed to open document. Please check your browser's pop-up settings.");
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'An error occurred while trying to stream the document.');
+    }
+  };
+
   return (
     <>
       <ToastContainer position="top-right" />
@@ -455,7 +506,17 @@ const News: React.FC = () => {
                         <td className="px-3 py-3 text-center whitespace-nowrap">{item.start_date}</td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">{item.end_date}</td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">
-                          <a href={`/${item.document}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{item.document}</a>
+                          {item.document ? (
+                            <button
+                              onClick={() => handleStreamDocument(item.document)}
+                              className="text-red-500 hover:text-red-700 flex items-center justify-center w-full h-full bg-transparent border-none cursor-pointer p-0"
+                              title={`View ${item.document}`}
+                            >
+                              <AiFillFilePdf className="h-5 w-5" />
+                            </button>
+                          ) : (
+                            '-'
+                          )}
                         </td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">{item.created_by}</td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">{item.updated_by}</td>

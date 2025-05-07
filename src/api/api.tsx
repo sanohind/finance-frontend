@@ -38,6 +38,7 @@ export const API_Create_News_Admin = () => API + getRolePath() + '/news/store';
 export const API_Get_News_Edit_Admin = () => API + getRolePath() + '/news/edit';
 export const API_Update_News_Admin = () => API + getRolePath() + '/news/update';
 export const API_Delete_News_Admin = () => API + getRolePath() + '/news/delete';
+export const API_Stream_News_Admin = () => API + getRolePath() + '/news/document';
 
 // Invoice Management Admin
 export const API_Inv_Header_Admin = () => API + getRolePath() + `/inv-header`;
