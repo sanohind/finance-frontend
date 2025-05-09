@@ -15,7 +15,7 @@ const DropdownUser = () => {
   // Ambil data dari localStorage pada saat komponen dimuat
   useEffect(() => {
     const storedName = localStorage.getItem('name');
-    const storedSupplierName = localStorage.getItem('supplier_name');
+    const storedSupplierName = localStorage.getItem('role');
 
     if (storedName) {
       setName(storedName);

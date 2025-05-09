@@ -3,7 +3,11 @@ import { Calendar as BigCalendar, momentLocalizer, Views } from 'react-big-calen
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom';
+import { AiFillFilePdf } from 'react-icons/ai'; // Import the PDF icon
+import { toast, ToastContainer } from 'react-toastify'; // Import toast notifications
+import 'react-toastify/dist/ReactToastify.css'; // Import toast styles
+import { API_Stream_News_Admin } from '../api/api'; 
+import ReactDOMServer from 'react-dom/server'; // To render React components to string
 
 const localizer = momentLocalizer(moment);
 
@@ -40,9 +44,61 @@ const CustomToolbar = (toolbar: any) => {
 };
 
 const Calendar: React.FC<CalendarProps> = ({ events }) => {
-  const navigate = useNavigate();
+
+  const handleStreamDocumentInCalendar = async (documentPath: string) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      toast.error('Authentication token not found.');
+      return;
+    }
+
+    const filename = documentPath.includes('/') ? documentPath.substring(documentPath.lastIndexOf('/') + 1) : documentPath;
+
+    try {
+      toast.info('Fetching document...', { autoClose: 2000 });
+      const response = await fetch(`${API_Stream_News_Admin()}/${filename}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        let errorText = `Failed to stream document. Status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.message) {
+            errorText = errorData.message;
+          } else {
+            const textError = await response.text();
+            if (textError) errorText = textError;
+          }
+        } catch (e) {
+          try {
+            const textError = await response.text();
+            if (textError) errorText = textError;
+          } catch (textEx) {}
+        }
+        throw new Error(errorText);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const newWindow = window.open(url, '_blank');
+      if (!newWindow) {
+        toast.error("Failed to open document. Please check your browser's pop-up settings.");
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'An error occurred while trying to stream the document.');
+    }
+  };
 
   const onSelectEventHandler = (event: Event) => {
+    const pdfIconHtml = ReactDOMServer.renderToStaticMarkup(
+      <AiFillFilePdf className="h-5 w-5" style={{ verticalAlign: 'middle' }} />
+    );
+
     Swal.fire({
       icon: 'info',
       title: event.title,
@@ -57,17 +113,34 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
         <p>
           End Date: <strong>${moment(event.end_date).format('MMMM D, YYYY')}</strong>
         </p>
-        <p>Document: <strong>${event.document}</strong></p>
+        <p>Document: 
+          ${event.document ? `
+            <button 
+              id="view-calendar-doc-button" 
+              title="View Document: ${event.document}"
+              style="background: none; border: none; padding: 0; color: #1e3a8a; cursor: pointer; display: inline-flex; align-items: center; font-family: inherit; font-size: inherit; vertical-align: middle;"
+            >
+              ${pdfIconHtml}
+            </button>` :
+          'N/A'}
+        </p>
       </div>
       `,
-      confirmButtonColor: '#1e3a8a',
-      confirmButtonText: 'Go to Details',
+      showConfirmButton: false,
       showCancelButton: true,
       cancelButtonText: 'Close',
       cancelButtonColor: '#dc2626',
+      didOpen: () => {
+        if (event.document) {
+          const docButton = document.getElementById('view-calendar-doc-button');
+          if (docButton) {
+            docButton.onclick = () => handleStreamDocumentInCalendar(event.document);
+          }
+        }
+      },
     }).then((result) => {
-      if (result.isConfirmed) {
-        navigate(`/document-detail?doc=${event.document}`);
+      if (result.dismiss === Swal.DismissReason.cancel) {
+        // Optional: Handle cancel button click if needed
       }
     });
   };
@@ -105,31 +178,43 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
   }));
 
   return (
-    <div className="w-full max-w-full rounded-lg bg-white shadow-md">
-      <BigCalendar
-        localizer={localizer}
-        events={mappedEvents}
-        defaultView={Views.MONTH}
-        views={['month']}
-        startAccessor="start"
-        endAccessor="end"
-        style={{
-          height: 900,
-          padding: '30px',
-        }}
-        eventPropGetter={eventStyleGetter}
-        onSelectEvent={onSelectEventHandler}
-        toolbar={true}
-        components={{
-          toolbar: CustomToolbar,
-        }}
-        formats={formats}
-        popup
-        selectable
-        className="custom-calendar"
+    <>
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3000} 
+        hideProgressBar={false} 
+        newestOnTop={false} 
+        closeOnClick 
+        rtl={false} 
+        pauseOnFocusLoss 
+        draggable 
+        pauseOnHover 
       />
-      <style>
-        {`
+      <div className="w-full max-w-full rounded-lg bg-white shadow-md">
+        <BigCalendar
+          localizer={localizer}
+          events={mappedEvents}
+          defaultView={Views.MONTH}
+          views={['month']}
+          startAccessor="start"
+          endAccessor="end"
+          style={{
+            height: 900,
+            padding: '30px',
+          }}
+          eventPropGetter={eventStyleGetter}
+          onSelectEvent={onSelectEventHandler}
+          toolbar={true}
+          components={{
+            toolbar: CustomToolbar,
+          }}
+          formats={formats}
+          popup
+          selectable
+          className="custom-calendar"
+        />
+        <style>
+          {`
           .custom-calendar .rbc-toolbar {
             display: flex;
             justify-content: space-between;
@@ -267,8 +352,9 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
             background: #555;
           }
         `}
-      </style>
-    </div>
+        </style>
+      </div>
+    </>
   );
 };
 
