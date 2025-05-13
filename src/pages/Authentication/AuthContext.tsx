@@ -2,7 +2,6 @@ import { createContext, useState, useContext, useEffect, ReactNode } from 'react
 import { API_Logout, API_Login } from '../../api/api';
 import { toast, ToastContainer } from 'react-toastify';
 import axios from 'axios';
-import { getRolePath } from './Role';
 
 type Role = '1' | '2' | '3' | null;
 
@@ -23,7 +22,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('role');
+    const storedRole = localStorage.getItem('role') as Role | null;
+
     const loginError = sessionStorage.getItem('login_error');
 
     if (loginError) {
@@ -33,11 +33,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }, 100);
     }
 
-    if (token && role) {
-      const roleValue = getRolePath(role) as Role;
-      setUserRole(roleValue);
+    if (token && storedRole && ['1', '2', '3'].includes(storedRole)) {
+      setUserRole(storedRole);
       setIsAuthenticated(true);
     } else {
+      if (storedRole && !['1', '2', '3'].includes(storedRole)) {
+        toast.error('Invalid session data. Please log in again.');
+      }
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('name');
+      localStorage.removeItem('token_expiration');
       setUserRole(null);
       setIsAuthenticated(false);
     }
@@ -46,22 +52,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkTokenExpiration = () => {
       const expirationTime = localStorage.getItem('token_expiration');
       if (!expirationTime) {
-        setUserRole(null);
-        setIsAuthenticated(false);
-        localStorage.clear();
+        if (localStorage.getItem('access_token')) {
+          setUserRole(null);
+          setIsAuthenticated(false);
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('role');
+          localStorage.removeItem('name');
+          localStorage.removeItem('token_expiration');
+          toast.info('Session data incomplete. Please log in again.');
+        }
         return;
       }
 
-      if (expirationTime && new Date().getTime() > parseInt(expirationTime)) {
+      if (new Date().getTime() > parseInt(expirationTime)) {
         setUserRole(null);
+        setIsAuthenticated(false);
         localStorage.removeItem('access_token');
         localStorage.removeItem('token_expiration');
+        localStorage.removeItem('role');
+        localStorage.removeItem('name');
         toast.error('Session expired, please login again');
-        setIsAuthenticated(false);
       }
     };
 
-    const interval = setInterval(checkTokenExpiration, 1000); // Check every second
+    const interval = setInterval(checkTokenExpiration, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -69,30 +83,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const response = await axios.post(API_Login(), { username, password });
-      const { access_token, role, name } = response.data;
+      const { access_token, role: apiRole, name } = response.data;
 
-      // Save data to localStorage
+      let validatedUserRole: Role = null;
+      const serverRoleString = String(apiRole).trim();
+
+      if (serverRoleString === '1' || serverRoleString === '2' || serverRoleString === '3') {
+        validatedUserRole = serverRoleString as Role;
+      }
+
+      if (!validatedUserRole) {
+        sessionStorage.setItem('login_error', `Login failed: Invalid user role ('${apiRole || 'unknown'}') received from server.`);
+        setTimeout(() => window.location.reload(), 100);
+        return false;
+      }
+
       localStorage.setItem('access_token', access_token);
-      localStorage.setItem('role', getRolePath(role));
+      localStorage.setItem('role', validatedUserRole);
       localStorage.setItem('name', name);
-      localStorage.setItem('token_expiration', (new Date().getTime() + 3599 * 1000).toString()); // 59 minutes 59 seconds
+      localStorage.setItem('token_expiration', (new Date().getTime() + 3599 * 1000).toString());
 
       setIsAuthenticated(true);
-      setUserRole(role);
-
-      const expirationTime = new Date().getTime() + 3599 * 1000; // 59 minutes 59 seconds
-      localStorage.setItem('token_expiration', expirationTime.toString());
+      setUserRole(validatedUserRole);
 
       toast.success('Welcome back! ' + name);
       return true;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        sessionStorage.setItem('login_error', error.response.data.message);
-        setTimeout(() => window.location.reload(), 100);
+        sessionStorage.setItem('login_error', error.response.data.message || 'Login failed.');
       } else {
-        sessionStorage.setItem('login_error', 'An unexpected error occurred');
-        setTimeout(() => window.location.reload(), 100);
+        sessionStorage.setItem('login_error', 'An unexpected error occurred during login.');
       }
+      setTimeout(() => window.location.reload(), 100);
       return false;
     } finally {
       setIsLoading(false);
@@ -112,34 +134,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           },
           body: JSON.stringify({ access_token: token }),
         });
-
-        setUserRole(null);
-        localStorage.clear();
-        setIsAuthenticated(false);
-        toast.success('Logout success');
-        
-        // Add redirect after successful logout
-        window.location.href = '/';
       } catch (error: any) {
-        setUserRole(null);
-        localStorage.clear();
-        setIsAuthenticated(false);
-        toast.error('Logout failed: ' + (error.response ? error.response.data : error.message));
-        console.error('Error:', error.response ? error.response.data : error.message);
-        
-        // Still redirect even if logout API fails
-        window.location.href = '/';
+        console.error('API Logout failed:', error.response ? error.response.data : error.message);
       }
-    } else {
-      setUserRole(null);
-      localStorage.clear();
-      setIsAuthenticated(false);
-      toast.error('Error: Token not found');
-      console.error('Error: Token not found');
-      
-      // Redirect if no token found
-      window.location.href = '/';
     }
+
+    setUserRole(null);
+    setIsAuthenticated(false);
+
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('name');
+    localStorage.removeItem('token_expiration');
+
+    toast.success('Logout success');
+
+    window.location.href = '/';
   };
 
   return (

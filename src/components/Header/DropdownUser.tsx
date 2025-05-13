@@ -5,28 +5,70 @@ import UserLogo from '../../images/user/user_logo_default.png';
 import { useAuth } from '../../pages/Authentication/AuthContext';
 import ClickOutside from '../../components/ClickOutside';
 
-
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [name, setName] = useState('');
-  const [supplierName, setSupplierName] = useState('');
+  const [userRoleDisplay, setUserRoleDisplay] = useState('');
   const [supplierImage, setSupplierImage] = useState('');
-  const { logout } = useAuth();
+  const { logout, userRole, isLoading } = useAuth(); // Destructure isLoading
 
-  // Ambil data dari localStorage pada saat komponen dimuat
   useEffect(() => {
     const storedName = localStorage.getItem('name');
-    const storedSupplierName = localStorage.getItem('supplier_name');
-
     if (storedName) {
       setName(storedName);
     }
 
-    if (storedSupplierName) {
-      setSupplierName(storedSupplierName);
-      setSupplierImage(`https://picsum.photos/seed/${storedSupplierName}/200`);
+    let roleForSwitch: string | null = null;
+
+    if (isLoading) {
+      // While auth state is loading, try to use localStorage for an optimistic update
+      const lsRole = localStorage.getItem('role'); // lsRole is string or null
+      if (lsRole) { // If lsRole is a non-empty string (could be '1', '2', '3', or other)
+        roleForSwitch = lsRole;
+      }
+    } else {
+      // Auth state loading is complete, userRole from context is the source of truth
+      if (userRole !== null) { // userRole is '1', '2', or '3'
+        roleForSwitch = userRole; // userRole is already a string '1', '2', or '3'
+      }
+      // if userRole is null, roleForSwitch remains null
     }
-  }, []);
+
+    let newRoleText = 'User'; // Default display text
+
+    if (roleForSwitch) {
+      switch (roleForSwitch) {
+        case '1':
+          newRoleText = 'Super Admin';
+          break;
+        case '2':
+          newRoleText = 'Finance';
+          break;
+        case '3':
+          newRoleText = 'Supplier Finance';
+          break;
+        // default: newRoleText remains 'User' for unknown non-empty string roles from localStorage
+      }
+    } else {
+      // roleForSwitch is null. This means:
+      // 1. isLoading is true, and no valid role in localStorage.
+      // 2. isLoading is false, and userRole from context is null (indicating no role or logged out).
+      if (!isLoading && userRole === null) {
+        newRoleText = 'Guest'; // Explicitly 'Guest' if confirmed logged out or no role after loading.
+      }
+      // else (e.g., isLoading is true and no lsRole), newRoleText remains 'User' as a placeholder.
+    }
+    
+    setUserRoleDisplay(newRoleText);
+
+    // Logic for supplier image
+    const storedSupplierNameForImage = localStorage.getItem('supplier_name');
+    if (storedSupplierNameForImage) {
+      setSupplierImage(`https://picsum.photos/seed/${storedSupplierNameForImage}/200`);
+    } else {
+      setSupplierImage(''); // Clear previous image if no supplier_name, to allow UserLogo fallback
+    }
+  }, [userRole, isLoading]); // Dependencies for the effect
 
   const handleLogout = async () => {
     // SweetAlert2 for logout confirmation
@@ -41,7 +83,7 @@ const DropdownUser = () => {
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
-      logout(); // Memanggil fungsi logout Anda
+        logout(); // Memanggil fungsi logout Anda
       }
     });
   };
@@ -58,7 +100,7 @@ const DropdownUser = () => {
             {name || 'User Testing'} {/* Menampilkan nama dari localStorage */}
           </span>
           <span className="block text-xs">
-            {supplierName || 'Pengguna Testing'} {/* Menampilkan pekerjaan dari localStorage */}
+            {userRoleDisplay} {/* Display the mapped role name here */}
           </span>
         </span>
 
@@ -87,7 +129,6 @@ const DropdownUser = () => {
             d="M0.410765 0.910734C0.736202 0.585297 1.26384 0.585297 1.58928 0.910734L6.00002 5.32148L10.4108 0.910734C10.7362 0.585297 11.2638 0.585297 11.5893 0.910734C11.9147 1.23617 11.9147 1.76381 11.5893 2.08924L6.58928 7.08924C6.26384 7.41468 5.7362 7.41468 5.41077 7.08924L0.410765 2.08924C0.0853277 1.76381 0.0853277 1.23617 0.410765 0.910734Z"
             fill=""
           />
-
         </svg>
       </Link>
 

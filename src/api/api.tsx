@@ -3,8 +3,17 @@ const API = 'https://api-finance.profileporto.site/api';
 // const API = 'https://be-sss-dev.sanohindonesia.co.id:8443/api';
 
 const getRolePath = () => {
-    const userRole = localStorage.getItem('role');
-    return userRole ? `/${userRole}` : '';
+    const userRole = localStorage.getItem('role'); // This will be '1', '2', or '3'
+    switch (userRole) {
+        case '1':
+            return '/super-admin';
+        case '2':
+            return '/finance';
+        case '3':
+            return '/supplier-finance';
+        default:
+            return ''; // Or handle as an error, though empty string seems to be the fallback
+    }
 };
 
 // login API endpoint
