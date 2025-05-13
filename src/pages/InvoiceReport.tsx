@@ -445,25 +445,46 @@ const InvoiceReport: React.FC = () => {
     setShowReasonModal(true);
   };
 
-  // --- MODIFIED: Multi-record selection logic ---
   const handleRecordSelection = (invoice: Invoice) => {
-    const exists = selectedInvoices.find((inv) => inv.inv_no === invoice.inv_no);
-    const invoiceStatusLower = invoice.status?.toLowerCase();
+    const { status } = invoice;
+    const statusLower = status?.toLowerCase();
 
-    // If user clicks a row that's already selected, just toggle it off:
-    if (exists) {
-      setSelectedInvoices([]);
-      return;
-    }
+    setSelectedInvoices(prevSelectedInvoices => {
+      let newSelectedInvoices: Invoice[] = [];
+      const isCurrentlySelected = prevSelectedInvoices.some(inv => inv.inv_no === invoice.inv_no);
 
-    // For "New", "In Process", or "Ready To Payment" status, only allow selecting ONE at a time
-    if (
-      invoiceStatusLower === 'new' ||
-      invoiceStatusLower === 'in process' ||
-      invoiceStatusLower === 'ready to payment'
-    ) {
-      setSelectedInvoices([invoice]);
-    }
+      if (statusLower === 'new' || statusLower === 'in process') {
+        // Single select logic for 'New' or 'In Process'
+        if (isCurrentlySelected) {
+          // If already selected, deselect it (clear all selections)
+          newSelectedInvoices = [];
+        } else {
+          // If not selected, select it and clear any other selections
+          newSelectedInvoices = [invoice];
+        }
+      } else if (statusLower === 'ready to payment') {
+        // Multi-select logic for 'Ready To Payment'
+        if (isCurrentlySelected) {
+          // If already selected, deselect it
+          newSelectedInvoices = prevSelectedInvoices.filter(inv => inv.inv_no !== invoice.inv_no);
+        } else {
+          // If not selected, add it.
+          // Clear any 'New' or 'In Process' invoices if they were selected.
+          const hasNonReadyToPaymentSelected = prevSelectedInvoices.some(
+            inv => inv.status?.toLowerCase() === 'new' || inv.status?.toLowerCase() === 'in process'
+          );
+          if (hasNonReadyToPaymentSelected) {
+            newSelectedInvoices = [invoice]; // Start fresh with this 'Ready to Payment'
+          } else {
+            newSelectedInvoices = [...prevSelectedInvoices, invoice]; // Add to existing 'Ready to Payment' selections
+          }
+        }
+      } else {
+        // For other statuses (e.g., 'Paid', 'Rejected'), or if status is undefined, clicking does not change selection.
+        newSelectedInvoices = [...prevSelectedInvoices];
+      }
+      return newSelectedInvoices;
+    });
   };
 
   const handleVerify = async () => {
@@ -666,19 +687,16 @@ const InvoiceReport: React.FC = () => {
         toast.error('Authentication token not found');
         return;
       }
-      for (const invoice of readyToPaymentInvoices) {
-        const response = await fetch(API_Upload_Payment_Admin(invoice.inv_no), {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ actual_date: actualDate }),
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to update actual date');
-        }
+      // Bulk update actual_date for all selected invoices
+      const invNos = readyToPaymentInvoices.map(inv => inv.inv_no);
+      const response = await fetch(API_Upload_Payment_Admin(), {
+        method: 'POST', // Changed from PUT to POST
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inv_nos: invNos, actual_date: actualDate, status: 'Paid' }), // Added status: 'Paid'
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update actual dates');
       }
       toast.success('Actual date updated successfully!');
       setPostModalOpen(false);
@@ -1132,23 +1150,32 @@ const InvoiceReport: React.FC = () => {
                   const isSelected = selectedInvoices.some(
                     (inv) => inv.inv_no === invoice.inv_no
                   );
-                  const invoiceStatusLower = invoice.status?.toLowerCase();
-                  const statusColor = getStatusColor(invoice.status);
-
+                  const currentInvoiceStatusLower = invoice.status?.toLowerCase();
                   let showCheckbox = false;
 
-                  if (invoiceStatusLower === 'new' || invoiceStatusLower === 'in process') {
-                    const hasSelected = selectedInvoices.some(
-                      inv => inv.status?.toLowerCase() === invoiceStatusLower
-                    );
-                    showCheckbox = !hasSelected || isSelected;
-                  } else if (invoiceStatusLower === 'ready to payment') {
-                    const hasSelectedReadyToPayment = selectedInvoices.some(
-                      inv => inv.status?.toLowerCase() === 'ready to payment'
-                    );
-                    showCheckbox = !hasSelectedReadyToPayment || isSelected;
-                  } else {
-                    showCheckbox = false;
+                  if (currentInvoiceStatusLower === 'new' || currentInvoiceStatusLower === 'in process' || currentInvoiceStatusLower === 'ready to payment') {
+                    if (selectedInvoices.length === 0) {
+                      // Case 1: Nothing is selected. Show checkbox for any selectable type.
+                      showCheckbox = true;
+                    } else {
+                      // Case 2: Something is selected. Determine visibility based on the type of the first selected invoice.
+                      const firstSelectedInvoice = selectedInvoices[0];
+                      const firstSelectedStatusLower = firstSelectedInvoice.status?.toLowerCase();
+
+                      if (firstSelectedStatusLower === 'new' || firstSelectedStatusLower === 'in process') {
+                        // Subcase 2a: A 'New' or 'In Process' invoice is selected (single-select mode for this type).
+                        // Show checkbox ONLY for that specific selected invoice.
+                        if (invoice.inv_no === firstSelectedInvoice.inv_no) {
+                          showCheckbox = true;
+                        }
+                      } else if (firstSelectedStatusLower === 'ready to payment') {
+                        // Subcase 2b: 'Ready to Payment' invoice(s) are selected (multi-select mode for this type).
+                        // Show checkbox ONLY for other 'Ready to Payment' invoices.
+                        if (currentInvoiceStatusLower === 'ready to payment') {
+                          showCheckbox = true;
+                        }
+                      }
+                    }
                   }
 
                   const dbPphAmount = invoice.pph_amount || 0;
@@ -1158,13 +1185,14 @@ const InvoiceReport: React.FC = () => {
                   return (
                     <tr key={invoice.inv_no} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2 text-center">
-                        {showCheckbox ? (
+                        {showCheckbox && (
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => handleRecordSelection(invoice)}
+                            className="form-checkbox h-5 w-5 text-blue-600"
                           />
-                        ) : null}
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button
@@ -1219,7 +1247,7 @@ const InvoiceReport: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${statusColor} ${
+                          className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(invoice.status)} ${
                             invoice.status?.toLowerCase() === 'rejected' || invoice.status?.toLowerCase() === 'paid' ? 'cursor-pointer hover:underline' : ''
                           }`}
                           onClick={() => {
