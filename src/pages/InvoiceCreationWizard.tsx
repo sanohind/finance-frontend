@@ -27,18 +27,27 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
   const [taxNumberError, setTaxNumberError] = useState('');
 
   // Add file validation function
-  const [fileError, setFileError] = useState<string>('');
-  
-  const validateFileType = (file: File | null): boolean => {
-    if (!file) return false;
-    
-    // Check if file is PDF
+  const [invoiceFileError, setInvoiceFileError] = useState<string>('');
+  const [fakturFileError, setFakturFileError] = useState<string>('');
+  const [suratJalanFileError, setSuratJalanFileError] = useState<string>('');
+  const [poFileError, setPoFileError] = useState<string>('');
+
+  const validateFileType = (
+    file: File | null,
+    setError: React.Dispatch<React.SetStateAction<string>>
+  ): boolean => {
+    if (!file) { setError(''); return false; }
+    // Check PDF
     if (!file.type.includes('pdf')) {
-      setFileError('Only PDF files are allowed');
+      setError('Only PDF files are allowed');
       return false;
     }
-    
-    setFileError('');
+    // Check size <=5MB
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      return false;
+    }
+    setError('');
     return true;
   };
 
@@ -160,11 +169,9 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
         );
       }
 
-      alert('Invoice created successfully!');
       onFinish();
     } catch (err: any) {
       console.error('Error creating invoice:', err);
-      alert(`Failed to create invoice: ${err.message || String(err)}`);
     }
   };
 
@@ -416,13 +423,13 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    if (validateFileType(file)) setInvoiceFile(file);
+                    if (validateFileType(file, setInvoiceFileError)) setInvoiceFile(file);
                   }}
                 />
 
                 {/* Display file error if any */}
-                {fileError && (
-                  <p className="text-xs text-red-500 mt-1 text-center">{fileError}</p>
+                {invoiceFileError && (
+                  <p className="text-xs text-red-500 mt-1 text-center">{invoiceFileError}</p>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -463,9 +470,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    if (validateFileType(file)) setFakturPajakFile(file);
+                    if (validateFileType(file, setFakturFileError)) setFakturPajakFile(file);
                   }}
                 />
+                {fakturFileError && (
+                  <p className="text-xs text-red-500 mt-1 text-center">{fakturFileError}</p>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-center">
                 <span className="text-sm text-purple-800 font-medium">Tax Invoice</span>
@@ -507,9 +517,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    if (validateFileType(file)) setSuratJalanFile(file);
+                    if (validateFileType(file, setSuratJalanFileError)) setSuratJalanFile(file);
                   }}
                 />
+                {suratJalanFileError && (
+                  <p className="text-xs text-red-500 mt-1 text-center">{suratJalanFileError}</p>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-center">
                 <span className="text-sm text-purple-800 font-medium">Delivery Note</span>
@@ -551,9 +564,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                   accept="application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    if (validateFileType(file)) setPoFile(file);
+                    if (validateFileType(file, setPoFileError)) setPoFile(file);
                   }}
                 />
+                {poFileError && (
+                  <p className="text-xs text-red-500 mt-1 text-center">{poFileError}</p>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-center">
                 <span className="text-sm text-purple-800 font-medium">Purchase Order</span>

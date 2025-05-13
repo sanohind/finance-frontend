@@ -49,6 +49,8 @@ export const API_Update_Inv_Header_Admin = () => API + getRolePath() + `/inv-hea
 export const API_Update_Inv_Header_Rejected = () => API + getRolePath() + `/inv-header/reject`;
 export const API_Update_In_Process_Admin = () => API + getRolePath() + `/inv-header/`;
 export const API_Upload_Payment_Admin = (inv_no: string): string => `${API}${getRolePath()}/inv-header/upload-payment/${inv_no}`;
+export const API_Revert_Admin = () => API + getRolePath() + `/inv-header/revert`;
+
 // Invoice Lines Admin
 export const API_Inv_Line_Admin = () => API + getRolePath() + `/inv-line`;
 export const API_Inv_Line_Create_Invoice_Admin = () => API + getRolePath() + `/inv-line/invoice`;

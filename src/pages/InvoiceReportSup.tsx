@@ -303,7 +303,6 @@ const InvoiceReportSup = () => {
       'Status',
       'Receipt No',
       'Supplier Code',
-      'Supplier Name',
       'Tax Number',
       'Tax Date',
       'Total DPP',
@@ -326,7 +325,6 @@ const InvoiceReportSup = () => {
         inv.status || '-',
         inv.receipt_number || '-',
         inv.bp_code || '-',
-        inv.bp_name || '-', // Supplier Name as bp_name
         inv.inv_faktur || '-',
         inv.inv_faktur_date || '-',
         inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
@@ -612,13 +610,6 @@ const InvoiceReportSup = () => {
               type="button"
             >
               Download Report
-            </button>
-            <button
-              className="bg-blue-900 text-sm text-white px-4 py-2 rounded hover:bg-blue-800 ml-4"
-              onClick={handleCancelInvoice}
-              type="button"
-            >
-              Post Invoice
             </button>
           </div>
         </div>

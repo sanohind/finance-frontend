@@ -13,6 +13,7 @@ import {
   API_Stream_File_Faktur,
   API_Stream_File_Suratjalan,
   API_Stream_File_PO,
+  API_Revert_Admin,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
 import * as XLSX from 'xlsx';
@@ -111,113 +112,115 @@ const InvoiceReport: React.FC = () => {
   }));
   const selectedOption = supplierOptions.find((opt) => opt.value === searchSupplier) || null;
 
-  useEffect(() => {
-    const fetchBusinessPartners = async () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) return;
+  // fetch business partners
+  const fetchPartners = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
 
-      try {
-        const response = await fetch(API_List_Partner_Admin(), {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+    try {
+      const response = await fetch(API_List_Partner_Admin(), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch business partners');
-        }
-        const result = await response.json();
-        let partnersList: BusinessPartner[] = [];
-
-        if (result && typeof result === 'object') {
-          if (Array.isArray(result.data)) {
-            partnersList = result.data.map((partner: any) => ({
-              bp_code: partner.bp_code,
-              bp_name: partner.bp_name,
-              adr_line_1: partner.adr_line_1,
-            }));
-          } else if (result.data && typeof result.data === 'object') {
-            partnersList = Object.values(result.data).map((partner: any) => ({
-              bp_code: partner.bp_code,
-              bp_name: partner.bp_name,
-              adr_line_1: partner.adr_line_1,
-            }));
-          } else if (Array.isArray(result)) {
-            partnersList = result;
-          } else if (result.bp_code && result.bp_name) {
-            partnersList = [
-              {
-                bp_code: result.bp_code,
-                bp_name: result.bp_name,
-                adr_line_1: result.adr_line_1 || '',
-              },
-            ];
-          }
-        }
-
-        if (partnersList.length > 0) {
-          setBusinessPartners(partnersList);
-        } else {
-          toast.warn('No business partners found');
-        }
-      } catch (error) {
-        console.error('Error fetching business partners:', error);
-        toast.error('Error fetching business partners');
+      if (!response.ok) {
+        throw new Error('Failed to fetch business partners');
       }
-    };
+      const result = await response.json();
+      let partnersList: BusinessPartner[] = [];
 
-    fetchBusinessPartners();
+      if (result && typeof result === 'object') {
+        if (Array.isArray(result.data)) {
+          partnersList = result.data.map((partner: any) => ({
+            bp_code: partner.bp_code,
+            bp_name: partner.bp_name,
+            adr_line_1: partner.adr_line_1,
+          }));
+        } else if (result.data && typeof result.data === 'object') {
+          partnersList = Object.values(result.data).map((partner: any) => ({
+            bp_code: partner.bp_code,
+            bp_name: partner.bp_name,
+            adr_line_1: partner.adr_line_1,
+          }));
+        } else if (Array.isArray(result)) {
+          partnersList = result;
+        } else if (result.bp_code && result.bp_name) {
+          partnersList = [
+            {
+              bp_code: result.bp_code,
+              bp_name: result.bp_name,
+              adr_line_1: result.adr_line_1 || '',
+            },
+          ];
+        }
+      }
+
+      if (partnersList.length > 0) {
+        setBusinessPartners(partnersList);
+      } else {
+        toast.warn('No business partners found');
+      }
+    } catch (error) {
+      console.error('Error fetching business partners:', error);
+      toast.error('Error fetching business partners');
+    }
+  };
+
+  // fetch invoices
+  const fetchInvoices = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No access token found');
+      }
+      const response = await fetch(API_Inv_Header_Admin(), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice data');
+      }
+
+      const result = await response.json();
+      let invoiceList: Invoice[] = [];
+
+      if (result && typeof result === 'object') {
+        if (Array.isArray(result.data)) {
+          invoiceList = result.data;
+        } else if (result.data && typeof result.data === 'object') {
+          invoiceList = Object.values(result.data);
+        } else if (Array.isArray(result)) {
+          invoiceList = result;
+        }
+      }
+
+      if (invoiceList.length > 0) {
+        setData(invoiceList);
+        setFilteredData(invoiceList);
+      } else {
+        toast.warn('No invoice data found');
+      }
+    } catch (error) {
+      console.error('Error fetching invoice data:', error);
+      toast.error('Failed to fetch invoice data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPartners();
   }, []);
 
   useEffect(() => {
-    const fetchInvoiceData = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-          throw new Error('No access token found');
-        }
-        const response = await fetch(API_Inv_Header_Admin(), {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch invoice data');
-        }
-
-        const result = await response.json();
-        let invoiceList: Invoice[] = [];
-
-        if (result && typeof result === 'object') {
-          if (Array.isArray(result.data)) {
-            invoiceList = result.data;
-          } else if (result.data && typeof result.data === 'object') {
-            invoiceList = Object.values(result.data);
-          } else if (Array.isArray(result)) {
-            invoiceList = result;
-          }
-        }
-
-        if (invoiceList.length > 0) {
-          setData(invoiceList);
-          setFilteredData(invoiceList);
-        } else {
-          toast.warn('No invoice data found');
-        }
-      } catch (error) {
-        console.error('Error fetching invoice data:', error);
-        toast.error('Failed to fetch invoice data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchInvoiceData();
+    fetchInvoices();
   }, []);
 
   // Apply column filters
@@ -531,6 +534,7 @@ const InvoiceReport: React.FC = () => {
 
   const handleCancelInvoice = () => {
     toast.info('Invoice cancelled');
+    fetchInvoices();
   };
 
   const handleDownloadAttachment = () => {
@@ -679,9 +683,26 @@ const InvoiceReport: React.FC = () => {
       toast.success('Actual date updated successfully!');
       setPostModalOpen(false);
       setSelectedInvoices([]);
-      // Optionally refresh data here
+      fetchInvoices();
     } catch (error: any) {
       toast.error(error.message || 'Error updating actual date');
+    }
+  };
+
+  // Revert paid invoices back to Ready To Payment
+  const handleRevertInvoice = async (invNo: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) throw new Error('No token');
+      const res = await fetch(`${API_Revert_Admin()}/${invNo}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Failed to revert');
+      toast.success('Invoice reverted to Ready To Payment');
+      fetchInvoices();
+    } catch (err: any) {
+      toast.error('Error reverting invoice: ' + (err.message || ''));
     }
   };
 
@@ -1112,8 +1133,7 @@ const InvoiceReport: React.FC = () => {
                     (inv) => inv.inv_no === invoice.inv_no
                   );
                   const invoiceStatusLower = invoice.status?.toLowerCase();
-                  const status = invoice.status || "New";
-                  const statusColor = getStatusColor(status);
+                  const statusColor = getStatusColor(invoice.status);
 
                   let showCheckbox = false;
 
@@ -1200,11 +1220,21 @@ const InvoiceReport: React.FC = () => {
                       <td className="px-6 py-4 text-center">
                         <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${statusColor} ${
-                            invoice.status?.toLowerCase() === 'rejected' ? 'cursor-pointer hover:underline' : ''
+                            invoice.status?.toLowerCase() === 'rejected' || invoice.status?.toLowerCase() === 'paid' ? 'cursor-pointer hover:underline' : ''
                           }`}
-                          onClick={() => invoice.status?.toLowerCase() === 'rejected' && handleShowRejectedReason(invoice.reason)}
+                          onClick={() => {
+                            if (invoice.status?.toLowerCase() === 'rejected') handleShowRejectedReason(invoice.reason);
+                            if (invoice.status?.toLowerCase() === 'paid') handleRevertInvoice(invoice.inv_no);
+                          }}
+                          title={
+                            invoice.status?.toLowerCase() === 'rejected'
+                              ? 'View rejection reason'
+                              : invoice.status?.toLowerCase() === 'paid'
+                              ? 'Click to revert to Ready To Payment'
+                              : ''
+                          }
                         >
-                          {status}
+                          {invoice.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">{invoice.receipt_number || '-'}</td>
@@ -1317,7 +1347,10 @@ const InvoiceReport: React.FC = () => {
       {/* Render the wizard modal here */}
       <InvoiceReportWizard
         isOpen={wizardOpen}
-        onClose={() => setWizardOpen(false)}
+        onClose={() => {
+          setWizardOpen(false);
+          fetchInvoices();
+        }}
         invoiceNumberProp={modalInvoiceNumber}
       />
       
