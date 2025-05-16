@@ -173,7 +173,7 @@ const Calendar: React.FC<CalendarProps> = ({ events }) => {
   const mappedEvents = events.map((event) => ({
     ...event,
     start: event.start_date,
-    end: event.end_date,
+    end: moment(event.end_date).add(1, 'days').toDate(),
     allDay: true,
   }));
 

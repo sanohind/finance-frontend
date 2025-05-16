@@ -113,10 +113,13 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
     const pphId = Number(pphCode);
 
     // Determine PPh rate based on pph_id
-    if (pphId === 1) pphRate = 0.02; // INCOME TAX 2%
-    else if (pphId === 2) pphRate = 0.04; // INCOME TAX 4%
-    else if (pphId === 3) pphRate = 0.15; // INCOME TAX 15%
-    else if (pphId === 4) pphRate = 0.0; // INCOME TAX 0%
+    if (pphId === 1) pphRate = 0.0200;
+    else if (pphId === 2) pphRate = 0.0250;
+    else if (pphId === 3) pphRate = 0.1000;
+    else if (pphId === 4) pphRate = 0.0175;
+    else if (pphId === 5) pphRate = 0.1000;
+    else if (pphId === 6) pphRate = 0.00;
+    else if (pphId === 7) pphRate = 0.2000;
     // else, pphRate remains 0, or you could fetch from pphList if it contained rates
 
     const calculatedPphAmount = numericPphBaseAmount * pphRate;
@@ -280,11 +283,12 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
   };
 
   // Validation for required fields (move to component scope)
-  const pphCodeError = !pphCode;
-  const pphBaseAmountError = !pphBaseAmount || isNaN(Number(pphBaseAmount));
+  const pphBaseAmountError =
+    pphBaseAmount.trim() !== '' &&
+    isNaN(parseFloat(pphBaseAmount.replace(/[^\d.]/g, ''))); // Error only if provided and not a number
   const planDateError = !planDate;
   const disclaimerError = !disclaimerAccepted;
-  const isFormValid = !pphCodeError && !pphBaseAmountError && !planDateError && !disclaimerError;
+  const isFormValid = !pphBaseAmountError && !planDateError && !disclaimerError; // pphCode is no longer checked for form validity here
 
   // Step 1: Main Form (now includes all sections in order)
   const renderMainForm = () => {
@@ -292,13 +296,19 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
       const id = Number(pphId);
       switch (id) {
         case 1:
-          return 'INCOME TAX 2%';
+          return 'Pph 23';
         case 2:
-          return 'INCOME TAX 4%';
+          return 'Pph 21';
         case 3:
-          return 'INCOME TAX 15%';
+          return 'Pasal 4(2) - 10%';
         case 4:
-          return 'INCOME TAX 0%';
+          return 'Pasal 4(2) - 1.75%';
+        case 5:
+          return 'Pasal 26 - 10%';
+        case 6:
+          return 'Pasal 26 - 0%';
+        case 7:
+          return 'Pasal 26 - 20%';
         default:
           // Fallback to original description if no match or find from pphList
           const pphItem = pphList.find(
@@ -389,32 +399,27 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
           </div>
           <div className="space-y-2">
             <label htmlFor="pphCode" className="text-sm font-medium text-gray-700">
-              PPh Code <span className="text-red-500">*</span>
+              Income Tax
             </label>
             <select
               id="pphCode"
-              className={`w-full p-2 border rounded-md bg-white ${
-                pphCodeError ? 'border-red-500' : 'border-blue-900'
-              }`}
+              className="w-full p-2 border border-blue-900 rounded-md bg-white"
               value={pphCode}
               onChange={(e) => setPphCode(e.target.value)}
             >
-              <option value="">Select PPh Code...</option>
+              <option value="">Select Income Tax...</option>
               {pphList.map((item) => (
                 <option key={item.pph_id} value={item.pph_id}>
                   {getPphDescription(item.pph_id)}
                 </option>
               ))}
             </select>
-            {pphCodeError && (
-              <span className="text-xs text-red-500">PPh Code is required.</span>
-            )}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
             <label htmlFor="pphBaseAmount" className="text-sm font-medium text-gray-700">
-              PPh Base Amount <span className="text-red-500">*</span>
+              PPh Base Amount
             </label>
             <input
               id="pphBaseAmount"
@@ -428,7 +433,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
             />
             {pphBaseAmountError && (
               <span className="text-xs text-red-500">
-                PPh Base Amount is required and must be a number.
+                PPh Base Amount must be a valid number if provided.
               </span>
             )}
           </div>
@@ -607,16 +612,21 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 return;
               }
               try {
-                const pph_id = parseInt(pphCode, 10) || 0;
-                const numericPphBase = parseFloat(
-                  pphBaseAmount.replace(/[^0-9.]/g, '')
-                ) || 0;
+                // Prepare pph_id for payload
+                const parsedPphId = parseInt(pphCode, 10);
+                const finalPphId = pphCode && !isNaN(parsedPphId) ? parsedPphId : null;
+
+                // Prepare pph_base_amount for payload
+                const cleanedPphBaseAmount = pphBaseAmount.replace(/[^0-9.]/g, '');
+                const parsedPphBaseAmount = parseFloat(cleanedPphBaseAmount);
+                const finalPphBaseAmount = cleanedPphBaseAmount.trim() !== '' && !isNaN(parsedPphBaseAmount) ? parsedPphBaseAmount : null;
+
                 const bodyData = {
-                  pph_id,
-                  pph_base_amount: numericPphBase,
+                  pph_id: finalPphId,
+                  pph_base_amount: finalPphBaseAmount,
                   status: 'Ready To Payment',
                   plan_date: planDate,
-                  reason: '',
+                  reason: '', // Reason is empty for "Ready To Payment"
                 };
 
                 const response = await fetch(

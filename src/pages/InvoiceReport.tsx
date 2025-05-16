@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
 import { Search, XCircle } from 'lucide-react';
@@ -13,7 +13,7 @@ import {
   API_Stream_File_Faktur,
   API_Stream_File_Suratjalan,
   API_Stream_File_PO,
-  API_Revert_Admin,
+  API_Revert_Invoice_Admin,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
 import * as XLSX from 'xlsx';
@@ -52,7 +52,7 @@ interface BusinessPartner {
   adr_line_1: string;
 }
 
-const InvoiceReport: React.FC = () => {
+const InvoiceReport: React.FC = (): ReactNode => {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [modalInvoiceNumber, setModalInvoiceNumber] = useState('');
 
@@ -456,31 +456,38 @@ const InvoiceReport: React.FC = () => {
       if (statusLower === 'new' || statusLower === 'in process') {
         // Single select logic for 'New' or 'In Process'
         if (isCurrentlySelected) {
-          // If already selected, deselect it (clear all selections)
           newSelectedInvoices = [];
         } else {
-          // If not selected, select it and clear any other selections
           newSelectedInvoices = [invoice];
         }
-      } else if (statusLower === 'ready to payment') {
-        // Multi-select logic for 'Ready To Payment'
+      } else if (statusLower === 'ready to payment' || statusLower === 'paid') {
+        // Multi-select logic for 'Ready To Payment' or 'Paid'
         if (isCurrentlySelected) {
-          // If already selected, deselect it
           newSelectedInvoices = prevSelectedInvoices.filter(inv => inv.inv_no !== invoice.inv_no);
         } else {
-          // If not selected, add it.
-          // Clear any 'New' or 'In Process' invoices if they were selected.
-          const hasNonReadyToPaymentSelected = prevSelectedInvoices.some(
+          const hasNewOrInProcessSelected = prevSelectedInvoices.some(
             inv => inv.status?.toLowerCase() === 'new' || inv.status?.toLowerCase() === 'in process'
           );
-          if (hasNonReadyToPaymentSelected) {
-            newSelectedInvoices = [invoice]; // Start fresh with this 'Ready to Payment'
+
+          if (hasNewOrInProcessSelected) {
+            newSelectedInvoices = [invoice]; // Start fresh if 'New' or 'In Process' was selected
           } else {
-            newSelectedInvoices = [...prevSelectedInvoices, invoice]; // Add to existing 'Ready to Payment' selections
+            const currentSelectionType = prevSelectedInvoices.length > 0 ? prevSelectedInvoices[0].status?.toLowerCase() : null;
+            // If there's an existing selection and its type is different from the clicked item's type
+            // (and both are multi-selectable types like 'ready to payment' or 'paid')
+            // then start a new selection with the clicked item.
+            if (currentSelectionType && currentSelectionType !== statusLower &&
+                (currentSelectionType === 'ready to payment' || currentSelectionType === 'paid') &&
+                (statusLower === 'ready to payment' || statusLower === 'paid')) {
+              newSelectedInvoices = [invoice];
+            } else {
+              // Otherwise, add to the current selection (or start a new one if no prior selection)
+              newSelectedInvoices = [...prevSelectedInvoices, invoice];
+            }
           }
         }
       } else {
-        // For other statuses (e.g., 'Paid', 'Rejected'), or if status is undefined, clicking does not change selection.
+        // For other statuses (e.g., 'Rejected'), or if status is undefined, clicking does not change selection.
         newSelectedInvoices = [...prevSelectedInvoices];
       }
       return newSelectedInvoices;
@@ -551,11 +558,6 @@ const InvoiceReport: React.FC = () => {
     } else {
       toast.warning('Selected invoice status cannot be processed');
     }
-  };
-
-  const handleCancelInvoice = () => {
-    toast.info('Invoice cancelled');
-    fetchInvoices();
   };
 
   const handleDownloadAttachment = () => {
@@ -706,21 +708,43 @@ const InvoiceReport: React.FC = () => {
       toast.error(error.message || 'Error updating actual date');
     }
   };
+  // Revert selected paid invoices back to Ready To Payment
+  const handleBulkRevertInvoices = async () => {
+    const paidInvoicesToRevert = selectedInvoices.filter(
+      (inv) => inv.status?.toLowerCase() === 'paid'
+    );
 
-  // Revert paid invoices back to Ready To Payment
-  const handleRevertInvoice = async (invNo: string) => {
+    if (paidInvoicesToRevert.length === 0) {
+      toast.warn("Please select 'Paid' invoices to revert.");
+      return;
+    }
+
+    const invNosToRevert = paidInvoicesToRevert.map((inv) => inv.inv_no);
+
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No token');
-      const res = await fetch(`${API_Revert_Admin()}/${invNo}`, {
+      if (!token) throw new Error('No access token found. Please log in again.');
+
+      const response = await fetch(API_Revert_Invoice_Admin(), {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inv_nos: invNosToRevert }),
       });
-      if (!res.ok) throw new Error('Failed to revert');
-      toast.success('Invoice reverted to Ready To Payment');
-      fetchInvoices();
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        toast.success(result.message);
+        fetchInvoices();
+        setSelectedInvoices([]);
+      } else {
+        toast.error(result.message || 'Failed to revert invoices.');
+      }
     } catch (err: any) {
-      toast.error('Error reverting invoice: ' + (err.message || ''));
+      console.error('Error reverting invoices:', err);
+      toast.error(`Error reverting invoices: ${err.message}`);
     }
   };
 
@@ -891,11 +915,11 @@ const InvoiceReport: React.FC = () => {
         <div className="flex justify-between mb-8">
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
-              className="bg-red-600 text-sm text-white px-4 py-2 rounded hover:bg-red-500"
-              onClick={handleCancelInvoice}
+              className="bg-yellow-500 text-sm text-white px-4 py-2 rounded hover:bg-yellow-600"
+              onClick={handleBulkRevertInvoices}
               type="button"
             >
-              Cancel Invoice
+              Revert Invoice
             </button>
           </div>
 
@@ -1039,6 +1063,10 @@ const InvoiceReport: React.FC = () => {
                 </td>
                 <td className="px-2 py-1 border">
                   <input
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
                     type="text"
                     placeholder="-"
                     value={supplierCodeFilter}
@@ -1153,25 +1181,35 @@ const InvoiceReport: React.FC = () => {
                   const currentInvoiceStatusLower = invoice.status?.toLowerCase();
                   let showCheckbox = false;
 
-                  if (currentInvoiceStatusLower === 'new' || currentInvoiceStatusLower === 'in process' || currentInvoiceStatusLower === 'ready to payment') {
+                  if (currentInvoiceStatusLower === 'new' || 
+                      currentInvoiceStatusLower === 'in process' || 
+                      currentInvoiceStatusLower === 'ready to payment' || 
+                      currentInvoiceStatusLower === 'paid') {
+                        
                     if (selectedInvoices.length === 0) {
                       // Case 1: Nothing is selected. Show checkbox for any selectable type.
                       showCheckbox = true;
                     } else {
-                      // Case 2: Something is selected. Determine visibility based on the type of the first selected invoice.
+                      // Case 2: Something is selected.
                       const firstSelectedInvoice = selectedInvoices[0];
                       const firstSelectedStatusLower = firstSelectedInvoice.status?.toLowerCase();
 
                       if (firstSelectedStatusLower === 'new' || firstSelectedStatusLower === 'in process') {
-                        // Subcase 2a: A 'New' or 'In Process' invoice is selected (single-select mode for this type).
+                        // Subcase 2a: A 'New' or 'In Process' invoice is selected.
                         // Show checkbox ONLY for that specific selected invoice.
                         if (invoice.inv_no === firstSelectedInvoice.inv_no) {
                           showCheckbox = true;
                         }
                       } else if (firstSelectedStatusLower === 'ready to payment') {
-                        // Subcase 2b: 'Ready to Payment' invoice(s) are selected (multi-select mode for this type).
+                        // Subcase 2b: 'Ready to Payment' invoice(s) are selected.
                         // Show checkbox ONLY for other 'Ready to Payment' invoices.
                         if (currentInvoiceStatusLower === 'ready to payment') {
+                          showCheckbox = true;
+                        }
+                      } else if (firstSelectedStatusLower === 'paid') {
+                        // Subcase 2c: 'Paid' invoice(s) are selected.
+                        // Show checkbox ONLY for other 'Paid' invoices.
+                        if (currentInvoiceStatusLower === 'paid') {
                           showCheckbox = true;
                         }
                       }
@@ -1248,17 +1286,14 @@ const InvoiceReport: React.FC = () => {
                       <td className="px-6 py-4 text-center">
                         <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(invoice.status)} ${
-                            invoice.status?.toLowerCase() === 'rejected' || invoice.status?.toLowerCase() === 'paid' ? 'cursor-pointer hover:underline' : ''
+                            invoice.status?.toLowerCase() === 'rejected' ? 'cursor-pointer hover:underline' : ''
                           }`}
                           onClick={() => {
                             if (invoice.status?.toLowerCase() === 'rejected') handleShowRejectedReason(invoice.reason);
-                            if (invoice.status?.toLowerCase() === 'paid') handleRevertInvoice(invoice.inv_no);
                           }}
                           title={
                             invoice.status?.toLowerCase() === 'rejected'
                               ? 'View rejection reason'
-                              : invoice.status?.toLowerCase() === 'paid'
-                              ? 'Click to revert to Ready To Payment'
                               : ''
                           }
                         >
