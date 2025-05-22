@@ -1,4 +1,4 @@
-const API = 'https://be-temanku.sanohindonesia.co.id:8445/api';
+const API = 'https://api-finance.profileporto.site/api';
 // const API = 'http://127.0.0.1:8000/api';
 // const API = 'https://be-sss-dev.sanohindonesia.co.id:8443/api';
 
