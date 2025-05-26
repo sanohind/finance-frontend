@@ -1,4 +1,4 @@
-const API = 'https://api-finance.profileporto.site/api';
+const API = 'https://be-temanku.sanohindonesia.co.id:8443/api';
 // const API = 'http://127.0.0.1:8000/api';
 // const API = 'https://be-sss-dev.sanohindonesia.co.id:8443/api';
 
@@ -58,7 +58,7 @@ export const API_Update_Inv_Header_Admin = () => API + getRolePath() + `/inv-hea
 export const API_Update_Inv_Header_Rejected = () => API + getRolePath() + `/inv-header/reject`;
 export const API_Update_In_Process_Admin = () => API + getRolePath() + `/inv-header/`;
 export const API_Upload_Payment_Admin = (): string => API + getRolePath() + '/inv-header/upload-payment';
-export const API_Revert_Invoice_Admin = (): string => API + getRolePath() + `/inv-header/revertInvoice`;
+export const API_Revert_Invoice_Admin = (): string => API + getRolePath() + `/inv-header/revertInvoices`;
 
 // Invoice Lines Admin
 export const API_Inv_Line_Admin = () => API + getRolePath() + `/inv-line`;

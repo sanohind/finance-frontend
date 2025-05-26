@@ -706,39 +706,40 @@ const InvoiceReport: React.FC = (): ReactNode => {
       fetchInvoices();
     } catch (error: any) {
       toast.error(error.message || 'Error updating actual date');
+    }  };  // NEW: Bulk revert method for multiple "Paid" invoices
+  const handleBulkRevertInvoices = async () => {
+    const paidInvoices = selectedInvoices.filter(
+      inv => inv.status?.toLowerCase() === 'paid'
+    );
+    
+    if (paidInvoices.length === 0) {
+      toast.warning('Please select invoices with "Paid" status to revert');
+      return;
     }
-  };  // DEPRECATED: Bulk revert method - now using individual click on status instead
-  // Kept for reference or potential future use, updated to match new API format
-  const handleRevertSingleInvoice = async (invoiceNo: string) => {
+
     try {
       const token = localStorage.getItem('access_token');
       if (!token) throw new Error('No access token found. Please log in again.');
 
-      // Use the new endpoint format which accepts invoice number directly in the URL path
-      const response = await fetch(API_Revert_Invoice_Admin() + `/${invoiceNo}`, {
-        method: 'PUT',
+      const invoiceNumbers = paidInvoices.map(inv => inv.inv_no);      const response = await fetch(API_Revert_Invoice_Admin(), {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
-        // No body needed - the invoice number is in the URL path as per backend implementation
+        },
+        body: JSON.stringify({ invoice_numbers: invoiceNumbers })
       });
 
-      // Check if the response is ok (status code 200-299)
       if (response.ok) {
-        let successMessage = `Invoice ${invoiceNo} status reverted to Ready To Payment.`;
+        let successMessage = `${invoiceNumbers.length} invoice(s) reverted to Ready To Payment status.`;
         
-        // Try to parse the response as JSON
         try {
           const contentType = response.headers.get('content-type');
-          // Only try to parse JSON if the content type includes 'application/json'
           if (contentType && contentType.includes('application/json')) {
             const result = await response.json();
-            // Use the message from the API if available
             successMessage = result.message || successMessage;
           }
         } catch (jsonError) {
-          // If JSON parsing fails, just use the default success message
           console.warn('Could not parse success response as JSON:', jsonError);
         }
         
@@ -746,26 +747,28 @@ const InvoiceReport: React.FC = (): ReactNode => {
         fetchInvoices();
         setSelectedInvoices([]);
       } else {
-        // Handle error response
-        let errorMessage = `Failed to revert invoice ${invoiceNo}. Status: ${response.status}`;
+        let errorMessage = `Failed to revert invoices. Status: ${response.status}`;
         
         try {
           const contentType = response.headers.get('content-type');
-          // Only try to parse JSON if the content type includes 'application/json'
           if (contentType && contentType.includes('application/json')) {
             const errorResult = await response.json();
             errorMessage = errorResult.message || errorMessage;
+            
+            // If there are specific invoices that weren't found, show them
+            if (errorResult.not_found && Array.isArray(errorResult.not_found)) {
+              errorMessage += `\nInvoices not found or not in Paid status: ${errorResult.not_found.join(', ')}`;
+            }
           }
         } catch (jsonError) {
-          // If JSON parsing fails on error response, just use the default error message
           console.warn('Could not parse error response as JSON:', jsonError);
         }
         
         toast.error(errorMessage);
       }
     } catch (err: any) {
-      console.error(`Error reverting invoice ${invoiceNo}:`, err);
-      toast.error(`Error reverting invoice: ${err.message}`);
+      console.error('Error reverting invoices:', err);
+      toast.error(`Error reverting invoices: ${err.message}`);
     }
   };
 
@@ -931,10 +934,22 @@ const InvoiceReport: React.FC = (): ReactNode => {
         </button>
       </div>
 
-      <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>      <div className="bg-white p-6 space-y-6 mt-8">
-        <div className="flex justify-between mb-8">
+      <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>      <div className="bg-white p-6 space-y-6 mt-8">        <div className="flex justify-between mb-8">
           <div style={{ display: 'flex', gap: '1rem' }}>
-            {/* Bulk revert button removed - now using individual clicks on Paid status */}
+            {/* New bulk revert button for Paid invoices */}
+            <button
+              className={`text-sm text-white px-4 py-2 rounded ${
+                selectedInvoices.some(inv => inv.status?.toLowerCase() === 'paid')
+                  ? 'bg-orange-600 hover:bg-orange-700'
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+              onClick={handleBulkRevertInvoices}
+              type="button"
+              disabled={!selectedInvoices.some(inv => inv.status?.toLowerCase() === 'paid')}
+              title="Revert selected Paid invoices back to Ready To Payment status"
+            >
+              Revert Invoices
+            </button>
           </div>
 
           <div>
@@ -1296,23 +1311,18 @@ const InvoiceReport: React.FC = (): ReactNode => {
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
                           </button>
                         )}
-                      </td>                      <td className="px-6 py-4 text-center">
-                        <span
+                      </td>                      <td className="px-6 py-4 text-center">                        <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(invoice.status)} ${
-                            invoice.status?.toLowerCase() === 'rejected' || invoice.status?.toLowerCase() === 'paid' ? 'cursor-pointer hover:underline' : ''
+                            invoice.status?.toLowerCase() === 'rejected' ? 'cursor-pointer hover:underline' : ''
                           }`}
                           onClick={() => {
                             if (invoice.status?.toLowerCase() === 'rejected') {
                               handleShowRejectedReason(invoice.reason);
-                            } else if (invoice.status?.toLowerCase() === 'paid') {
-                              handleRevertSingleInvoice(invoice.inv_no);
                             }
                           }}
                           title={
                             invoice.status?.toLowerCase() === 'rejected'
                               ? 'View rejection reason'
-                              : invoice.status?.toLowerCase() === 'paid'
-                              ? 'Click to revert this invoice to Ready To Payment'
                               : ''
                           }
                         >
