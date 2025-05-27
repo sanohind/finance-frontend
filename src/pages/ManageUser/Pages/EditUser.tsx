@@ -151,7 +151,7 @@ const EditUser = () => {
       username: username === originalUsername ? "" : username,
       name: firstName,
       role,
-      password: password || "",
+      password: password,
       email: email.trim()
     };
 
