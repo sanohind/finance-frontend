@@ -678,7 +678,7 @@ const InvoiceCreationSup = () => {
   const handleSelectAll = () => {
     setSelectAll(!selectAll);
     if (!selectAll) {
-      setSelectedRecords([...grSaList]);
+      setSelectedRecords([...filteredData]);
     } else {
       setSelectedRecords([]);
     }
