@@ -109,8 +109,6 @@ interface ColumnFilters {
   invDueDateFilter: string;
   paymentDocFilter: string;
   paymentDateFilter: string;
-  createdAtFilter: string;
-  updatedAtFilter: string;
 }
 
 const InvoiceCreationSup = () => {
@@ -167,9 +165,7 @@ const InvoiceCreationSup = () => {
     invSupplierNoFilter: '',
     invDueDateFilter: '',
     paymentDocFilter: '',
-    paymentDateFilter: '',
-    createdAtFilter: '',
-    updatedAtFilter: ''
+    paymentDateFilter: ''
   });
 
   // New state variables for Outstanding section
@@ -492,20 +488,6 @@ const InvoiceCreationSup = () => {
       );
     }
     
-    // Filter by Created At
-    if (columnFilters.createdAtFilter) {
-      filtered = filtered.filter(item => 
-        item.created_at?.includes(columnFilters.createdAtFilter)
-      );
-    }
-    
-    // Filter by Updated At
-    if (columnFilters.updatedAtFilter) {
-      filtered = filtered.filter(item => 
-        item.updated_at?.includes(columnFilters.updatedAtFilter)
-      );
-    }
-    
     return filtered;
   };
 
@@ -657,9 +639,7 @@ const InvoiceCreationSup = () => {
       invSupplierNoFilter: '',
       invDueDateFilter: '',
       paymentDocFilter: '',
-      paymentDateFilter: '',
-      createdAtFilter: '',
-      updatedAtFilter: ''
+      paymentDateFilter: ''
     });
     // Clear selected records and reset selectAll state
     setSelectedRecords([]);
@@ -1051,8 +1031,6 @@ const InvoiceCreationSup = () => {
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[130px]">Due Date</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Created At</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Updated At</th>
                   </tr>
                   {/* Column filter inputs row */}
                   <tr className="bg-gray-50">
@@ -1419,24 +1397,6 @@ const InvoiceCreationSup = () => {
                         className="border rounded w-full px-2 py-1 text-xs text-center"
                       />
                     </td>
-                    <td className="px-2 py-2 border">
-                      <input
-                        type="text"
-                        placeholder="-"
-                        value={columnFilters.createdAtFilter}
-                        onChange={(e) => handleColumnFilterChange('createdAtFilter', e.target.value)}
-                        className="border rounded w-full px-2 py-1 text-xs text-center"
-                      />
-                    </td>
-                    <td className="px-2 py-2 border">
-                      <input
-                        type="text"
-                        placeholder="-"
-                        value={columnFilters.updatedAtFilter}
-                        onChange={(e) => handleColumnFilterChange('updatedAtFilter', e.target.value)}
-                        className="border rounded w-full px-2 py-1 text-xs text-center"
-                      />
-                    </td>
                   </tr>
                 </thead>
                 <tbody>
@@ -1493,8 +1453,6 @@ const InvoiceCreationSup = () => {
                         <td className="px-3 py-2 text-center">{item.inv_due_date}</td>
                         <td className="px-3 py-2 text-center">{item.payment_doc}</td>
                         <td className="px-3 py-2 text-center">{item.payment_doc_date}</td>
-                        <td className="px-3 py-2 text-center">{item.created_at}</td>
-                        <td className="px-3 py-2 text-center">{item.updated_at}</td>
                       </tr>
                     ))
                   ) : (
