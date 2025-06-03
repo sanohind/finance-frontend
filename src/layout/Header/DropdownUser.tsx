@@ -95,8 +95,20 @@ const DropdownUser = () => {
         <div
           className={`absolute right-0 mt-4 flex w-62.5 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark`}
         > 
+          {/* Profile Option: Only show for role 2 and 3 */}
+          {(supplierName === '2' || supplierName === '3') && (
+            <Link
+              to="/profile"
+              className="flex items-center gap-3.5 px-6 py-4 text-sm font-medium text-gray-500 duration-300 ease-in-out hover:text-primary lg:text-base border-b border-gray-100"
+              style={{ cursor: 'pointer', textDecoration: 'none' }}
+              onClick={() => setDropdownOpen(false)}
+            >
+              <svg className="text-lg text-gray-400" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+              Profile
+            </Link>
+          )}
           <button
-            onClick={handleLogout} // Panggil handleLogout ketika diklik
+            onClick={handleLogout}
             className="flex items-center gap-3.5 px-6 py-4 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base"
           >
             <svg

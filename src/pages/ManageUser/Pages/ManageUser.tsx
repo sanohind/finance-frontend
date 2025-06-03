@@ -3,12 +3,13 @@ import Breadcrumb from '../../../components/Breadcrumbs/Breadcrumb';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../../components/Table/Pagination';
 import SearchBar from '../../../components/Table/SearchBar';
-import { FaSortDown, FaSortUp, FaToggleOff, FaToggleOn, FaUserEdit, FaUserPlus } from 'react-icons/fa';
+import { FaSortDown, FaSortUp, FaToggleOff, FaToggleOn, FaUserEdit, FaUserPlus, FaTrash } from 'react-icons/fa';
 import MultiSelect from '../../../components/Forms/MultiSelect';
 import { toast, ToastContainer } from 'react-toastify';
-import { API_List_User_Admin, API_Update_Status_Admin } from '../../../api/api';
+import { API_List_User_Admin, API_Update_Status_Admin, API_Delete_User_Admin } from '../../../api/api';
 import Button from '../../../components/Forms/Button';
 import { getRoleName } from '../../Authentication/Role';
+import Swal from 'sweetalert2';
 
 interface User {
   UserID: string;
@@ -135,6 +136,47 @@ const ManageUser: React.FC = () => {
       } catch (error) {
           throw error;
       }
+  };
+
+  // Delete user handler (with SweetAlert2)
+  const handleDeleteUser = async (userId: string, username: string) => {
+    const token = localStorage.getItem('access_token');
+    const result = await Swal.fire({
+      title: `Delete user '${username}'?`,
+      text: "This action cannot be undone.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    });
+    if (!result.isConfirmed) return;
+    try {
+      const response = await toast.promise(
+        fetch(`${API_Delete_User_Admin()}${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        {
+          pending: `Deleting user '${username}'...`,
+          success: `User '${username}' deleted successfully!`,
+          error: {
+            render({data}) { return `Failed to delete user '${username}': ${data}`; },
+            autoClose: 3000
+          }
+        }
+      );
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      setData(prev => prev.filter(u => u.UserID !== userId));
+      setFilteredData(prev => prev.filter(u => u.UserID !== userId));
+    } catch (error) {
+      // error handled by toast
+    }
   };
 
   // Filter updates
@@ -275,6 +317,9 @@ const ManageUser: React.FC = () => {
                     <th className="px-3 py-3.5 text-sm font-bold text-gray-700 uppercase tracking-wider text-center border">
                       Edit User
                     </th>
+                    <th className="px-3 py-3.5 text-sm font-bold text-gray-700 uppercase tracking-wider text-center border" title="Delete User">
+                      Delete User
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
@@ -295,6 +340,9 @@ const ManageUser: React.FC = () => {
                         </td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">
                           <div className="h-4 bg-gray-200 rounded"></div>
+                        </td>
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          <div className="w-8 h-8 mx-auto bg-gray-200 rounded-full"></div>
                         </td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">
                           <div className="w-8 h-8 mx-auto bg-gray-200 rounded-full"></div>
@@ -359,6 +407,15 @@ const ManageUser: React.FC = () => {
                             className="hover:opacity-80 transition-opacity"
                           >
                             <FaUserEdit className="text-xl text-lg text-purple-900" />
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteUser(row.UserID, row.Username)}
+                            className="hover:opacity-80 transition-opacity"
+                            title="Delete User"
+                          >
+                            <FaTrash className="text-lg text-red-600" />
                           </button>
                         </td>
                       </tr>

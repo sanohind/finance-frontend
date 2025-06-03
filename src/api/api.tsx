@@ -41,6 +41,10 @@ export const API_Update_User_Admin = () => API + getRolePath() + '/update/';
 export const API_Delete_User_Admin = () => API + getRolePath() + `/delete/`;
 export const API_Update_Status_Admin = () => API + getRolePath() + `/status/`;
 
+// Manage Profile
+export const API_Edit_Profile = () => API + getRolePath() + '/edit/profile';
+export const API_Update_Profile = () => API + getRolePath() + '/update/profile';
+
 // News and Manage News
 export const API_Get_News = () => API + getRolePath() + '/news';
 export const API_Create_News_Admin = () => API + getRolePath() + '/news/store';

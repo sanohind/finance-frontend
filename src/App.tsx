@@ -5,6 +5,7 @@ import SignIn from './pages/Authentication/Pages/SignIn';
 import Dashboard from './pages/Dashboard/Dashboard';
 import DefaultLayout from './layout/DefaultLayout';
 import ProtectedRoute from './pages/Authentication/ProtectedRoute';
+import ManageProfile from './pages/ManageUser/Pages/ManageProfile';  // Ensure this path is correct
 import ManageUser from './pages/ManageUser/Pages/ManageUser';  // Ensure this path is correct
 import AddUser from './pages/ManageUser/Pages/AddUser';  // Ensure this path is correct
 import EditUser from './pages/ManageUser/Pages/EditUser';  // Ensure this path is correct
@@ -50,6 +51,15 @@ const App = () => {
               element={
                 <ProtectedRoute allowedRoles={['1','2','3']}>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute allowedRoles={['2','3']}>
+                  <ManageProfile />
                 </ProtectedRoute>
               }
             />
