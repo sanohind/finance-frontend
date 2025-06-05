@@ -16,9 +16,9 @@ const EditUser = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(""); // Changed to single email string
   const [originalUsername, setOriginalUsername] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -146,14 +146,17 @@ const EditUser = () => {
       return;
     }
 
-    const payload = {
+    // Only send password if provided, otherwise omit it
+    const payload: any = {
       bp_code: selectedSupplier.value,
       username: username === originalUsername ? "" : username,
       name: firstName,
       role,
-      password: password || "",
-      email: email.trim()
+      email: email.trim(),
     };
+    if (password) {
+      payload.password = password;
+    }
 
     try {
       const token = localStorage.getItem('access_token');
