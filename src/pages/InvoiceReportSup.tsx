@@ -8,6 +8,7 @@ import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected, API_Stream_File_I
 import * as XLSX from 'xlsx';
 
 interface Invoice {
+  inv_id: number;
   inv_no: string;
   receipt_number: string | null;
   receipt_path: string | null;
@@ -74,9 +75,8 @@ const InvoiceReportSup = () => {
   // Reason popup state
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
-
   // State for selected invoice (only one allowed)
-  const [selectedInvoiceNo, setSelectedInvoiceNo] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
   // State for reason input modal
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -388,10 +388,9 @@ const InvoiceReportSup = () => {
     if (!amount) return '-';
     return `Rp ${amount.toLocaleString('id-ID')},00`;
   };
-
   // Cancel/Reject Invoice logic
   const handleCancelInvoice = () => {
-    if (!selectedInvoiceNo) {
+    if (!selectedInvoiceId) {
       toast.warning('Please select one invoice with status "New" to cancel.');
       return;
     }
@@ -404,11 +403,10 @@ const InvoiceReportSup = () => {
       toast.error('Please provide a reason for rejection.');
       return;
     }
-    setRejectLoading(true);
-    try {
+    setRejectLoading(true);    try {
       const token = localStorage.getItem('access_token');
       const response = await fetch(
-        API_Update_Inv_Header_Rejected() + `/${selectedInvoiceNo}`,
+        API_Update_Inv_Header_Rejected() + `/${selectedInvoiceId}`,
         {
           method: 'PUT',
           headers: {
@@ -425,13 +423,13 @@ const InvoiceReportSup = () => {
       toast.success('Invoice rejected successfully!');
       // Update local data
       const updatedData = data.map((inv) =>
-        inv.inv_no === selectedInvoiceNo
+        inv.inv_id === selectedInvoiceId
           ? { ...inv, status: 'Rejected', reason: rejectReason }
           : inv
       );
       setData(updatedData);
       setFilteredData(updatedData);
-      setSelectedInvoiceNo(null);
+      setSelectedInvoiceId(null);
       setShowRejectInput(false);
       setRejectReason('');
     } catch (err: any) {
@@ -510,20 +508,23 @@ const InvoiceReportSup = () => {
               value={verificationDate}
               onChange={(e) => setVerificationDate(e.target.value)}
             />
-          </div>
-
-          {/* Invoice Status */}
+          </div>          {/* Invoice Status */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Status
             </label>
-            <input
-              type="text"
+            <select
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              placeholder="----  ----------"
               value={invoiceStatus}
               onChange={(e) => setInvoiceStatus(e.target.value)}
-            />
+            >
+              <option value="">All Statuses</option>
+              <option value="new">New</option>
+              <option value="in process">In Process</option>
+              <option value="ready to payment">Ready To Payment</option>
+              <option value="paid">Paid</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
         </div>
 
@@ -825,12 +826,11 @@ const InvoiceReportSup = () => {
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((invoice: Invoice, index: number) => {
                   const status = invoice.status || "New";
-                  const statusColor = getStatusColor(status);
-                  // Only show checkbox for 'New' status
+                  const statusColor = getStatusColor(status);                  // Only show checkbox for 'New' status
                   const isNew = status.toLowerCase() === 'new';
-                  const isChecked = selectedInvoiceNo === invoice.inv_no;
+                  const isChecked = selectedInvoiceId === invoice.inv_id;
                   // Only show checkbox if no selection or this is the selected one
-                  const showCheckbox = isNew && (!selectedInvoiceNo || isChecked);
+                  const showCheckbox = isNew && (!selectedInvoiceId || isChecked);
 
                   const dbPphAmount = invoice.pph_amount || 0;
                   const dbPphBaseAmount = invoice.pph_base_amount || 0;
@@ -838,15 +838,14 @@ const InvoiceReportSup = () => {
 
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 text-center">
-                        {showCheckbox ? (
+                      <td className="px-6 py-4 text-center">                        {showCheckbox ? (
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() =>
                               isChecked
-                                ? setSelectedInvoiceNo(null)
-                                : setSelectedInvoiceNo(invoice.inv_no)
+                                ? setSelectedInvoiceId(null)
+                                : setSelectedInvoiceId(invoice.inv_id)
                             }
                           />
                         ) : null}
@@ -874,7 +873,7 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_no}.pdf`;
+                            const url = `${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_id}.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View Invoice PDF"
@@ -886,7 +885,7 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_no}.pdf`;
+                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_id}.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View Faktur PDF"
@@ -898,7 +897,7 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_no}.pdf`;
+                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_id}.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View Surat Jalan PDF"
@@ -910,7 +909,7 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_PO()}/PO_${invoice.inv_no}.pdf`;
+                            const url = `${API_Stream_File_PO()}/PO_${invoice.inv_id}.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View PO PDF"

@@ -140,7 +140,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
         const token = localStorage.getItem('access_token');
         if (!token) return;
 
-        // --- Fetch header data from new API ---
+        // --- Fetch header data using inv_id instead of inv_no ---
         const headerRes = await fetch(
           API_Inv_Header_By_Inv_No_Admin() + `${invoiceNumberProp}`,
           {
@@ -150,6 +150,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
         if (headerRes.ok) {
           const headerData = await headerRes.json();
           const data = headerData.data || {};
+          
           setInvoiceNumber(data.inv_no || '');
           setInvoiceDate(data.inv_date || '');
           setTaxNumber(data.inv_faktur || '');
@@ -623,14 +624,14 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
 
                 const bodyData = {
                   pph_id: finalPphId,
-                  pph_base_amount: finalPphBaseAmount,
+                  pph_base_amount: finalPphBaseAmount,                  
                   status: 'Ready To Payment',
                   plan_date: planDate,
                   reason: '', // Reason is empty for "Ready To Payment"
                 };
 
                 const response = await fetch(
-                  API_Update_Inv_Header_Admin() + `${invoiceNumber}`,
+                  API_Update_Inv_Header_Admin() + `${invoiceNumberProp}`,
                   {
                     method: 'PUT',
                     headers: {
@@ -683,7 +684,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 if (!token) {
                   toast.error('No access token found');
                   return;
-                }
+                }                
                 try {
                   // No pph_id, pph_base_amount, or plan_date for Rejected
                   const bodyData = {
@@ -692,7 +693,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                   };
 
                   const response = await fetch(
-                    API_Update_Inv_Header_Admin() + `${invoiceNumber}`,
+                    API_Update_Inv_Header_Admin() + `${invoiceNumberProp}`,
                     {
                       method: 'PUT',
                       headers: {

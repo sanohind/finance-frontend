@@ -20,6 +20,7 @@ import * as XLSX from 'xlsx';
 import { AiFillFilePdf } from 'react-icons/ai';
 
 interface Invoice {
+  inv_id: number;
   inv_no: string;
   receipt_number: string | null;
   receipt_path: string | null;
@@ -444,14 +445,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setRejectedReason(reason);
     setShowReasonModal(true);
   };
-
   const handleRecordSelection = (invoice: Invoice) => {
     const { status } = invoice;
     const statusLower = status?.toLowerCase();
 
     setSelectedInvoices(prevSelectedInvoices => {
       let newSelectedInvoices: Invoice[] = [];
-      const isCurrentlySelected = prevSelectedInvoices.some(inv => inv.inv_no === invoice.inv_no);
+      const isCurrentlySelected = prevSelectedInvoices.some(inv => inv.inv_id === invoice.inv_id);
 
       if (statusLower === 'new' || statusLower === 'in process') {
         // Single select logic for 'New' or 'In Process'
@@ -463,7 +463,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       } else if (statusLower === 'ready to payment' || statusLower === 'paid') {
         // Multi-select logic for 'Ready To Payment' or 'Paid'
         if (isCurrentlySelected) {
-          newSelectedInvoices = prevSelectedInvoices.filter(inv => inv.inv_no !== invoice.inv_no);
+          newSelectedInvoices = prevSelectedInvoices.filter(inv => inv.inv_id !== invoice.inv_id);
         } else {
           const hasNewOrInProcessSelected = prevSelectedInvoices.some(
             inv => inv.status?.toLowerCase() === 'new' || inv.status?.toLowerCase() === 'in process'
@@ -515,7 +515,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
           }
 
           const response = await fetch(
-            API_Update_Status_To_In_Process_Finance() + `/${selectedInvoice.inv_no}`,
+            API_Update_Status_To_In_Process_Finance() + `/${selectedInvoice.inv_id}`,
             {
               method: 'PUT',
               headers: {
@@ -545,10 +545,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
         } catch (err: any) {
           toast.error(err.message || 'Error updating invoice status');
           return;
-        }
-      }
-      // Open the wizard with the invoice number (for both 'new' and 'in process')
-      setModalInvoiceNumber(selectedInvoice.inv_no);
+        }      }
+      // Open the wizard with the invoice ID (for both 'new' and 'in process')
+      setModalInvoiceNumber(selectedInvoice.inv_id.toString());
       setWizardOpen(true);
       return;
     }
@@ -673,9 +672,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       return;
     }
     setPostModalOpen(true);
-  };
-
-  const handleSubmitActualDate = async () => {
+  };  const handleSubmitActualDate = async () => {
     const readyToPaymentInvoices = selectedInvoices.filter(
       inv => inv.status?.toLowerCase() === 'ready to payment'
     );
@@ -689,12 +686,11 @@ const InvoiceReport: React.FC = (): ReactNode => {
         toast.error('Authentication token not found');
         return;
       }
-      // Bulk update actual_date for all selected invoices
-      const invNos = readyToPaymentInvoices.map(inv => inv.inv_no);
-      const response = await fetch(API_Upload_Payment_Admin(), {
-        method: 'POST', // Changed from PUT to POST
+      // Use inv_id for individual invoice updates (only selected invoices)
+      const invNos = readyToPaymentInvoices.map(inv => inv.inv_id);      const response = await fetch(API_Upload_Payment_Admin(), {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inv_nos: invNos, actual_date: actualDate, status: 'Paid' }), // Added status: 'Paid'
+        body: JSON.stringify({ inv_ids: invNos, actual_date: actualDate }),
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -706,7 +702,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       fetchInvoices();
     } catch (error: any) {
       toast.error(error.message || 'Error updating actual date');
-    }  };  // NEW: Bulk revert method for multiple "Paid" invoices
+    }};  // NEW: Bulk revert method for multiple "Paid" invoices
   const handleBulkRevertInvoices = async () => {
     const paidInvoices = selectedInvoices.filter(
       inv => inv.status?.toLowerCase() === 'paid'
@@ -721,7 +717,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
       const token = localStorage.getItem('access_token');
       if (!token) throw new Error('No access token found. Please log in again.');
 
-      const invoiceNumbers = paidInvoices.map(inv => inv.inv_no);      const response = await fetch(API_Revert_Invoice_Admin(), {
+      // Use inv_id (invoice IDs) to revert only the specifically selected invoices
+      const invoiceNumbers = paidInvoices.map(inv => inv.inv_id);      
+      const response = await fetch(API_Revert_Invoice_Admin(), {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -862,18 +860,23 @@ const InvoiceReport: React.FC = (): ReactNode => {
               value={verificationDate}
               onChange={(e) => setVerificationDate(e.target.value)}
             />
-          </div>
+          </div>          
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Status
             </label>
-            <input
-              type="text"
+            <select
               className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              placeholder="----  ----------"
               value={invoiceStatus}
               onChange={(e) => setInvoiceStatus(e.target.value)}
-            />
+            >
+              <option value="">All Statuses</option>
+              <option value="new">New</option>
+              <option value="in process">In Process</option>
+              <option value="ready to payment">Ready To Payment</option>
+              <option value="paid">Paid</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
         </div>
 
@@ -1088,11 +1091,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     value={receiptNoFilter}
                     onChange={(e) => setReceiptNoFilter(e.target.value)}
                     className="border rounded w-full px-2 py-1 text-sm text-center"
-                  />
-                </td>
-                <td className="px-2 py-1 border">
-                  <input
-                  />
+                  />                
                 </td>
                 <td className="px-2 py-1 border">
                   <input
@@ -1202,10 +1201,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     Loading...
                   </td>
                 </tr>
-              ) : filteredData.length > 0 ? (
-                paginatedData.map((invoice) => {
+              ) : filteredData.length > 0 ? (                paginatedData.map((invoice) => {
                   const isSelected = selectedInvoices.some(
-                    (inv) => inv.inv_no === invoice.inv_no
+                    (inv) => inv.inv_id === invoice.inv_id
                   );
                   const currentInvoiceStatusLower = invoice.status?.toLowerCase();
                   let showCheckbox = false;
@@ -1221,12 +1219,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     } else {
                       // Case 2: Something is selected.
                       const firstSelectedInvoice = selectedInvoices[0];
-                      const firstSelectedStatusLower = firstSelectedInvoice.status?.toLowerCase();
-
-                      if (firstSelectedStatusLower === 'new' || firstSelectedStatusLower === 'in process') {
+                      const firstSelectedStatusLower = firstSelectedInvoice.status?.toLowerCase();                      if (firstSelectedStatusLower === 'new' || firstSelectedStatusLower === 'in process') {
                         // Subcase 2a: A 'New' or 'In Process' invoice is selected.
                         // Show checkbox ONLY for that specific selected invoice.
-                        if (invoice.inv_no === firstSelectedInvoice.inv_no) {
+                        if (invoice.inv_id === firstSelectedInvoice.inv_id) {
                           showCheckbox = true;
                         }
                       } else if (firstSelectedStatusLower === 'ready to payment') {
@@ -1247,10 +1243,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
                   const dbPphAmount = invoice.pph_amount || 0;
                   const dbPphBaseAmount = invoice.pph_base_amount || 0;
-                  const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
-
-                  return (
-                    <tr key={invoice.inv_no} className="border-b hover:bg-gray-50">
+                  const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;                  return (
+                    <tr key={invoice.inv_id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2 text-center">
                         {showCheckbox && (
                           <input
@@ -1275,7 +1269,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() => window.open(`${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
                             title="View Invoice PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
@@ -1285,7 +1279,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() => window.open(`${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
                             title="View Faktur Pajak PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
@@ -1295,7 +1289,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() => window.open(`${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
                             title="View Surat Jalan PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
@@ -1305,7 +1299,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_PO()}/PO_${invoice.inv_no}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() => window.open(`${API_Stream_File_PO()}/PO_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
                             title="View Purchase Order PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
