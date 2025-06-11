@@ -39,14 +39,13 @@ const InvoiceReportSup = () => {
   // Detail modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
-
   // Filter states
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [verificationDate, setVerificationDate] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState('');
   const [paymentPlanningDate, setPaymentPlanningDate] = useState('');
-  const [creationDate, setCreationDate] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState('');
+  // Date range states for invoice date filter
+  const [invoiceDateFrom, setInvoiceDateFrom] = useState<string>('');
+  const [invoiceDateTo, setInvoiceDateTo] = useState<string>('');
 
   // Column filter states
   const [invoiceNoFilter, setInvoiceNoFilter] = useState('');
@@ -237,18 +236,12 @@ const InvoiceReportSup = () => {
     pphAmountFilter,
     totalAmountFilter
   ]);
-
   const handleSearch = () => {
     let newFiltered = [...data];
 
     if (invoiceNumber.trim()) {
       newFiltered = newFiltered.filter((row) =>
         row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase())
-      );
-    }
-    if (verificationDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.actual_date?.slice(0, 10) === verificationDate
       );
     }
     if (invoiceStatus.trim()) {
@@ -261,28 +254,34 @@ const InvoiceReportSup = () => {
         (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate
       );
     }
-    if (creationDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.created_at?.slice(0, 10) === creationDate
-      );
-    }
-    if (invoiceDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.inv_date?.slice(0, 10) === invoiceDate
-      );
+    // Filter by invoice date range
+    if (invoiceDateFrom && invoiceDateTo) {
+      newFiltered = newFiltered.filter((row) => {
+        if (!row.inv_date) return false;
+        const rowDate = row.inv_date.slice(0, 10);
+        return rowDate >= invoiceDateFrom && rowDate <= invoiceDateTo;
+      });
+    } else if (invoiceDateFrom) {
+      newFiltered = newFiltered.filter((row) => {
+        if (!row.inv_date) return false;
+        return row.inv_date.slice(0, 10) >= invoiceDateFrom;
+      });
+    } else if (invoiceDateTo) {
+      newFiltered = newFiltered.filter((row) => {
+        if (!row.inv_date) return false;
+        return row.inv_date.slice(0, 10) <= invoiceDateTo;
+      });
     }
 
     setFilteredData(newFiltered);
     setCurrentPage(1);
   };
-
   const handleClear = () => {
     setInvoiceNumber('');
-    setVerificationDate('');
     setInvoiceStatus('');
     setPaymentPlanningDate('');
-    setCreationDate('');
-    setInvoiceDate('');
+    setInvoiceDateFrom('');
+    setInvoiceDateTo('');
     setFilteredData(data);
     setCurrentPage(1);
   };
@@ -468,25 +467,31 @@ const InvoiceReportSup = () => {
     setDetailInvoice(invoice);
     setDetailModalOpen(true);
   };
-
   // Close detail modal
   const closeDetailModal = () => {
     setDetailInvoice(null);
     setDetailModalOpen(false);
   };
 
+  // Date range handlers
+  const handleInvoiceDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInvoiceDateFrom(e.target.value);
+  };
+
+  const handleInvoiceDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInvoiceDateTo(e.target.value);
+  };
+
   return (
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Report" />
-      <ToastContainer />
-
-      {/* Filters */}
+      <ToastContainer />      {/* Filters */}
       <form className="space-y-4">
         <div className="flex space-x-4">
           {/* Invoice Number */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
-              Invoice Number
+              Invoice Supplier Number
             </label>
             <input
               type="text"
@@ -497,18 +502,52 @@ const InvoiceReportSup = () => {
             />
           </div>
 
-          {/* Verification Date */}
+          {/* Invoice Date Range */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
-              Verification Date
+              Invoice Date
             </label>
-            <input
-              type="date"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              value={verificationDate}
-              onChange={(e) => setVerificationDate(e.target.value)}
-            />
-          </div>          {/* Invoice Status */}
+            <div className="flex w-3/4 space-x-2 items-center">
+              <div className="relative w-1/2">
+                <input
+                  type="date" 
+                  className="input w-full border border-violet-200 p-2 rounded-md text-xs"
+                  placeholder="From Date"
+                  value={invoiceDateFrom}
+                  onChange={handleInvoiceDateFromChange}
+                />
+                {invoiceDateFrom && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setInvoiceDateFrom('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <span className="text-sm">to</span>
+              <div className="relative w-1/2">
+                <input 
+                  type="date" 
+                  className="input w-full border border-violet-200 p-2 rounded-md text-xs"
+                  placeholder="To Date"
+                  value={invoiceDateTo}
+                  onChange={handleInvoiceDateToChange}
+                />
+                {invoiceDateTo && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setInvoiceDateTo('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>          
+          {/* Invoice Status */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Status
@@ -541,31 +580,11 @@ const InvoiceReportSup = () => {
               onChange={(e) => setPaymentPlanningDate(e.target.value)}
             />
           </div>
-
-          {/* Creation Date */}
           <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">
-              Creation Date
-            </label>
-            <input
-              type="date"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              value={creationDate}
-              onChange={(e) => setCreationDate(e.target.value)}
-            />
+            {/* Empty space for layout consistency */}
           </div>
-
-          {/* Invoice Date */}
           <div className="flex w-1/3 items-center gap-2">
-            <label className="w-1/4 text-sm font-medium text-gray-700">
-              Invoice Date
-            </label>
-            <input
-              type="date"
-              className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-              value={invoiceDate}
-              onChange={(e) => setInvoiceDate(e.target.value)}
-            />
+            {/* Empty space for layout consistency */}
           </div>
         </div>
       </form>

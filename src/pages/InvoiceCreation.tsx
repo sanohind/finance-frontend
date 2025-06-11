@@ -14,18 +14,10 @@ interface BusinessPartner {
 }
 
 interface FilterParams {
-  inv_due_date: string;
   bp_id?: string;
-  gr_no?: string;
-  tax_number?: string;
+  packing_slip?: string;
   po_no?: string;
-  invoice_no?: string;
-  status?: string;
-  gr_date?: string;
-  tax_date?: string;
-  po_date?: string;
-  invoice_date?: string;
-  dn_number?: string;
+  receipt_no?: string;
 }
 
 export interface GrSaRecord {
@@ -84,52 +76,37 @@ const InvoiceCreation = () => {
   const [rowsPerPage] = useState(10);
   const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [filterParams, setFilterParams] = useState<FilterParams>({ inv_due_date: '' });
-  const [selectedSupplier, setSelectedSupplier] = useState('');
-  // Add column filter state and outstanding state
+  const [filterParams, setFilterParams] = useState<FilterParams>({});
+  const [selectedSupplier, setSelectedSupplier] = useState('');  // Add column filter state and outstanding state
   const [columnFilters, setColumnFilters] = useState({
-    poNoFilter: '',
-    grNoFilter: '', // Moved here
     bpIdFilter: '',
     bpNameFilter: '',
-    currencyFilter: '',
-    poTypeFilter: '',
-    poReferenceFilter: '',
-    poLineFilter: '',
-    poSequenceFilter: '',
-    receiptSequenceFilter: '',
-    receiptDateFilter: '',
-    receiptYearFilter: '',
-    receiptPeriodFilter: '',
+    poNoFilter: '',
     receiptNoFilter: '',
-    receiptLineFilter: '',
+    poReferenceFilter: '',
+    currencyFilter: '',
+    receiptDateFilter: '',
     packingSlipFilter: '',
-    itemNoFilter: '',
-    icsCodeFilter: '',
-    icsPartFilter: '',
     partNoFilter: '',
     itemDescFilter: '',
-    itemGroupFilter: '',
+    itemNoFilter: '',
+    unitFilter: '',
     itemTypeFilter: '',
-    itemTypeDescFilter: '',
+    unitPriceFilter: '',
     requestQtyFilter: '',
     receiptQtyFilter: '',
     approveQtyFilter: '',
-    unitFilter: '',
     receiptAmountFilter: '',
-    unitPriceFilter: '',
     finalReceiptFilter: '',
     confirmedFilter: '',
+    invSupplierNoFilter: '',
     invDocNoFilter: '',
     invDocDateFilter: '',
     invQtyFilter: '',
     invAmountFilter: '',
-    invSupplierNoFilter: '',
     invDueDateFilter: '',
     paymentDocFilter: '',
-    paymentDateFilter: '',
-    createdAtFilter: '',
-    updatedAtFilter: ''
+    paymentDateFilter: ''
   });
   const [grDateFrom, setGrDateFrom] = useState('');
   const [grDateTo, setGrDateTo] = useState('');
@@ -251,61 +228,103 @@ const InvoiceCreation = () => {
     value: partner.bp_code,
     label: `${partner.bp_code} | ${partner.bp_name}`,
   }));
-
   const applyColumnFilters = (dataToFilter: GrSaRecord[]): GrSaRecord[] => {
     let filtered = [...dataToFilter];
     const hasFilters = Object.values(columnFilters).some(value => value !== '');
     if (!hasFilters) return filtered;
-    if (columnFilters.poNoFilter) filtered = filtered.filter(item => item.po_no?.toLowerCase().includes(columnFilters.poNoFilter.toLowerCase()));
-    if (columnFilters.grNoFilter) filtered = filtered.filter(item => item.gr_no?.toLowerCase().includes(columnFilters.grNoFilter.toLowerCase())); // Moved here
+    
+    // Filter by BP ID
     if (columnFilters.bpIdFilter) filtered = filtered.filter(item => item.bp_id?.toLowerCase().includes(columnFilters.bpIdFilter.toLowerCase()));
+    
+    // Filter by BP Name
     if (columnFilters.bpNameFilter) filtered = filtered.filter(item => item.bp_name?.toLowerCase().includes(columnFilters.bpNameFilter.toLowerCase()));
-    if (columnFilters.currencyFilter) filtered = filtered.filter(item => item.currency?.toLowerCase().includes(columnFilters.currencyFilter.toLowerCase()));
-    if (columnFilters.poTypeFilter) filtered = filtered.filter(item => item.po_type?.toLowerCase().includes(columnFilters.poTypeFilter.toLowerCase()));
-    if (columnFilters.poReferenceFilter) filtered = filtered.filter(item => item.po_reference?.toLowerCase().includes(columnFilters.poReferenceFilter.toLowerCase()));
-    if (columnFilters.poLineFilter) filtered = filtered.filter(item => item.po_line?.toLowerCase().includes(columnFilters.poLineFilter.toLowerCase()));
-    if (columnFilters.poSequenceFilter) filtered = filtered.filter(item => item.po_sequence?.toLowerCase().includes(columnFilters.poSequenceFilter.toLowerCase()));
-    if (columnFilters.receiptSequenceFilter) filtered = filtered.filter(item => item.po_receipt_sequence?.toLowerCase().includes(columnFilters.receiptSequenceFilter.toLowerCase()));
-    if (columnFilters.receiptDateFilter) filtered = filtered.filter(item => item.actual_receipt_date?.includes(columnFilters.receiptDateFilter));
-    if (columnFilters.receiptYearFilter) filtered = filtered.filter(item => item.actual_receipt_year?.toLowerCase().includes(columnFilters.receiptYearFilter.toLowerCase()));
-    if (columnFilters.receiptPeriodFilter) filtered = filtered.filter(item => item.actual_receipt_period?.toLowerCase().includes(columnFilters.receiptPeriodFilter.toLowerCase()));
+    
+    // Filter by PO No
+    if (columnFilters.poNoFilter) filtered = filtered.filter(item => item.po_no?.toLowerCase().includes(columnFilters.poNoFilter.toLowerCase()));
+    
+    // Filter by Receipt No
     if (columnFilters.receiptNoFilter) filtered = filtered.filter(item => item.receipt_no?.toLowerCase().includes(columnFilters.receiptNoFilter.toLowerCase()));
-    if (columnFilters.receiptLineFilter) filtered = filtered.filter(item => item.receipt_line?.toLowerCase().includes(columnFilters.receiptLineFilter.toLowerCase()));
+    
+    // Filter by PO Reference
+    if (columnFilters.poReferenceFilter) filtered = filtered.filter(item => item.po_reference?.toLowerCase().includes(columnFilters.poReferenceFilter.toLowerCase()));
+    
+    // Filter by Currency
+    if (columnFilters.currencyFilter) filtered = filtered.filter(item => item.currency?.toLowerCase().includes(columnFilters.currencyFilter.toLowerCase()));
+    
+    // Filter by Receipt Date
+    if (columnFilters.receiptDateFilter) filtered = filtered.filter(item => item.actual_receipt_date?.includes(columnFilters.receiptDateFilter));
+    
+    // Filter by Packing Slip
     if (columnFilters.packingSlipFilter) filtered = filtered.filter(item => item.packing_slip?.toLowerCase().includes(columnFilters.packingSlipFilter.toLowerCase()));
-    if (columnFilters.itemNoFilter) filtered = filtered.filter(item => item.item_no?.toLowerCase().includes(columnFilters.itemNoFilter.toLowerCase()));
-    if (columnFilters.icsCodeFilter) filtered = filtered.filter(item => item.ics_code?.toLowerCase().includes(columnFilters.icsCodeFilter.toLowerCase()));
-    if (columnFilters.icsPartFilter) filtered = filtered.filter(item => item.ics_part?.toLowerCase().includes(columnFilters.icsPartFilter.toLowerCase()));
+    
+    // Filter by Part No
     if (columnFilters.partNoFilter) filtered = filtered.filter(item => item.part_no?.toLowerCase().includes(columnFilters.partNoFilter.toLowerCase()));
+    
+    // Filter by Item Description
     if (columnFilters.itemDescFilter) filtered = filtered.filter(item => item.item_desc?.toLowerCase().includes(columnFilters.itemDescFilter.toLowerCase()));
-    if (columnFilters.itemGroupFilter) filtered = filtered.filter(item => item.item_group?.toLowerCase().includes(columnFilters.itemGroupFilter.toLowerCase()));
-    if (columnFilters.itemTypeFilter) filtered = filtered.filter(item => item.item_type?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase()));
-    if (columnFilters.itemTypeDescFilter) filtered = filtered.filter(item => item.item_type_desc?.toLowerCase().includes(columnFilters.itemTypeDescFilter.toLowerCase()));
-    if (columnFilters.requestQtyFilter) filtered = filtered.filter(item => item.request_qty?.toString().includes(columnFilters.requestQtyFilter));
-    if (columnFilters.receiptQtyFilter) filtered = filtered.filter(item => item.actual_receipt_qty?.toString().includes(columnFilters.receiptQtyFilter));
-    if (columnFilters.approveQtyFilter) filtered = filtered.filter(item => item.approve_qty?.toString().includes(columnFilters.approveQtyFilter));
+    
+    // Filter by Item No
+    if (columnFilters.itemNoFilter) filtered = filtered.filter(item => item.item_no?.toLowerCase().includes(columnFilters.itemNoFilter.toLowerCase()));
+    
+    // Filter by Unit
     if (columnFilters.unitFilter) filtered = filtered.filter(item => item.unit?.toLowerCase().includes(columnFilters.unitFilter.toLowerCase()));
-    if (columnFilters.receiptAmountFilter) filtered = filtered.filter(item => item.receipt_amount?.toString().includes(columnFilters.receiptAmountFilter));
+    
+    // Filter by Item Type
+    if (columnFilters.itemTypeFilter) filtered = filtered.filter(item => item.item_type?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase()));
+    
+    // Filter by Unit Price
     if (columnFilters.unitPriceFilter) filtered = filtered.filter(item => item.receipt_unit_price?.toString().includes(columnFilters.unitPriceFilter));
+    
+    // Filter by Request Qty
+    if (columnFilters.requestQtyFilter) filtered = filtered.filter(item => item.request_qty?.toString().includes(columnFilters.requestQtyFilter));
+    
+    // Filter by Receipt Qty
+    if (columnFilters.receiptQtyFilter) filtered = filtered.filter(item => item.actual_receipt_qty?.toString().includes(columnFilters.receiptQtyFilter));
+    
+    // Filter by Approve Qty
+    if (columnFilters.approveQtyFilter) filtered = filtered.filter(item => item.approve_qty?.toString().includes(columnFilters.approveQtyFilter));
+    
+    // Filter by Receipt Amount
+    if (columnFilters.receiptAmountFilter) filtered = filtered.filter(item => item.receipt_amount?.toString().includes(columnFilters.receiptAmountFilter));
+    
+    // Filter by Final Receipt
     if (columnFilters.finalReceiptFilter) {
       const filterValue = columnFilters.finalReceiptFilter.toLowerCase();
       if (filterValue === 'yes' || filterValue === 'y' || filterValue === 'true') filtered = filtered.filter(item => item.is_final_receipt === true);
       else if (filterValue === 'no' || filterValue === 'n' || filterValue === 'false') filtered = filtered.filter(item => item.is_final_receipt === false);
     }
+    
+    // Filter by Confirmed
     if (columnFilters.confirmedFilter) {
       const filterValue = columnFilters.confirmedFilter.toLowerCase();
       if (filterValue === 'yes' || filterValue === 'y' || filterValue === 'true') filtered = filtered.filter(item => item.is_confirmed === true);
       else if (filterValue === 'no' || filterValue === 'n' || filterValue === 'false') filtered = filtered.filter(item => item.is_confirmed === false);
     }
-    if (columnFilters.invDocNoFilter) filtered = filtered.filter(item => item.inv_doc_no?.toLowerCase().includes(columnFilters.invDocNoFilter.toLowerCase()));
-    if (columnFilters.invDocDateFilter) filtered = filtered.filter(item => item.inv_doc_date?.includes(columnFilters.invDocDateFilter));
-    if (columnFilters.invQtyFilter) filtered = filtered.filter(item => item.inv_qty?.toString().includes(columnFilters.invQtyFilter));
-    if (columnFilters.invAmountFilter) filtered = filtered.filter(item => item.inv_amount?.toString().includes(columnFilters.invAmountFilter));
+    
+    // Filter by Invoice Supplier No
     if (columnFilters.invSupplierNoFilter) filtered = filtered.filter(item => item.inv_supplier_no?.toLowerCase().includes(columnFilters.invSupplierNoFilter.toLowerCase()));
+    
+    // Filter by Invoice Doc No
+    if (columnFilters.invDocNoFilter) filtered = filtered.filter(item => item.inv_doc_no?.toLowerCase().includes(columnFilters.invDocNoFilter.toLowerCase()));
+    
+    // Filter by Invoice Doc Date
+    if (columnFilters.invDocDateFilter) filtered = filtered.filter(item => item.inv_doc_date?.includes(columnFilters.invDocDateFilter));
+    
+    // Filter by Invoice Qty
+    if (columnFilters.invQtyFilter) filtered = filtered.filter(item => item.inv_qty?.toString().includes(columnFilters.invQtyFilter));
+    
+    // Filter by Invoice Amount
+    if (columnFilters.invAmountFilter) filtered = filtered.filter(item => item.inv_amount?.toString().includes(columnFilters.invAmountFilter));
+    
+    // Filter by Invoice Due Date
     if (columnFilters.invDueDateFilter) filtered = filtered.filter(item => item.inv_due_date?.includes(columnFilters.invDueDateFilter));
+    
+    // Filter by Payment Doc
     if (columnFilters.paymentDocFilter) filtered = filtered.filter(item => item.payment_doc?.toLowerCase().includes(columnFilters.paymentDocFilter.toLowerCase()));
+    
+    // Filter by Payment Date
     if (columnFilters.paymentDateFilter) filtered = filtered.filter(item => item.payment_doc_date?.includes(columnFilters.paymentDateFilter));
-    if (columnFilters.createdAtFilter) filtered = filtered.filter(item => item.created_at?.includes(columnFilters.createdAtFilter));
-    if (columnFilters.updatedAtFilter) filtered = filtered.filter(item => item.updated_at?.includes(columnFilters.updatedAtFilter));
+    
     return filtered;
   };
   const handleColumnFilterChange = (field: keyof typeof columnFilters, value: string) => {
@@ -412,54 +431,38 @@ const InvoiceCreation = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleClear = () => {
-    setFilterParams({ inv_due_date: '' });
+  };  const handleClear = () => {
+    setFilterParams({});
     setSelectedSupplier('');
     setColumnFilters({
-      poNoFilter: '',
-      grNoFilter: '', // Moved here
       bpIdFilter: '',
       bpNameFilter: '',
-      currencyFilter: '',
-      poTypeFilter: '',
-      poReferenceFilter: '',
-      poLineFilter: '',
-      poSequenceFilter: '',
-      receiptSequenceFilter: '',
-      receiptDateFilter: '',
-      receiptYearFilter: '',
-      receiptPeriodFilter: '',
+      poNoFilter: '',
       receiptNoFilter: '',
-      receiptLineFilter: '',
+      poReferenceFilter: '',
+      currencyFilter: '',
+      receiptDateFilter: '',
       packingSlipFilter: '',
-      itemNoFilter: '',
-      icsCodeFilter: '',
-      icsPartFilter: '',
       partNoFilter: '',
       itemDescFilter: '',
-      itemGroupFilter: '',
+      itemNoFilter: '',
+      unitFilter: '',
       itemTypeFilter: '',
-      itemTypeDescFilter: '',
+      unitPriceFilter: '',
       requestQtyFilter: '',
       receiptQtyFilter: '',
       approveQtyFilter: '',
-      unitFilter: '',
       receiptAmountFilter: '',
-      unitPriceFilter: '',
       finalReceiptFilter: '',
       confirmedFilter: '',
+      invSupplierNoFilter: '',
       invDocNoFilter: '',
       invDocDateFilter: '',
       invQtyFilter: '',
       invAmountFilter: '',
-      invSupplierNoFilter: '',
       invDueDateFilter: '',
       paymentDocFilter: '',
-      paymentDateFilter: '',
-      createdAtFilter: '',
-      updatedAtFilter: ''
+      paymentDateFilter: ''
     });
     const formInputs = document.querySelectorAll('input');
     formInputs.forEach((input) => {
@@ -593,15 +596,14 @@ const InvoiceCreation = () => {
                   value={selectedSupplier ? (supplierOptions.find(opt => opt.value === selectedSupplier)?.label.split(' | ')[1] || '') : ''}
                   readOnly
                 />
-              </div>
-              <div className="flex w-1/3 items-center gap-2">
-                <label className="w-1/4 text-sm font-medium text-gray-700">GR / SA Number</label>
+              </div>              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">Packing Slip</label>
                 <input
                   type="text"
                   className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
                   placeholder="----  ---------"
-                  value={filterParams.gr_no || ''}
-                  onChange={(e) => handleInputChange('gr_no', e.target.value)}
+                  value={filterParams.packing_slip || ''}
+                  onChange={(e) => handleInputChange('packing_slip', e.target.value)}
                 />
               </div>
               <div className="flex w-1/3 items-center gap-2">
@@ -614,50 +616,20 @@ const InvoiceCreation = () => {
                   onChange={(e) => handleInputChange('po_no', e.target.value)}
                 />
               </div>
-            </div>
-            {/* Row 3 - DN Number, Invoice Number, Invoice Due Date */}
-            <div className='flex space-x-4'>
-              <div className="flex w-1/3 items-center gap-2">
-                <label className="w-1/4 text-sm font-medium text-gray-700">DN Number</label>
-                <input
+            </div>            {/* Row 3 - Receipt Number only */}
+            <div className='flex space-x-4'>              <div className="flex w-1/3 items-center gap-2">
+                <label className="w-1/4 text-sm font-medium text-gray-700">Receipt Number</label>                <input
                   type="text"
                   placeholder="----  ---------"
                   className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-                  value={filterParams.dn_number || ''}
-                  onChange={(e) => handleInputChange('dn_number', e.target.value)}
+                  value={filterParams.receipt_no || ''}
+                  onChange={(e) => handleInputChange('receipt_no', e.target.value)}
                 />
               </div>
-              <div className="flex w-1/3 items-center gap-2">
-                <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Number</label>
-                <input
-                  type="text"
-                  placeholder="----  ---------"
-                  className="input w-3/4 border border-violet-200 p-2 rounded-md text-xs"
-                  value={filterParams.invoice_no || ''}
-                  onChange={(e) => handleInputChange('invoice_no', e.target.value)}
-                />
-              </div>
-              <div className="flex w-1/3 items-center gap-2">
-                <label className="w-1/4 text-sm font-medium text-gray-700">Invoice Due Date</label>
-                <div className="relative w-3/4">
-                  <input
-                    type="date"
-                    className="input w-full border border-violet-200 p-2 rounded-md text-xs"
-                    name="inv_due_date"
-                    value={filterParams.inv_due_date || ''}
-                    onChange={(e) => handleInputChange('inv_due_date', e.target.value)}
-                  />
-                  {filterParams.inv_due_date && (
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => handleInputChange('inv_due_date', '')}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              </div>
+              
+              {/* Empty divs to maintain layout */}
+              <div className="flex w-1/3 items-center gap-2"></div>
+              <div className="flex w-1/3 items-center gap-2"></div>
             </div>
             {/* Action Buttons */}
             <div className="my-6 flex flex-col md:flex-row md:items-center md:justify-between">
@@ -767,8 +739,7 @@ const InvoiceCreation = () => {
 
             <div className="overflow-x-auto shadow-md border rounded-lg">
               <table className="w-full text-sm text-center">
-                <thead className="bg-gray-100 uppercase">
-                  <tr>
+                <thead className="bg-gray-100 uppercase">                  <tr>
                     <th className="px-3 py-2 text-center border">
                       <input
                         type="checkbox"
@@ -777,96 +748,68 @@ const InvoiceCreation = () => {
                         className="cursor-pointer"
                       />
                     </th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO No</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">GR No</th> {/* Moved here */}
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">BP ID</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">BP Name</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
-                    <th className="px-6 py-2 text-gray-700 text-center border">PO Type</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[200px]">BP Name</th>                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO NO</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">DN NO</th>
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">PO Reference</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">PO Line</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">PO Sequence</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Sequence</th>
+                    <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Year</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Period</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Receipt No</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Receipt Line</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Packing Slip</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Item No</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">ICS Code</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">ICS Part</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Supplier REF No</th>
                     <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">Part No</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Item Description</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Item Group</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">Item Desc</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">ERP PART NO</th>
+                    <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Item Type</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Item Type Desc</th>
+                    <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Request Qty</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Receipt Qty</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Approve Qty</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Receipt Amount</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Final Receipt</th>
-                    <th className="px-4 py-2 text-gray-700 text-center border">Confirmed</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Invoice No</th>
+                    <th className="px-4 py-2 text-gray-700 text-center border">Confirmed</th>                    <th className="px-8 py-2 text-gray-700 text-center border">Inv Supplier No</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border">ERP INV NO</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Invoice Date</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Invoice Qty</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Invoice Amount</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border">Supplier No</th>
-                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[130px]">Due Date</th>
+                    <th className="px-8 py-2 text-gray-700 text-center border min-w-[130px]">Invoice Due Date</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
                     <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
-                  </tr>
-                  {/* Column filter inputs row */}
+                  </tr>                  {/* Column filter inputs row */}
                   <tr className="bg-gray-50">
                     <td className="px-2 py-2 border"></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poNoFilter} onChange={e => handleColumnFilterChange('poNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.grNoFilter} onChange={e => handleColumnFilterChange('grNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td> {/* Moved here */}
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.bpIdFilter} onChange={e => handleColumnFilterChange('bpIdFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.bpNameFilter} onChange={e => handleColumnFilterChange('bpNameFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.currencyFilter} onChange={e => handleColumnFilterChange('currencyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poTypeFilter} onChange={e => handleColumnFilterChange('poTypeFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poReferenceFilter} onChange={e => handleColumnFilterChange('poReferenceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poLineFilter} onChange={e => handleColumnFilterChange('poLineFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poSequenceFilter} onChange={e => handleColumnFilterChange('poSequenceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptSequenceFilter} onChange={e => handleColumnFilterChange('receiptSequenceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="date" placeholder="-" value={columnFilters.receiptDateFilter} onChange={e => handleColumnFilterChange('receiptDateFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptYearFilter} onChange={e => handleColumnFilterChange('receiptYearFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptPeriodFilter} onChange={e => handleColumnFilterChange('receiptPeriodFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poNoFilter} onChange={e => handleColumnFilterChange('poNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptNoFilter} onChange={e => handleColumnFilterChange('receiptNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptLineFilter} onChange={e => handleColumnFilterChange('receiptLineFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poReferenceFilter} onChange={e => handleColumnFilterChange('poReferenceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.currencyFilter} onChange={e => handleColumnFilterChange('currencyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="date" placeholder="-" value={columnFilters.receiptDateFilter} onChange={e => handleColumnFilterChange('receiptDateFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.packingSlipFilter} onChange={e => handleColumnFilterChange('packingSlipFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemNoFilter} onChange={e => handleColumnFilterChange('itemNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.icsCodeFilter} onChange={e => handleColumnFilterChange('icsCodeFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.icsPartFilter} onChange={e => handleColumnFilterChange('icsPartFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.partNoFilter} onChange={e => handleColumnFilterChange('partNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemDescFilter} onChange={e => handleColumnFilterChange('itemDescFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemGroupFilter} onChange={e => handleColumnFilterChange('itemGroupFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemNoFilter} onChange={e => handleColumnFilterChange('itemNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.unitFilter} onChange={e => handleColumnFilterChange('unitFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemTypeFilter} onChange={e => handleColumnFilterChange('itemTypeFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemTypeDescFilter} onChange={e => handleColumnFilterChange('itemTypeDescFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.unitPriceFilter} onChange={e => handleColumnFilterChange('unitPriceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.requestQtyFilter} onChange={e => handleColumnFilterChange('requestQtyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptQtyFilter} onChange={e => handleColumnFilterChange('receiptQtyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.approveQtyFilter} onChange={e => handleColumnFilterChange('approveQtyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.unitFilter} onChange={e => handleColumnFilterChange('unitFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptAmountFilter} onChange={e => handleColumnFilterChange('receiptAmountFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.unitPriceFilter} onChange={e => handleColumnFilterChange('unitPriceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.finalReceiptFilter} onChange={e => handleColumnFilterChange('finalReceiptFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.confirmedFilter} onChange={e => handleColumnFilterChange('confirmedFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.invSupplierNoFilter} onChange={e => handleColumnFilterChange('invSupplierNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.invDocNoFilter} onChange={e => handleColumnFilterChange('invDocNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="date" placeholder="-" value={columnFilters.invDocDateFilter} onChange={e => handleColumnFilterChange('invDocDateFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.invQtyFilter} onChange={e => handleColumnFilterChange('invQtyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.invAmountFilter} onChange={e => handleColumnFilterChange('invAmountFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.invSupplierNoFilter} onChange={e => handleColumnFilterChange('invSupplierNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="date" placeholder="-" value={columnFilters.invDueDateFilter} onChange={e => handleColumnFilterChange('invDueDateFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.paymentDocFilter} onChange={e => handleColumnFilterChange('paymentDocFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="date" placeholder="-" value={columnFilters.paymentDateFilter} onChange={e => handleColumnFilterChange('paymentDateFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                   </tr>
-                </thead>
-                <tbody>
+                </thead>                <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={42} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={29} className="px-6 py-4 text-center text-gray-500">
                         Loading...
                       </td>
                     </tr>
@@ -881,51 +824,39 @@ const InvoiceCreation = () => {
                             className="cursor-pointer"
                           />
                         </td>
-                        <td className="px-3 py-2 text-center">{item.po_no}</td>
-                        <td className="px-3 py-2 text-center">{item.gr_no}</td> {/* Moved here */}
-                        <td className="px-3 py-2 text-center">{item.bp_id}</td>
-                        <td className="px-3 py-2 text-center">{item.bp_name}</td>
-                        <td className="px-3 py-2 text-center">{item.currency}</td>
-                        <td className="px-3 py-2 text-center">{item.po_type}</td>
-                        <td className="px-3 py-2 text-center">{item.po_reference}</td>
-                        <td className="px-3 py-2 text-center">{item.po_line}</td>
-                        <td className="px-3 py-2 text-center">{item.po_sequence}</td>
-                        <td className="px-3 py-2 text-center">{item.po_receipt_sequence}</td>
-                        <td className="px-3 py-2 text-center">{item.actual_receipt_date}</td>
-                        <td className="px-3 py-2 text-center">{item.actual_receipt_year}</td>
-                        <td className="px-3 py-2 text-center">{item.actual_receipt_period}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_no}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_line}</td>
-                        <td className="px-3 py-2 text-center">{item.packing_slip}</td>
-                        <td className="px-3 py-2 text-center">{item.item_no}</td>
-                        <td className="px-3 py-2 text-center">{item.ics_code}</td>
-                        <td className="px-3 py-2 text-center">{item.ics_part}</td>
-                        <td className="px-3 py-2 text-center">{item.part_no}</td>
-                        <td className="px-3 py-2 text-center">{item.item_desc}</td>
-                        <td className="px-3 py-2 text-center">{item.item_group}</td>
-                        <td className="px-3 py-2 text-center">{item.item_type}</td>
-                        <td className="px-3 py-2 text-center">{item.item_type_desc}</td>
-                        <td className="px-3 py-2 text-center">{item.request_qty}</td>
-                        <td className="px-3 py-2 text-center">{item.actual_receipt_qty}</td>
-                        <td className="px-3 py-2 text-center">{item.approve_qty}</td>
-                        <td className="px-3 py-2 text-center">{item.unit}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_amount}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_unit_price}</td>
+                        <td className="px-3 py-2 text-center">{item.bp_id || ''}</td>
+                        <td className="px-3 py-2 text-left">{item.bp_name || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.po_no || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.receipt_no || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.po_reference || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.currency || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.actual_receipt_date ? new Date(item.actual_receipt_date).toLocaleDateString() : ''}</td>
+                        <td className="px-3 py-2 text-center">{item.packing_slip || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.part_no || ''}</td>
+                        <td className="px-3 py-2 text-left">{item.item_desc || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.item_no || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.unit || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.item_type || ''}</td>
+                        <td className="px-3 py-2 text-right">{item.receipt_unit_price ? item.receipt_unit_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
+                        <td className="px-3 py-2 text-right">{item.request_qty ? item.request_qty.toLocaleString() : ''}</td>
+                        <td className="px-3 py-2 text-right">{item.actual_receipt_qty ? item.actual_receipt_qty.toLocaleString() : ''}</td>
+                        <td className="px-3 py-2 text-right">{item.approve_qty ? item.approve_qty.toLocaleString() : ''}</td>
+                        <td className="px-3 py-2 text-right">{item.receipt_amount ? item.receipt_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
                         <td className="px-3 py-2 text-center">{item.is_final_receipt ? 'Yes' : 'No'}</td>
                         <td className="px-3 py-2 text-center">{item.is_confirmed ? 'Yes' : 'No'}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_doc_no}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_doc_date}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_qty}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_amount}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_supplier_no}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_due_date}</td>
-                        <td className="px-3 py-2 text-center">{item.payment_doc}</td>
-                        <td className="px-3 py-2 text-center">{item.payment_doc_date}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_supplier_no || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_doc_no || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_doc_date ? new Date(item.inv_doc_date).toLocaleDateString() : ''}</td>
+                        <td className="px-3 py-2 text-right">{item.inv_qty ? item.inv_qty.toLocaleString() : ''}</td>
+                        <td className="px-3 py-2 text-right">{item.inv_amount ? item.inv_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_due_date ? new Date(item.inv_due_date).toLocaleDateString() : ''}</td>
+                        <td className="px-3 py-2 text-center">{item.payment_doc || ''}</td>
+                        <td className="px-3 py-2 text-center">{item.payment_doc_date ? new Date(item.payment_doc_date).toLocaleDateString() : ''}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={42} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={29} className="px-6 py-4 text-center text-gray-500">
                         No data available
                       </td>
                     </tr>
