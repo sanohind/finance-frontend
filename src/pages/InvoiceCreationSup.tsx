@@ -260,7 +260,7 @@ const InvoiceCreationSup = () => {
     // Filter by Item Type
     if (columnFilters.itemTypeFilter) {
       filtered = filtered.filter(item => 
-        item.item_type?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase())
+        item.item_type_desc?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase())
       );
     }
     
@@ -855,14 +855,14 @@ const InvoiceCreationSup = () => {
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[200px]">BP Name</th>                <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO NO</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">DN NO</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">PO Reference</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
-                <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Supplier REF No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">Part No</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">Item Desc</th>
-                <th className="px-8 py-2 text-gray-700 text-center border">ERP PART NO</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Receipt Date</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[250px]">Supplier REF No</th>
+                <th className="px-4 py-2 text-gray-700 text-center border min-w-[140px]">Part No</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Item Desc</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">ERP PART NO</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Item Type</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Request Qty</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Receipt Qty</th>
@@ -929,15 +929,6 @@ const InvoiceCreationSup = () => {
                 </td>
                 <td className="px-2 py-2 border">
                   <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.currencyFilter}
-                    onChange={(e) => handleColumnFilterChange('currencyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
                     type="date"
                     placeholder="-"
                     value={columnFilters.receiptDateFilter}
@@ -996,6 +987,15 @@ const InvoiceCreationSup = () => {
                     placeholder="-"
                     value={columnFilters.itemTypeFilter}
                     onChange={(e) => handleColumnFilterChange('itemTypeFilter', e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-xs text-center"
+                  />
+                </td>
+                <td className="px-2 py-2 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={columnFilters.currencyFilter}
+                    onChange={(e) => handleColumnFilterChange('currencyFilter', e.target.value)}
                     className="border rounded w-full px-2 py-1 text-xs text-center"
                   />
                 </td>
@@ -1149,30 +1149,31 @@ const InvoiceCreationSup = () => {
                           />
                         </td>
                         <td className="px-3 py-2 text-center">{item.bp_id}</td>
-                        <td className="px-3 py-2 text-center">{item.bp_name}</td>
+                        <td className="px-3 py-2 text-left">{item.bp_name}</td>
                         <td className="px-3 py-2 text-center">{item.po_no}</td>
                         <td className="px-3 py-2 text-center">{item.receipt_no}</td>
                         <td className="px-3 py-2 text-center">{item.po_reference}</td>
-                        <td className="px-3 py-2 text-center">{item.currency}</td>
+                        {/* <td className="px-3 py-2 text-center">{item.currency}</td> */}
                         <td className="px-3 py-2 text-center">{item.actual_receipt_date}</td>
                         <td className="px-3 py-2 text-center">{item.packing_slip}</td>
                         <td className="px-3 py-2 text-center">{item.part_no}</td>
-                        <td className="px-3 py-2 text-center">{item.item_desc}</td>
+                        <td className="px-3 py-2 text-left">{item.item_desc}</td>
                         <td className="px-3 py-2 text-center">{item.item_no}</td>
                         <td className="px-3 py-2 text-center">{item.unit}</td>
-                        <td className="px-3 py-2 text-center">{item.item_type}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_unit_price}</td>
+                        <td className="px-3 py-2 text-center">{item.item_type_desc}</td>
+                        <td className="px-3 py-2 text-center">{item.currency}</td>
+                        <td className="px-3 py-2 text-right">{formatToIDR(item.receipt_unit_price)}</td>
                         <td className="px-3 py-2 text-center">{item.request_qty}</td>
                         <td className="px-3 py-2 text-center">{item.actual_receipt_qty}</td>
                         <td className="px-3 py-2 text-center">{item.approve_qty}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_amount}</td>
+                        <td className="px-3 py-2 text-right">{formatToIDR(item.receipt_amount)}</td>
                         <td className="px-3 py-2 text-center">{item.is_final_receipt ? 'Yes' : 'No'}</td>
                         <td className="px-3 py-2 text-center">{item.is_confirmed ? 'Yes' : 'No'}</td>
                         <td className="px-3 py-2 text-center">{item.inv_supplier_no}</td>
                         <td className="px-3 py-2 text-center">{item.inv_doc_no}</td>
                         <td className="px-3 py-2 text-center">{item.inv_doc_date}</td>
                         <td className="px-3 py-2 text-center">{item.inv_qty}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_amount}</td>
+                        <td className="px-3 py-2 text-right">{formatToIDR(item.inv_amount)}</td>
                         <td className="px-3 py-2 text-center">{item.inv_due_date}</td>
                         <td className="px-3 py-2 text-center">{item.payment_doc}</td>
                         <td className="px-3 py-2 text-center">{item.payment_doc_date}</td>

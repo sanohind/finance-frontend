@@ -433,7 +433,7 @@ const GrTracking = () => {
     // Filter by Item Type
     if (columnFilters.itemTypeFilter) {
       filtered = filtered.filter(item => 
-        item.item_type?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase())
+        item.item_type_desc?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase())
       );
     }
     
@@ -656,9 +656,9 @@ const GrTracking = () => {
       toast.info('Preparing Excel file, please wait...');
 
       // Define headers in the exact order shown in the table
-      const headers = [        'BP ID', 'BP Name', 'PO NO', 'DN NO', 'PO Reference', 'Currency', 
+      const headers = [        'BP ID', 'BP Name', 'PO NO', 'DN NO', 'PO Reference', 
         'Receipt Date', 'Supplier REF No', 'Part No', 'Item Desc', 'ERP PART NO', 
-        'Unit', 'Item Type', 'Unit Price', 'Request Qty', 'Receipt Qty', 'Approve Qty', 
+        'Unit', 'Item Type', 'Currency', 'Unit Price', 'Request Qty', 'Receipt Qty', 'Approve Qty', 
         'Receipt Amount', 'Final Receipt', 'Confirmed', 'Inv Supplier No', 'ERP INV NO',
         'Invoice Date', 'Invoice Qty', 'Invoice Amount', 'Invoice Due Date', 
         'Payment Doc', 'Payment Date'
@@ -671,14 +671,14 @@ const GrTracking = () => {
         item.po_no || '',
         item.receipt_no || '',
         item.po_reference || '',
-        item.currency || '',
         item.actual_receipt_date || '',
         item.packing_slip || '',
         item.part_no || '',
         item.item_desc || '',
         item.item_no || '',
         item.unit || '',
-        item.item_type || '',
+        item.item_type_desc || '',
+        item.currency || '',
         item.receipt_unit_price?.toFixed(2) || '',
         item.request_qty || '',
         item.actual_receipt_qty || '',
@@ -731,17 +731,25 @@ const GrTracking = () => {
       ws['!cols'] = calculateColumnWidths();
 
       // Apply number formatting to currency columns (Unit Price, Receipt Amount, Invoice Amount)
-      const currencyColumns = [13, 17, 24]; // 0-based indices for Unit Price, Receipt Amount, Invoice Amount
+      // Indices: Item Type (11), Currency (12), Unit Price (13), ... Receipt Amount (17), ... Invoice Amount (24)
+      const currencyValueColumns = [13, 17, 24]; // 0-based indices for Unit Price, Receipt Amount, Invoice Amount
       for (let r = 1; r <= filteredData.length; r++) {
-        for (let c of currencyColumns) {
+        for (let c of currencyValueColumns) { // Iterate over actual monetary value columns
           const cellRef = XLSX.utils.encode_cell({ r, c });
           if (ws[cellRef] && ws[cellRef].v !== '') {
             ws[cellRef].z = '#,##0.00'; // Number format for currency
           }
         }
+        // Style the Currency text column (index 12) if needed, e.g., center align
+        const currencyTextCellRef = XLSX.utils.encode_cell({ r, c: 12 });
+        if (ws[currencyTextCellRef]) {
+            // Example: ws[currencyTextCellRef].s = { alignment: { horizontal: "center" } };
+            // For now, no specific style beyond auto-width for the currency text column itself.
+        }
       }
 
       // Apply number formatting to quantity columns
+      // Indices: Request Qty (14), Receipt Qty (15), Approve Qty (16), ... Invoice Qty (23)
       const quantityColumns = [14, 15, 16, 23]; // Request Qty, Receipt Qty, Approve Qty, Invoice Qty
       for (let r = 1; r <= filteredData.length; r++) {
         for (let c of quantityColumns) {
@@ -993,7 +1001,6 @@ const GrTracking = () => {
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO NO</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">DN NO</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">PO Reference</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Supplier REF No</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">Part No</th>
@@ -1001,6 +1008,7 @@ const GrTracking = () => {
                 <th className="px-8 py-2 text-gray-700 text-center border">ERP PART NO</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Item Type</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Request Qty</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Receipt Qty</th>
@@ -1016,315 +1024,82 @@ const GrTracking = () => {
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[130px]">Invoice Due Date</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Payment Doc</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Payment Date</th>
-              </tr>              {/* Column filter inputs row */}
-              <tr className="bg-gray-50">
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.bpIdFilter}
-                    onChange={(e) => handleColumnFilterChange('bpIdFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.bpNameFilter}
-                    onChange={(e) => handleColumnFilterChange('bpNameFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.poNoFilter}
-                    onChange={(e) => handleColumnFilterChange('poNoFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.receiptNoFilter}
-                    onChange={(e) => handleColumnFilterChange('receiptNoFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.poReferenceFilter}
-                    onChange={(e) => handleColumnFilterChange('poReferenceFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.currencyFilter}
-                    onChange={(e) => handleColumnFilterChange('currencyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="date"
-                    placeholder="-"
-                    value={columnFilters.receiptDateFilter}
-                    onChange={(e) => handleColumnFilterChange('receiptDateFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.packingSlipFilter}
-                    onChange={(e) => handleColumnFilterChange('packingSlipFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.partNoFilter}
-                    onChange={(e) => handleColumnFilterChange('partNoFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.itemDescFilter}
-                    onChange={(e) => handleColumnFilterChange('itemDescFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.itemNoFilter}
-                    onChange={(e) => handleColumnFilterChange('itemNoFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.unitFilter}
-                    onChange={(e) => handleColumnFilterChange('unitFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.itemTypeFilter}
-                    onChange={(e) => handleColumnFilterChange('itemTypeFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.unitPriceFilter}
-                    onChange={(e) => handleColumnFilterChange('unitPriceFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.requestQtyFilter}
-                    onChange={(e) => handleColumnFilterChange('requestQtyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.receiptQtyFilter}
-                    onChange={(e) => handleColumnFilterChange('receiptQtyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.approveQtyFilter}
-                    onChange={(e) => handleColumnFilterChange('approveQtyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.receiptAmountFilter}
-                    onChange={(e) => handleColumnFilterChange('receiptAmountFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.finalReceiptFilter}
-                    onChange={(e) => handleColumnFilterChange('finalReceiptFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.confirmedFilter}
-                    onChange={(e) => handleColumnFilterChange('confirmedFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.invSupplierNoFilter}
-                    onChange={(e) => handleColumnFilterChange('invSupplierNoFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.invDocNoFilter}
-                    onChange={(e) => handleColumnFilterChange('invDocNoFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="date"
-                    placeholder="-"
-                    value={columnFilters.invDocDateFilter}
-                    onChange={(e) => handleColumnFilterChange('invDocDateFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.invQtyFilter}
-                    onChange={(e) => handleColumnFilterChange('invQtyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.invAmountFilter}
-                    onChange={(e) => handleColumnFilterChange('invAmountFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="date"
-                    placeholder="-"
-                    value={columnFilters.invDueDateFilter}
-                    onChange={(e) => handleColumnFilterChange('invDueDateFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.paymentDocFilter}
-                    onChange={(e) => handleColumnFilterChange('paymentDocFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
-                    type="date"
-                    placeholder="-"
-                    value={columnFilters.paymentDateFilter}
-                    onChange={(e) => handleColumnFilterChange('paymentDateFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
+              </tr>
+              {/* Column Filter Row */}
+              <tr>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.bpIdFilter} onChange={(e) => handleColumnFilterChange('bpIdFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.bpNameFilter} onChange={(e) => handleColumnFilterChange('bpNameFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.poNoFilter} onChange={(e) => handleColumnFilterChange('poNoFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.receiptNoFilter} onChange={(e) => handleColumnFilterChange('receiptNoFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.poReferenceFilter} onChange={(e) => handleColumnFilterChange('poReferenceFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.receiptDateFilter} onChange={(e) => handleColumnFilterChange('receiptDateFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.packingSlipFilter} onChange={(e) => handleColumnFilterChange('packingSlipFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.partNoFilter} onChange={(e) => handleColumnFilterChange('partNoFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.itemDescFilter} onChange={(e) => handleColumnFilterChange('itemDescFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.itemNoFilter} onChange={(e) => handleColumnFilterChange('itemNoFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.unitFilter} onChange={(e) => handleColumnFilterChange('unitFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.itemTypeFilter} onChange={(e) => handleColumnFilterChange('itemTypeFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.currencyFilter} onChange={(e) => handleColumnFilterChange('currencyFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.unitPriceFilter} onChange={(e) => handleColumnFilterChange('unitPriceFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.requestQtyFilter} onChange={(e) => handleColumnFilterChange('requestQtyFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.receiptQtyFilter} onChange={(e) => handleColumnFilterChange('receiptQtyFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.approveQtyFilter} onChange={(e) => handleColumnFilterChange('approveQtyFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.receiptAmountFilter} onChange={(e) => handleColumnFilterChange('receiptAmountFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.finalReceiptFilter} onChange={(e) => handleColumnFilterChange('finalReceiptFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.confirmedFilter} onChange={(e) => handleColumnFilterChange('confirmedFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invSupplierNoFilter} onChange={(e) => handleColumnFilterChange('invSupplierNoFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invDocNoFilter} onChange={(e) => handleColumnFilterChange('invDocNoFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invDocDateFilter} onChange={(e) => handleColumnFilterChange('invDocDateFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invQtyFilter} onChange={(e) => handleColumnFilterChange('invQtyFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invAmountFilter} onChange={(e) => handleColumnFilterChange('invAmountFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invDueDateFilter} onChange={(e) => handleColumnFilterChange('invDueDateFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.paymentDocFilter} onChange={(e) => handleColumnFilterChange('paymentDocFilter', e.target.value)} /></td>
+                <td className="px-1 py-1 border"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.paymentDateFilter} onChange={(e) => handleColumnFilterChange('paymentDateFilter', e.target.value)} /></td>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                renderSkeletons()              ) : !selectedSupplier ? (
+                renderSkeletons()
+              ) : paginatedData.length > 0 ? (
+                paginatedData.map((item, index) => (
+                  <tr key={index} className="border-b hover:bg-gray-50">
+                    <td className="px-3 py-2 text-center border">{item.bp_id}</td>
+                    <td className="px-3 py-2 text-left border">{item.bp_name}</td>
+                    <td className="px-3 py-2 text-center border">{item.po_no}</td>
+                    <td className="px-3 py-2 text-center border">{item.receipt_no}</td>
+                    <td className="px-3 py-2 text-left border">{item.po_reference}</td>
+                    <td className="px-3 py-2 text-center border">{item.actual_receipt_date ? new Date(item.actual_receipt_date).toLocaleDateString() : ''}</td>
+                    <td className="px-3 py-2 text-left border">{item.packing_slip}</td>
+                    <td className="px-3 py-2 text-left border">{item.part_no}</td>
+                    <td className="px-3 py-2 text-left border">{item.item_desc}</td>
+                    <td className="px-3 py-2 text-center border">{item.item_no}</td>
+                    <td className="px-3 py-2 text-center border">{item.unit}</td>
+                    <td className="px-3 py-2 text-center border">{item.item_type_desc}</td>
+                    <td className="px-3 py-2 text-center border">{item.currency}</td>
+                    <td className="px-3 py-2 text-right border">{item.receipt_unit_price?.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right border">{item.request_qty}</td>
+                    <td className="px-3 py-2 text-right border">{item.actual_receipt_qty}</td>
+                    <td className="px-3 py-2 text-right border">{item.approve_qty}</td>
+                    <td className="px-3 py-2 text-right border">{item.receipt_amount?.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-center border">{item.is_final_receipt ? 'Yes' : 'No'}</td>
+                    <td className="px-3 py-2 text-center border">{item.is_confirmed ? 'Yes' : 'No'}</td>
+                    <td className="px-3 py-2 text-left border">{item.inv_supplier_no}</td>
+                    <td className="px-3 py-2 text-center border">{item.inv_doc_no}</td>
+                    <td className="px-3 py-2 text-center border">{item.inv_doc_date ? new Date(item.inv_doc_date).toLocaleDateString() : ''}</td>
+                    <td className="px-3 py-2 text-right border">{item.inv_qty}</td>
+                    <td className="px-3 py-2 text-right border">{item.inv_amount?.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-center border">{item.inv_due_date ? new Date(item.inv_due_date).toLocaleDateString() : ''}</td>
+                    <td className="px-3 py-2 text-center border">{item.payment_doc}</td>
+                    <td className="px-3 py-2 text-center border">{item.payment_doc_date ? new Date(item.payment_doc_date).toLocaleDateString() : ''}</td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={28} className="px-6 py-4 text-center text-gray-500">
-                    Please select a supplier and click search
+                  <td colSpan={28} className="py-4 text-center text-gray-500 border">
+                    No data available or supplier not selected.
                   </td>
                 </tr>
-                )
-                : filteredData.length > 0                ? paginatedData.map((item, index) => (
-                    // Data Rows
-                    <tr key={`${item.bp_id}-${item.po_no}-${index}`} className="border-b hover:bg-gray-50 text-sm">
-                       <td className="px-3 py-2 text-center">{item.bp_id || ''}</td>
-                       <td className="px-3 py-2 text-left">{item.bp_name || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.po_no || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.receipt_no || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.po_reference || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.currency || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.actual_receipt_date ? new Date(item.actual_receipt_date).toLocaleDateString() : ''}</td>
-                       <td className="px-3 py-2 text-center">{item.packing_slip || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.part_no || ''}</td>
-                       <td className="px-3 py-2 text-left">{item.item_desc || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.item_no || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.unit || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.item_type || ''}</td>
-                       <td className="px-3 py-2 text-right">{item.receipt_unit_price ? item.receipt_unit_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
-                       <td className="px-3 py-2 text-right">{item.request_qty ? item.request_qty.toLocaleString() : ''}</td>
-                       <td className="px-3 py-2 text-right">{item.actual_receipt_qty ? item.actual_receipt_qty.toLocaleString() : ''}</td>
-                       <td className="px-3 py-2 text-right">{item.approve_qty ? item.approve_qty.toLocaleString() : ''}</td>
-                       <td className="px-3 py-2 text-right">{item.receipt_amount ? item.receipt_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
-                       <td className="px-3 py-2 text-center">{item.is_final_receipt ? 'Yes' : 'No'}</td>
-                       <td className="px-3 py-2 text-center">{item.is_confirmed ? 'Yes' : 'No'}</td>
-                       <td className="px-3 py-2 text-center">{item.inv_supplier_no || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.inv_doc_no || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.inv_doc_date ? new Date(item.inv_doc_date).toLocaleDateString() : ''}</td>  
-                       <td className="px-3 py-2 text-right">{item.inv_qty ? item.inv_qty.toLocaleString() : ''}</td>
-                       <td className="px-3 py-2 text-right">{item.inv_amount ? item.inv_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
-                       <td className="px-3 py-2 text-center">{item.inv_due_date ? new Date(item.inv_due_date).toLocaleDateString() : ''}</td>
-                       <td className="px-3 py-2 text-center">{item.payment_doc || ''}</td>
-                       <td className="px-3 py-2 text-center">{item.payment_doc_date ? new Date(item.payment_doc_date).toLocaleDateString() : ''}</td>
-                    </tr>
-                  ))
-                : (
-                    // No Data Message (after selection/search or if no results)
-                    <tr>
-                        <td colSpan={28} className="px-6 py-4 text-center text-gray-500">
-                            {/* Adjust message based on state */}
-                            { !selectedSupplier && !isLoadingPartners ? "Please select a supplier and click search." :
-                              !isLoading ? "No data available for the current filters." : "" /* Hide during load */
-                            }
-                        </td>
-                    </tr>
-                )}
+              )}
             </tbody>
           </table>
         </div>

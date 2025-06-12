@@ -388,9 +388,8 @@ const GrTrackingSup = () => {
     
     // Filter by Item Type
     if (columnFilters.itemTypeFilter) {
-      filtered = filtered.filter(item => 
-        item.item_type?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase())
-      );
+      // This is the corrected line
+      filtered = filtered.filter(item => item.item_type_desc?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase()));
     }
     
     // Filter by Unit Price
@@ -630,30 +629,31 @@ const GrTrackingSup = () => {
     try {
       toast.info('Preparing Excel file, please wait...');
 
-      // Define headers in the exact order shown in the table
-      const headers = [        'BP ID', 'BP Name', 'PO NO', 'DN NO', 'PO Reference', 'Currency', 
+      // Define headers in the exact order shown in the table (reordered to match GrTracking)
+      const headers = [
+        'BP ID', 'BP Name', 'PO NO', 'DN NO', 'PO Reference',
         'Receipt Date', 'Supplier REF No', 'Part No', 'Item Desc', 'ERP PART NO',
-        'Unit', 'Item Type', 'Unit Price', 'Request Qty', 'Receipt Qty', 'Approve Qty', 
+        'Unit', 'Item Type', 'Currency', 'Unit Price', 'Request Qty', 'Receipt Qty', 'Approve Qty',
         'Receipt Amount', 'Final Receipt', 'Confirmed', 'Inv Supplier No', 'ERP INV NO',
-        'Invoice Date', 'Invoice Qty', 'Invoice Amount', 'Invoice Due Date', 
+        'Invoice Date', 'Invoice Qty', 'Invoice Amount', 'Invoice Due Date',
         'Payment Doc', 'Payment Date'
       ];
 
-      // Convert filtered data to rows format
+      // Convert filtered data to rows format (matching new header order)
       const rows = filteredData.map(item => [
         item.bp_id || '',
         item.bp_name || '',
         item.po_no || '',
         item.receipt_no || '',
         item.po_reference || '',
-        item.currency || '',
         item.actual_receipt_date || '',
         item.packing_slip || '',
         item.part_no || '',
         item.item_desc || '',
         item.item_no || '',
         item.unit || '',
-        item.item_type || '',
+        item.item_type_desc || '',
+        item.currency || '',
         item.receipt_unit_price?.toFixed(2) || '',
         item.request_qty || '',
         item.actual_receipt_qty || '',
@@ -1146,7 +1146,6 @@ const GrTrackingSup = () => {
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[120px]">PO NO</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">DN NO</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[190px]">PO Reference</th>
-                <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                 <th className="px-8 py-2 text-gray-700 text-center border">Receipt Date</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[250px]">Supplier REF No</th>
                 <th className="px-8 py-2 text-gray-700 text-center border min-w-[140px]">Part No</th>
@@ -1154,6 +1153,7 @@ const GrTrackingSup = () => {
                 <th className="px-8 py-2 text-gray-700 text-center border">ERP PART NO</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Item Type</th>
+                <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Request Qty</th>
                 <th className="px-4 py-2 text-gray-700 text-center border">Receipt Qty</th>
@@ -1218,15 +1218,6 @@ const GrTrackingSup = () => {
                 </td>
                 <td className="px-2 py-2 border">
                   <input
-                    type="text"
-                    placeholder="-"
-                    value={columnFilters.currencyFilter}
-                    onChange={(e) => handleColumnFilterChange('currencyFilter', e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-xs text-center"
-                  />
-                </td>
-                <td className="px-2 py-2 border">
-                  <input
                     type="date"
                     placeholder="-"
                     value={columnFilters.receiptDateFilter}
@@ -1285,6 +1276,15 @@ const GrTrackingSup = () => {
                     placeholder="-"
                     value={columnFilters.itemTypeFilter}
                     onChange={(e) => handleColumnFilterChange('itemTypeFilter', e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-xs text-center"
+                  />
+                </td>
+                <td className="px-2 py-2 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={columnFilters.currencyFilter}
+                    onChange={(e) => handleColumnFilterChange('currencyFilter', e.target.value)}
                     className="border rounded w-full px-2 py-1 text-xs text-center"
                   />
                 </td>
@@ -1439,14 +1439,14 @@ const GrTrackingSup = () => {
                     <td className="px-3 py-2 text-center">{item.po_no || ''}</td>
                     <td className="px-3 py-2 text-center">{item.receipt_no || ''}</td>
                     <td className="px-3 py-2 text-center">{item.po_reference || ''}</td>
-                    <td className="px-3 py-2 text-center">{item.currency || ''}</td>
                     <td className="px-3 py-2 text-center">{item.actual_receipt_date || ''}</td>
                     <td className="px-3 py-2 text-center">{item.packing_slip || ''}</td>
                     <td className="px-3 py-2 text-center">{item.part_no || ''}</td>
                     <td className="px-3 py-2 text-center">{item.item_desc || ''}</td>
                     <td className="px-3 py-2 text-center">{item.item_no || ''}</td>
                     <td className="px-3 py-2 text-center">{item.unit || ''}</td>
-                    <td className="px-3 py-2 text-center">{item.item_type || ''}</td>
+                    <td className="px-3 py-2 text-center">{item.item_type_desc}</td>
+                    <td className="px-3 py-2 text-center">{item.currency || ''}</td>
                     <td className="px-3 py-2 text-center">{item.receipt_unit_price ? item.receipt_unit_price.toFixed(2) : ''}</td>
                     <td className="px-3 py-2 text-center">{item.request_qty || ''}</td>
                     <td className="px-3 py-2 text-center">{item.actual_receipt_qty || ''}</td>

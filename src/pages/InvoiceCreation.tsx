@@ -270,7 +270,11 @@ const InvoiceCreation = () => {
     if (columnFilters.unitFilter) filtered = filtered.filter(item => item.unit?.toLowerCase().includes(columnFilters.unitFilter.toLowerCase()));
     
     // Filter by Item Type
-    if (columnFilters.itemTypeFilter) filtered = filtered.filter(item => item.item_type?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase()));
+    if (columnFilters.itemTypeFilter) {
+      filtered = filtered.filter(item =>
+        item.item_type_desc?.toLowerCase().includes(columnFilters.itemTypeFilter.toLowerCase())
+      );
+    }
     
     // Filter by Unit Price
     if (columnFilters.unitPriceFilter) filtered = filtered.filter(item => item.receipt_unit_price?.toString().includes(columnFilters.unitPriceFilter));
@@ -760,6 +764,7 @@ const InvoiceCreation = () => {
                     <th className="px-8 py-2 text-gray-700 text-center border">ERP PART NO</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Unit</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Item Type</th>
+                    <th className="px-4 py-2 text-gray-700 text-center border">Currency</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Unit Price</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Request Qty</th>
                     <th className="px-4 py-2 text-gray-700 text-center border">Receipt Qty</th>
@@ -782,7 +787,7 @@ const InvoiceCreation = () => {
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poNoFilter} onChange={e => handleColumnFilterChange('poNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptNoFilter} onChange={e => handleColumnFilterChange('receiptNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.poReferenceFilter} onChange={e => handleColumnFilterChange('poReferenceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
-                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.currencyFilter} onChange={e => handleColumnFilterChange('currencyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    {/* <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.currencyFilter} onChange={e => handleColumnFilterChange('currencyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td> */}
                     <td className="px-2 py-2 border"><input type="date" placeholder="-" value={columnFilters.receiptDateFilter} onChange={e => handleColumnFilterChange('receiptDateFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.packingSlipFilter} onChange={e => handleColumnFilterChange('packingSlipFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.partNoFilter} onChange={e => handleColumnFilterChange('partNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
@@ -790,6 +795,7 @@ const InvoiceCreation = () => {
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemNoFilter} onChange={e => handleColumnFilterChange('itemNoFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.unitFilter} onChange={e => handleColumnFilterChange('unitFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.itemTypeFilter} onChange={e => handleColumnFilterChange('itemTypeFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
+                    <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.currencyFilter} onChange={e => handleColumnFilterChange('currencyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.unitPriceFilter} onChange={e => handleColumnFilterChange('unitPriceFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.requestQtyFilter} onChange={e => handleColumnFilterChange('requestQtyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
                     <td className="px-2 py-2 border"><input type="text" placeholder="-" value={columnFilters.receiptQtyFilter} onChange={e => handleColumnFilterChange('receiptQtyFilter', e.target.value)} className="border rounded w-full px-2 py-1 text-xs text-center" /></td>
@@ -824,40 +830,41 @@ const InvoiceCreation = () => {
                             className="cursor-pointer"
                           />
                         </td>
-                        <td className="px-3 py-2 text-center">{item.bp_id || ''}</td>
-                        <td className="px-3 py-2 text-left">{item.bp_name || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.po_no || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.receipt_no || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.po_reference || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.currency || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.actual_receipt_date ? new Date(item.actual_receipt_date).toLocaleDateString() : ''}</td>
-                        <td className="px-3 py-2 text-center">{item.packing_slip || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.part_no || ''}</td>
-                        <td className="px-3 py-2 text-left">{item.item_desc || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.item_no || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.unit || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.item_type || ''}</td>
-                        <td className="px-3 py-2 text-right">{item.receipt_unit_price ? item.receipt_unit_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
-                        <td className="px-3 py-2 text-right">{item.request_qty ? item.request_qty.toLocaleString() : ''}</td>
-                        <td className="px-3 py-2 text-right">{item.actual_receipt_qty ? item.actual_receipt_qty.toLocaleString() : ''}</td>
-                        <td className="px-3 py-2 text-right">{item.approve_qty ? item.approve_qty.toLocaleString() : ''}</td>
-                        <td className="px-3 py-2 text-right">{item.receipt_amount ? item.receipt_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
+                        <td className="px-3 py-2 text-center">{item.bp_id}</td>
+                        <td className="px-3 py-2 text-left">{item.bp_name}</td>
+                        <td className="px-3 py-2 text-center">{item.po_no}</td>
+                        <td className="px-3 py-2 text-center">{item.receipt_no}</td>
+                        <td className="px-3 py-2 text-center">{item.po_reference}</td>
+                        {/* <td className="px-3 py-2 text-center">{item.currency}</td> */}
+                        <td className="px-3 py-2 text-center">{item.actual_receipt_date}</td>
+                        <td className="px-3 py-2 text-center">{item.packing_slip}</td>
+                        <td className="px-3 py-2 text-center">{item.part_no}</td>
+                        <td className="px-3 py-2 text-left">{item.item_desc}</td>
+                        <td className="px-3 py-2 text-center">{item.item_no}</td>
+                        <td className="px-3 py-2 text-center">{item.unit}</td>
+                        <td className="px-3 py-2 text-center">{item.item_type_desc}</td>
+                        <td className="px-3 py-2 text-center">{item.currency}</td>
+                        <td className="px-3 py-2 text-right">{formatToIDR(item.receipt_unit_price)}</td>
+                        <td className="px-3 py-2 text-center">{item.request_qty}</td>
+                        <td className="px-3 py-2 text-center">{item.actual_receipt_qty}</td>
+                        <td className="px-3 py-2 text-center">{item.approve_qty}</td>
+                        <td className="px-3 py-2 text-right">{formatToIDR(item.receipt_amount)}</td>
                         <td className="px-3 py-2 text-center">{item.is_final_receipt ? 'Yes' : 'No'}</td>
                         <td className="px-3 py-2 text-center">{item.is_confirmed ? 'Yes' : 'No'}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_supplier_no || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_doc_no || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_doc_date ? new Date(item.inv_doc_date).toLocaleDateString() : ''}</td>
-                        <td className="px-3 py-2 text-right">{item.inv_qty ? item.inv_qty.toLocaleString() : ''}</td>
-                        <td className="px-3 py-2 text-right">{item.inv_amount ? item.inv_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
-                        <td className="px-3 py-2 text-center">{item.inv_due_date ? new Date(item.inv_due_date).toLocaleDateString() : ''}</td>
-                        <td className="px-3 py-2 text-center">{item.payment_doc || ''}</td>
-                        <td className="px-3 py-2 text-center">{item.payment_doc_date ? new Date(item.payment_doc_date).toLocaleDateString() : ''}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_supplier_no}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_doc_no}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_doc_date}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_qty}</td>
+                        <td className="px-3 py-2 text-right">{formatToIDR(item.inv_amount)}</td>
+                        <td className="px-3 py-2 text-center">{item.inv_due_date}</td>
+                        <td className="px-3 py-2 text-center">{item.payment_doc}</td>
+                        <td className="px-3 py-2 text-center">{item.payment_doc_date}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td colSpan={29} className="px-6 py-4 text-center text-gray-500">
-                        No data available
+                        {selectedSupplier ? 'No data available for the selected supplier and filters.' : 'Please select a supplier to view data.'}
                       </td>
                     </tr>
                   )}
