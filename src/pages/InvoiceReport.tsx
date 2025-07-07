@@ -13,6 +13,7 @@ import {
   API_Stream_File_Faktur,
   API_Stream_File_Suratjalan,
   API_Stream_File_PO,
+  API_Stream_File_Receipt,
   API_Revert_Invoice_Admin,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
@@ -1350,7 +1351,16 @@ const InvoiceReport: React.FC = (): ReactNode => {
                           {invoice.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">{invoice.receipt_number || '-'}</td>
+                      <td className="px-6 py-4 text-center">
+                        {invoice.inv_id && (
+                          <button
+                            onClick={() => window.open(`${API_Stream_File_Receipt()}/RECEIPT_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
+                            title="View Receipt PDF"
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-center">{invoice.bp_code || '-'}</td>
                       <td className="px-6 py-4 text-center">{invoice.inv_faktur || '-'}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_faktur_date)}</td>

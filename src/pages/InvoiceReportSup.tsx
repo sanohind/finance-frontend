@@ -4,7 +4,7 @@ import { Search, XCircle } from 'lucide-react';
 import { AiFillFilePdf } from 'react-icons/ai';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
-import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected, API_Stream_File_Invoice, API_Stream_File_Faktur, API_Stream_File_Suratjalan, API_Stream_File_PO } from '../api/api';
+import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected, API_Stream_File_Invoice, API_Stream_File_Faktur, API_Stream_File_Suratjalan, API_Stream_File_PO, API_Stream_File_Receipt } from '../api/api';
 import * as XLSX from 'xlsx';
 
 interface Invoice {
@@ -952,7 +952,20 @@ const InvoiceReportSup = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {invoice.receipt_number || '-'}
+                        {invoice.receipt_number ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = `${API_Stream_File_Receipt()}/RECEIPT_${invoice.inv_id}.pdf`;
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                            }}
+                            title="View Receipt PDF"
+                          >
+                            <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
+                          </button>
+                        ) : (
+                          '-'
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {invoice.bp_code || '-'}

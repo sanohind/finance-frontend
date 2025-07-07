@@ -1,6 +1,6 @@
-const API = 'https://api-finance.profileporto.site/api';
+// const API = 'https://api-finance.profileporto.site/api';
 // const API = 'http://127.0.0.1:8000/api';
-// const API = 'https://be-temanku.sanohindonesia.co.id:8445/api';
+const API = 'https://be-temanku.sanohindonesia.co.id:8445/api';
 
 const getRolePath = () => {
     const userRole = localStorage.getItem('role'); // This will be '1', '2', or '3'
@@ -76,6 +76,7 @@ export const API_Stream_File_Invoice = () => API  + '/stream/invoices';
 export const API_Stream_File_Faktur = () => API  + '/stream/faktur';
 export const API_Stream_File_Suratjalan = () => API  + '/stream/suratjalan';
 export const API_Stream_File_PO = () => API  + '/stream/po';
+export const API_Stream_File_Receipt = () => API  + '/stream/receipts';
 
 // Finance API
 export const API_Inv_Header_Finance = () => API + getRolePath() + `/inv-header`;
