@@ -60,6 +60,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
   // UI state
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // PPN data
   const [ppnList, setPpnList] = useState<any[]>([]);
@@ -96,6 +97,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
 
   // Submit
   const submitInvoice = async () => {
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
@@ -172,6 +174,8 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
       onFinish();
     } catch (err: any) {
       console.error('Error creating invoice:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -725,14 +729,20 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
                 <button
                   onClick={() => setCurrentStep(2)}
                   className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-md transition-colors"
+                  disabled={isSubmitting}
                 >
                   Back
                 </button>
                 <button
                   onClick={submitInvoice}
-                  className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md transition-colors"
+                  disabled={isSubmitting}
+                  className={`px-6 py-2 rounded-md transition-colors text-white ${
+                    isSubmitting 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-900 hover:bg-blue-800'
+                  }`}
                 >
-                  I Agree
+                  {isSubmitting ? 'Creating Invoice...' : 'I Agree'}
                 </button>
               </div>
             </div>

@@ -151,6 +151,7 @@ const InvoiceCreationSup = () => {
   const [overdueItems, setOverdueItems] = useState<GrSaRecord[]>([]);
   const [nonOverdueItems, setNonOverdueItems] = useState<GrSaRecord[]>([]);
   const [isLoadingOutstanding] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   // Format number to IDR currency format
   const formatToIDR = (value: number): string => {
     return new Intl.NumberFormat('id-ID', {
@@ -567,9 +568,15 @@ const InvoiceCreationSup = () => {
   };
 
   const handleWizardFinish = () => {
+    setIsProcessing(true);
     setShowWizard(false);
-    toast.success('Invoice process completed!');
-    setSelectedRecords([]);
+    
+    // Simulate processing time for better UX
+    setTimeout(() => {
+      toast.success('Invoice process completed!');
+      setSelectedRecords([]);
+      setIsProcessing(false);
+    }, 1000);
   };
 
   const handlePageChange = (page: number) => {
@@ -646,6 +653,19 @@ const InvoiceCreationSup = () => {
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Creation" />
       <ToastContainer />
+      
+      {/* Loading overlay when processing */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+          <div className="bg-white rounded-lg p-8 shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="text-lg font-medium text-gray-700">Processing invoice...</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {showWizard ? (
         <InvoiceCreationWizard
           selectedRecords={selectedRecords}
