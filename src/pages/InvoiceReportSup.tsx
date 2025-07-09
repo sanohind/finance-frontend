@@ -300,7 +300,7 @@ const InvoiceReportSup = () => {
       'Plan Date',
       'Actual Date',
       'Status',
-      'Receipt No',
+      'Receipt Doc',
       'Supplier Code',
       'Tax Number',
       'Tax Date',
@@ -649,7 +649,7 @@ const InvoiceReportSup = () => {
                   Document
                 </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">Status</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt Doc</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>

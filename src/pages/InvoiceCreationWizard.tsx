@@ -723,6 +723,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
               <p>Please ensure all required fields are filled and mandatory documents are attached before final submission.</p>
               <div className="mt-2 mb-2 flex justify-end gap-2">
                 <button
+                  onClick={() => setCurrentStep(2)}
+                  className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-md transition-colors"
+                >
+                  Back
+                </button>
+                <button
                   onClick={submitInvoice}
                   className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md transition-colors"
                 >

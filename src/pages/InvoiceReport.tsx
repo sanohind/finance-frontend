@@ -587,7 +587,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       'Plan Date',
       'Actual Date',
       'Status',
-      'Receipt No',
+      'Receipt Doc',
       'Supplier Code',
       'Supplier Name',
       'Tax Number',
@@ -1029,7 +1029,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                   Document
                 </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">Status</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt No</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt Doc</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
