@@ -419,7 +419,7 @@ const InvoiceReportSup = () => {
         const errorText = await response.text();
         throw new Error(errorText || 'Failed to reject invoice');
       }
-      toast.success('Invoice rejected successfully!');
+      toast.success('Invoice Cancel successfully!');
       // Update local data
       const updatedData = data.map((inv) =>
         inv.inv_id === selectedInvoiceId
