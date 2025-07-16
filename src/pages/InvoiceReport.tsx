@@ -582,13 +582,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
     toast.info('Preparing Excel file, please wait...');
 
     const headers = [
+      'Supplier Code',
       'Invoice No',
       'Inv Date',
       'Plan Date',
       'Actual Date',
       'Status',
       'Receipt Doc',
-      'Supplier Code',
       'Supplier Name',
       'Tax Number',
       'Tax Date',
@@ -621,13 +621,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
       const calculatedPphAmountExcel = dbPphAmountExcel - dbPphBaseAmountExcel;
 
       return [
+        inv.bp_code || '-',
         inv.inv_no || '-',
         inv.inv_date || '-',
         inv.plan_date || '-',
         inv.actual_date || '-',
         inv.status || '-',
         inv.receipt_number || '-',
-        inv.bp_code || '-',
         bpAdrMap[inv.bp_code || ''] || '-',
         inv.inv_faktur || '-',
         inv.inv_faktur_date || '-',
@@ -643,10 +643,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = [
       { wch: 20 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
       { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
       { wch: 20 },
       { wch: 20 },
       { wch: 40 },
@@ -1019,6 +1019,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
             <thead className="bg-gray-100 uppercase">
               <tr>
                 <th className="px-3 py-2 text-gray-700 text-center border w-10"></th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
@@ -1030,7 +1031,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">Status</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt Doc</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
@@ -1047,7 +1047,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
               </tr>
               <tr className="bg-gray-100 border">
-                <th colSpan={3}></th>
+                <th colSpan={4}></th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 {/* Document sub-columns */}
@@ -1055,11 +1055,20 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
-                <th colSpan={11}></th>
+                <th colSpan={10}></th>
               </tr>
               {/* Filter inputs row (skip Document columns) */}
               <tr className="bg-gray-50 border">
                 <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={supplierCodeFilter}
+                    onChange={(e) => setSupplierCodeFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
                 <td className="px-2 py-1 border">
                   <input
                     type="text"
@@ -1120,15 +1129,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     onChange={(e) => setReceiptNoFilter(e.target.value)}
                     className="border rounded w-full px-2 py-1 text-sm text-center"
                   />                
-                </td>
-                <td className="px-2 py-1 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={supplierCodeFilter}
-                    onChange={(e) => setSupplierCodeFilter(e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-sm text-center"
-                  />
                 </td>
                 <td className="px-2 py-1 border">
                   <input
@@ -1283,6 +1283,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                           />
                         )}
                       </td>
+                      <td className="px-6 py-4 text-center">{invoice.bp_code || '-'}</td>
                       <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleShowDetail(invoice)}
@@ -1361,7 +1362,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
                           </button>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-center">{invoice.bp_code || '-'}</td>
                       <td className="px-6 py-4 text-center">{invoice.inv_faktur || '-'}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_faktur_date)}</td>
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_dpp)}</td>

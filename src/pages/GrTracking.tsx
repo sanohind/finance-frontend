@@ -683,7 +683,7 @@ const GrTracking = () => {  // --- Currency Formatter Function ---
         'Receipt Amount', 'Final Receipt', 'Confirmed', 'Inv Supplier No', 'ERP INV NO',
         'Invoice Date', 'Invoice Qty', 'Invoice Amount', 'Invoice Due Date', 
         'Payment Doc', 'Payment Date'
-      ];      // Convert filtered data to rows format
+      ];      // Convert filtered data to rows format - Using raw numeric values
       const rows = filteredData.map(item => [
         item.bp_id || '',
         item.bp_name || '',
@@ -698,17 +698,18 @@ const GrTracking = () => {  // --- Currency Formatter Function ---
         item.unit || '',
         item.item_type_desc || '',
         item.currency || '',
-        formatRupiah(item.receipt_unit_price) || '',
-        item.request_qty?.toLocaleString('id-ID') || '',
-        item.actual_receipt_qty?.toLocaleString('id-ID') || '',
-        item.approve_qty?.toLocaleString('id-ID') || '',
-        formatRupiah(item.receipt_amount) || '',
+        item.receipt_unit_price || '', // Raw numeric value
+        item.request_qty || '', // Raw numeric value
+        item.actual_receipt_qty || '', // Raw numeric value
+        item.approve_qty || '', // Raw numeric value
+        item.receipt_amount || '', // Raw numeric value
         item.is_final_receipt ? 'Yes' : 'No',
         item.is_confirmed ? 'Yes' : 'No',
         item.inv_supplier_no || '',
         item.inv_doc_no || '',
-        item.inv_doc_date || '',        item.inv_qty?.toLocaleString('id-ID') || '',
-        formatRupiahInvoice(item.inv_amount) || '',
+        item.inv_doc_date || '',        
+        item.inv_qty || '', // Raw numeric value
+        item.inv_amount || '', // Raw numeric value
         item.inv_due_date || '',
         item.payment_doc || '',
         item.payment_doc_date || ''
@@ -748,35 +749,7 @@ const GrTracking = () => {  // --- Currency Formatter Function ---
       // Apply the calculated column widths
       ws['!cols'] = calculateColumnWidths();
 
-      // Apply number formatting to currency columns (Unit Price, Receipt Amount, Invoice Amount)
-      // Indices: Item Type (11), Currency (12), Unit Price (13), ... Receipt Amount (17), ... Invoice Amount (24)
-      const currencyValueColumns = [13, 17, 24]; // 0-based indices for Unit Price, Receipt Amount, Invoice Amount
-      for (let r = 1; r <= filteredData.length; r++) {
-        for (let c of currencyValueColumns) { // Iterate over actual monetary value columns
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          if (ws[cellRef] && ws[cellRef].v !== '') {
-            ws[cellRef].z = '#,##0.00'; // Number format for currency
-          }
-        }
-        // Style the Currency text column (index 12) if needed, e.g., center align
-        const currencyTextCellRef = XLSX.utils.encode_cell({ r, c: 12 });
-        if (ws[currencyTextCellRef]) {
-            // Example: ws[currencyTextCellRef].s = { alignment: { horizontal: "center" } };
-            // For now, no specific style beyond auto-width for the currency text column itself.
-        }
-      }
-
-      // Apply number formatting to quantity columns
-      // Indices: Request Qty (14), Receipt Qty (15), Approve Qty (16), ... Invoice Qty (23)
-      const quantityColumns = [14, 15, 16, 23]; // Request Qty, Receipt Qty, Approve Qty, Invoice Qty
-      for (let r = 1; r <= filteredData.length; r++) {
-        for (let c of quantityColumns) {
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          if (ws[cellRef] && ws[cellRef].v !== '') {
-            ws[cellRef].z = '#,##0'; // Number format for quantities (no decimals)
-          }
-        }
-      }
+      // No number formatting applied - keeping raw numeric values without any formatting
 
       // Create workbook and add worksheet
       const wb = XLSX.utils.book_new();

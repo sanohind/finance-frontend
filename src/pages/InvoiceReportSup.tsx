@@ -295,13 +295,13 @@ const InvoiceReportSup = () => {
     toast.info('Preparing Excel file, please wait...');
 
     const headers = [
+      'Supplier Code',
       'Invoice No',
       'Inv Date',
       'Plan Date',
       'Actual Date',
       'Status',
       'Receipt Doc',
-      'Supplier Code',
       'Tax Number',
       'Tax Date',
       'Total DPP',
@@ -317,31 +317,31 @@ const InvoiceReportSup = () => {
       const calculatedPphAmountExcel = dbPphAmountExcel - dbPphBaseAmountExcel;
 
       return [
-        inv.inv_no || '-',
-        inv.inv_date || '-',
-        inv.plan_date || '-',
-        inv.actual_date || '-',
-        inv.status || '-',
-        inv.receipt_number || '-',
-        inv.bp_code || '-',
-        inv.inv_faktur || '-',
-        inv.inv_faktur_date || '-',
-        inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
-        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
-        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
-        inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
-        formatRp(calculatedPphAmountExcel),
-        inv.total_amount != null ? formatRp(inv.total_amount) : '-',
+        inv.bp_code || '',
+        inv.inv_no || '',
+        inv.inv_date || '',
+        inv.plan_date || '',
+        inv.actual_date || '',
+        inv.status || '',
+        inv.receipt_number || '',
+        inv.inv_faktur || '',
+        inv.inv_faktur_date || '',
+        inv.total_dpp || '',
+        inv.tax_base_amount || '',
+        inv.tax_base_amount ? inv.tax_base_amount * 0.11 : '',
+        inv.pph_base_amount || '',
+        calculatedPphAmountExcel,
+        inv.total_amount || '',
       ];
     });
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = [
       { wch: 20 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
       { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
       { wch: 20 },
       { wch: 20 },
       { wch: 40 },
@@ -352,26 +352,10 @@ const InvoiceReportSup = () => {
       { wch: 26 },
       { wch: 22 },
       { wch: 22 },
-      { wch: 22 },
     ];
-    // Apply currency format to relevant columns (Total DPP, Tax Base Amount, Tax Amount, PPh Base Amount, PPh Amount, Total Amount)
-    for (let r = 1; r <= filteredData.length; r++) {
-      for (let c of [10, 11, 12, 13, 14, 15]) {
-        const cellRef = XLSX.utils.encode_cell({ r, c });
-        if (ws[cellRef]) {
-          ws[cellRef].z = '"Rp" #,##0.00';
-        }
-      }
-    }
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Invoice Report');
     XLSX.writeFile(wb, 'Invoice_Report.xlsx');
-  };
-
-  // Helper to format as Rp string
-  const formatRp = (amount: number | null) => {
-    if (!amount) return '-';
-    return `Rp ${amount.toLocaleString('id-ID')},00`;
   };
 
   const formatDate = (dateString: string | null) => {
@@ -639,6 +623,7 @@ const InvoiceReportSup = () => {
             <thead className="bg-gray-100 uppercase">
               <tr>
                 <th className="px-3 py-2 text-gray-700 text-center border w-10"></th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
@@ -650,7 +635,6 @@ const InvoiceReportSup = () => {
                 </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">Status</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt Doc</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
@@ -661,7 +645,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
               </tr>
               <tr className="bg-gray-100 border">
-                <th colSpan={3}></th>
+                <th colSpan={4}></th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 {/* Document sub-columns */}
@@ -674,6 +658,15 @@ const InvoiceReportSup = () => {
               {/* Filter inputs row (skip Document columns) */}
               <tr className="bg-gray-50 border">
                 <td className="px-2 py-1 border"></td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={supplierCodeFilter}
+                    onChange={(e) => setSupplierCodeFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
                 <td className="px-2 py-1 border">
                   <input
                     type="text"
@@ -732,15 +725,6 @@ const InvoiceReportSup = () => {
                     placeholder="-"
                     value={receiptNoFilter}
                     onChange={(e) => setReceiptNoFilter(e.target.value)}
-                    className="border rounded w-full px-2 py-1 text-sm text-center"
-                  />
-                </td>
-                <td className="px-2 py-1 border">
-                  <input
-                    type="text"
-                    placeholder="-"
-                    value={supplierCodeFilter}
-                    onChange={(e) => setSupplierCodeFilter(e.target.value)}
                     className="border rounded w-full px-2 py-1 text-sm text-center"
                   />
                 </td>
@@ -869,6 +853,9 @@ const InvoiceReportSup = () => {
                           />
                         ) : null}
                       </td>
+                      <td className="px-6 py-4 text-center">
+                        {invoice.bp_code || '-'}
+                      </td>
                       {/* Clickable invoice number to open detail modal */}
                       <td className="px-6 py-4 text-center">
                         <button
@@ -966,9 +953,6 @@ const InvoiceReportSup = () => {
                         ) : (
                           '-'
                         )}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {invoice.bp_code || '-'}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_faktur || '-'}

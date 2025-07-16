@@ -253,8 +253,8 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
       return;
     }
     
-    if (value.length !== 16) {
-      setTaxNumberError('Tax Number must be exactly 16 characters');
+    if (value.length !== 17) {
+      setTaxNumberError('Tax Number must be exactly 17 characters');
     } else {
       setTaxNumberError('');
     }
@@ -267,7 +267,7 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
       taxCode !== '' &&
       invoiceDate.trim() !== '' &&
       taxNumber.trim() !== '' &&
-      taxNumber.length === 16 &&
+      taxNumber.length === 17 &&
       taxDate.trim() !== ''
     );
   };
@@ -327,12 +327,12 @@ const InvoiceCreationWizard: React.FC<InvoiceCreationWizardProps> = ({
             </label>
             <input
               type="text"
-              placeholder="Enter Tax Number (16 digits)"
+              placeholder="Enter Tax Number (17 digits)"
               className={`w-full p-2 border ${
                 taxNumberError ? 'border-red-500' : 'border-blue-900'
               } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500`}
               value={taxNumber}
-              maxLength={16}
+              maxLength={17}
               onChange={(e) => {
                 const value = e.target.value;
                 setTaxNumber(value);
