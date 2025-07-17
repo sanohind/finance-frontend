@@ -199,11 +199,9 @@ const InvoiceReportSup = () => {
       const filterAmount = parseFloat(pphAmountFilter);
       if (!isNaN(filterAmount)) {
         newFiltered = newFiltered.filter(item => {
-          const dbPphAmount = item.pph_amount || 0;
-          const dbPphBaseAmount = item.pph_base_amount || 0;
-          const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
-          return Math.abs(calculatedPphAmount - filterAmount) < 0.01 ||
-            calculatedPphAmount.toString().includes(pphAmountFilter);
+          const pphAmount = item.pph_amount || 0;
+          return Math.abs(pphAmount - filterAmount) < 0.01 ||
+            pphAmount.toString().includes(pphAmountFilter);
         });
       }
     }
@@ -312,10 +310,6 @@ const InvoiceReportSup = () => {
       'Total Amount',
     ];
     const rows = filteredData.map((inv) => {
-      const dbPphAmountExcel = inv.pph_amount || 0;
-      const dbPphBaseAmountExcel = inv.pph_base_amount || 0;
-      const calculatedPphAmountExcel = dbPphAmountExcel - dbPphBaseAmountExcel;
-
       return [
         inv.bp_code || '',
         inv.inv_no || '',
@@ -330,7 +324,7 @@ const InvoiceReportSup = () => {
         inv.tax_base_amount || '',
         inv.tax_base_amount ? inv.tax_base_amount * 0.11 : '',
         inv.pph_base_amount || '',
-        calculatedPphAmountExcel,
+        inv.pph_amount || '',
         inv.total_amount || '',
       ];
     });
@@ -835,10 +829,6 @@ const InvoiceReportSup = () => {
                   // Only show checkbox if no selection or this is the selected one
                   const showCheckbox = isNew && (!selectedInvoiceId || isChecked);
 
-                  const dbPphAmount = invoice.pph_amount || 0;
-                  const dbPphBaseAmount = invoice.pph_base_amount || 0;
-                  const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
-
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       <td className="px-6 py-4 text-center">                        {showCheckbox ? (
@@ -975,7 +965,7 @@ const InvoiceReportSup = () => {
                         {formatCurrency(invoice.pph_base_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(calculatedPphAmount)}
+                        {formatCurrency(invoice.pph_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.total_amount)}

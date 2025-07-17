@@ -319,12 +319,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
       const filterAmount = parseFloat(pphAmountFilter);
       if (!isNaN(filterAmount)) {
         newFiltered = newFiltered.filter(item => {
-          if (!item.pph_base_amount) return false;
-          const dbPphAmount = item.pph_amount || 0;
-          const dbPphBaseAmount = item.pph_base_amount || 0;
-          const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;
-          return Math.abs(calculatedPphAmount - filterAmount) < 0.01 ||
-            calculatedPphAmount.toString().includes(pphAmountFilter);
+          const pphAmount = item.pph_amount || 0;
+          return Math.abs(pphAmount - filterAmount) < 0.01 ||
+            pphAmount.toString().includes(pphAmountFilter);
         });
       }
     }
@@ -604,39 +601,24 @@ const InvoiceReport: React.FC = (): ReactNode => {
       return acc;
     }, {} as Record<string, string>);
 
-    // Helper to format as Rp string
-    const formatRp = (amount: number | null | undefined) => {
-      if (amount === null || amount === undefined || isNaN(Number(amount))) return '-';
-      return Number(amount).toLocaleString('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    };
-
     const rows = filteredData.map((inv) => {
-      const dbPphAmountExcel = inv.pph_amount || 0;
-      const dbPphBaseAmountExcel = inv.pph_base_amount || 0;
-      const calculatedPphAmountExcel = dbPphAmountExcel - dbPphBaseAmountExcel;
-
       return [
-        inv.bp_code || '-',
-        inv.inv_no || '-',
-        inv.inv_date || '-',
-        inv.plan_date || '-',
-        inv.actual_date || '-',
-        inv.status || '-',
-        inv.receipt_number || '-',
-        bpAdrMap[inv.bp_code || ''] || '-',
-        inv.inv_faktur || '-',
-        inv.inv_faktur_date || '-',
-        inv.total_dpp != null ? formatRp(inv.total_dpp) : '-',
-        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount) : '-',
-        inv.tax_base_amount != null ? formatRp(inv.tax_base_amount * 0.11) : '0',
-        inv.pph_base_amount != null ? formatRp(inv.pph_base_amount) : '-',
-        formatRp(calculatedPphAmountExcel),
-        inv.total_amount != null ? formatRp(inv.total_amount) : '-',
+        inv.bp_code || '',
+        inv.inv_no || '',
+        inv.inv_date || '',
+        inv.plan_date || '',
+        inv.actual_date || '',
+        inv.status || '',
+        inv.receipt_number || '',
+        bpAdrMap[inv.bp_code || ''] || '',
+        inv.inv_faktur || '',
+        inv.inv_faktur_date || '',
+        inv.total_dpp || '',
+        inv.tax_base_amount || '',
+        inv.tax_base_amount ? inv.tax_base_amount * 0.11 : '',
+        inv.pph_base_amount || '',
+        inv.pph_amount || '',
+        inv.total_amount || '',
       ];
     });
 
@@ -659,17 +641,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
       { wch: 22 },
       { wch: 22 },
     ];
-
-    // Apply currency format to relevant columns (Total DPP, Tax Base Amount, Tax Amount, PPh Base Amount, PPh Amount, Total Amount)
-    // These are columns 11-16 (0-based: 10-15)
-    for (let r = 1; r <= filteredData.length; r++) {
-      for (let c of [10, 11, 12, 13, 14, 15]) {
-        const cellRef = XLSX.utils.encode_cell({ r, c });
-        if (ws[cellRef]) {
-          ws[cellRef].z = '\"Rp\" #,##0.00'; // Custom format string
-        }
-      }
-    }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Invoice Report');
@@ -1269,9 +1240,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     }
                   }
 
-                  const dbPphAmount = invoice.pph_amount || 0;
-                  const dbPphBaseAmount = invoice.pph_base_amount || 0;
-                  const calculatedPphAmount = dbPphAmount - dbPphBaseAmount;                  return (
+                  return (
                     <tr key={invoice.inv_id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2 text-center">
                         {showCheckbox && (
@@ -1371,7 +1340,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       </td>
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.pph_base_amount)}</td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(calculatedPphAmount)}
+                        {formatCurrency(invoice.pph_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_amount)}</td>
                     </tr>
