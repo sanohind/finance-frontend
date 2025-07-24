@@ -60,6 +60,7 @@ const InvoiceReportSup = () => {
   const [totalDppFilter, setTotalDppFilter] = useState('');
   const [taxBaseFilter, setTaxBaseFilter] = useState('');
   const [taxAmountFilter, setTaxAmountFilter] = useState('');
+  const [pphDescFilter, setPphDescFilter] = useState('');
   const [pphBaseFilter, setPphBaseFilter] = useState('');
   const [pphAmountFilter, setPphAmountFilter] = useState('');
   const [totalAmountFilter, setTotalAmountFilter] = useState('');
@@ -180,11 +181,16 @@ const InvoiceReportSup = () => {
       const filterAmount = parseFloat(taxAmountFilter);
       if (!isNaN(filterAmount)) {
         newFiltered = newFiltered.filter(item => {
-          if (!item.tax_base_amount) return false;
-          const taxAmount = item.tax_base_amount * 0.11;
+          const taxAmount = item.tax_amount || 0;
           return Math.abs(taxAmount - filterAmount) < 0.01 || taxAmount.toString().includes(taxAmountFilter);
         });
       }
+    }
+    if (pphDescFilter) {
+      newFiltered = newFiltered.filter(item => {
+        const pphDesc = getPphDescription(item.pph_id, item);
+        return pphDesc.toLowerCase().includes(pphDescFilter.toLowerCase());
+      });
     }
     if (pphBaseFilter) {
       const filterAmount = parseFloat(pphBaseFilter);
@@ -230,6 +236,7 @@ const InvoiceReportSup = () => {
     totalDppFilter,
     taxBaseFilter,
     taxAmountFilter,
+    pphDescFilter,
     pphBaseFilter,
     pphAmountFilter,
     totalAmountFilter
@@ -305,6 +312,7 @@ const InvoiceReportSup = () => {
       'Total DPP',
       'Tax Base Amount',
       'Tax Amount (Preview 11%)',
+      'PPh Description',
       'PPh Base Amount',
       'PPh Amount',
       'Total Amount',
@@ -322,7 +330,8 @@ const InvoiceReportSup = () => {
         inv.inv_faktur_date || '',
         inv.total_dpp || '',
         inv.tax_base_amount || '',
-        inv.tax_base_amount ? inv.tax_base_amount * 0.11 : '',
+        inv.tax_amount || '',
+        getPphDescription(inv.pph_id, inv),
         inv.pph_base_amount || '',
         inv.pph_amount || '',
         inv.total_amount || '',
@@ -343,7 +352,8 @@ const InvoiceReportSup = () => {
       { wch: 18 },
       { wch: 22 },
       { wch: 22 },
-      { wch: 26 },
+      { wch: 20 },
+      { wch: 22 },
       { wch: 22 },
       { wch: 22 },
     ];
@@ -364,6 +374,36 @@ const InvoiceReportSup = () => {
   const formatCurrency = (amount: number | null) => {
     if (!amount) return '-';
     return `Rp ${amount.toLocaleString('id-ID')},00`;
+  };
+
+  // Get PPh Description based on pph_id (same logic as InvoiceReport)
+  const getPphDescription = (pphId: string | number | null | undefined, invoice?: any): string => {
+    if (pphId === null || pphId === undefined) {
+      // Check if there are PPh amounts even when pph_id is null
+      if (invoice && (invoice.pph_amount > 0 || invoice.pph_base_amount > 0)) {
+        return 'PPh Applied (ID Missing)';
+      }
+      return '-';
+    }
+    const id = Number(pphId);
+    switch (id) {
+      case 1:
+        return 'Pph 23';
+      case 2:
+        return 'Pph 21';
+      case 3:
+        return 'Pasal 4(2) - 10%';
+      case 4:
+        return 'Pasal 4(2) - 1.75%';
+      case 5:
+        return 'Pasal 26 - 10%';
+      case 6:
+        return 'Pasal 26 - 0%';
+      case 7:
+        return 'Pasal 26 - 20%';
+      default:
+        return '-';
+    }
   };
   // Cancel/Reject Invoice logic
   const handleCancelInvoice = () => {
@@ -634,6 +674,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Base Amount</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">PPh Description</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Base Amount</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
@@ -647,7 +688,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
-                <th colSpan={11}></th>
+                <th colSpan={12}></th>
               </tr>
               {/* Filter inputs row (skip Document columns) */}
               <tr className="bg-gray-50 border">
@@ -776,6 +817,15 @@ const InvoiceReportSup = () => {
                   </div>
                 </td>
                 <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={pphDescFilter}
+                    onChange={(e) => setPphDescFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
                     <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
                     <input
@@ -816,7 +866,7 @@ const InvoiceReportSup = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>
@@ -957,10 +1007,9 @@ const InvoiceReportSup = () => {
                         {formatCurrency(invoice.tax_base_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(
-                          invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : 0
-                        )}
+                        {formatCurrency(invoice.tax_amount)}
                       </td>
+                      <td className="px-6 py-4 text-center">{getPphDescription(invoice.pph_id, invoice)}</td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_base_amount)}
                       </td>
@@ -975,7 +1024,7 @@ const InvoiceReportSup = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
                     No data available.
                   </td>
                 </tr>

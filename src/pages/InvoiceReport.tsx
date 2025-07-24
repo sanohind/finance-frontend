@@ -85,6 +85,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const [totalDppFilter, setTotalDppFilter] = useState('');
   const [taxBaseFilter, setTaxBaseFilter] = useState('');
   const [taxAmountFilter, setTaxAmountFilter] = useState('');
+  const [pphDescFilter, setPphDescFilter] = useState('');
   const [pphBaseFilter, setPphBaseFilter] = useState('');
   const [pphAmountFilter, setPphAmountFilter] = useState('');
   const [totalAmountFilter, setTotalAmountFilter] = useState('');
@@ -298,12 +299,17 @@ const InvoiceReport: React.FC = (): ReactNode => {
       const filterAmount = parseFloat(taxAmountFilter);
       if (!isNaN(filterAmount)) {
         newFiltered = newFiltered.filter(item => {
-          if (!item.tax_base_amount) return false;
-          const taxAmount = item.tax_base_amount * 0.11;
+          const taxAmount = item.tax_amount || 0;
           return Math.abs(taxAmount - filterAmount) < 0.01 ||
             taxAmount.toString().includes(taxAmountFilter);
         });
       }
+    }
+    if (pphDescFilter) {
+      newFiltered = newFiltered.filter(item => {
+        const pphDesc = getPphDescription(item.pph_id, item);
+        return pphDesc.toLowerCase().includes(pphDescFilter.toLowerCase());
+      });
     }
     if (pphBaseFilter) {
       const filterAmount = parseFloat(pphBaseFilter);
@@ -352,6 +358,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
     totalDppFilter,
     taxBaseFilter,
     taxAmountFilter,
+    pphDescFilter,
     pphBaseFilter,
     pphAmountFilter,
     totalAmountFilter
@@ -421,6 +428,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setTotalDppFilter('');
     setTaxBaseFilter('');
     setTaxAmountFilter('');
+    setPphDescFilter('');
     setPphBaseFilter('');
     setPphAmountFilter('');
     setTotalAmountFilter('');
@@ -592,6 +600,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       'Total DPP',
       'Tax Base Amount',
       'Tax Amount (Preview 11%)',
+      'PPh Description',
       'PPh Base Amount',
       'PPh Amount', // Header remains the same
       'Total Amount',
@@ -615,7 +624,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
         inv.inv_faktur_date || '',
         inv.total_dpp || '',
         inv.tax_base_amount || '',
-        inv.tax_base_amount ? inv.tax_base_amount * 0.11 : '',
+        inv.tax_amount || '',
+        getPphDescription(inv.pph_id, inv),
         inv.pph_base_amount || '',
         inv.pph_amount || '',
         inv.total_amount || '',
@@ -637,6 +647,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       { wch: 22 },
       { wch: 22 },
       { wch: 26 },
+      { wch: 20 },
       { wch: 22 },
       { wch: 22 },
       { wch: 22 },
@@ -780,6 +791,36 @@ const InvoiceReport: React.FC = (): ReactNode => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+  };
+
+  // Get PPh Description based on pph_id (same logic as InvoiceReportWizard)
+  const getPphDescription = (pphId: string | number | null | undefined, invoice?: any): string => {
+    if (pphId === null || pphId === undefined) {
+      // Check if there are PPh amounts even when pph_id is null
+      if (invoice && (invoice.pph_amount > 0 || invoice.pph_base_amount > 0)) {
+        return 'PPh Applied (ID Missing)';
+      }
+      return '-';
+    }
+    const id = Number(pphId);
+    switch (id) {
+      case 1:
+        return 'Pph 23';
+      case 2:
+        return 'Pph 21';
+      case 3:
+        return 'Pasal 4(2) - 10%';
+      case 4:
+        return 'Pasal 4(2) - 1.75%';
+      case 5:
+        return 'Pasal 26 - 10%';
+      case 6:
+        return 'Pasal 26 - 0%';
+      case 7:
+        return 'Pasal 26 - 20%';
+      default:
+        return '-';
+    }
   };
 
   // Click handler for showing invoice detail modal
@@ -1011,6 +1052,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">
                   Tax Amount (11%)
                 </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">
+                  PPh Description
+                </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">
                   PPh Base Amount
                 </th>
@@ -1026,7 +1070,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
-                <th colSpan={10}></th>
+                <th colSpan={11}></th>
               </tr>
               {/* Filter inputs row (skip Document columns) */}
               <tr className="bg-gray-50 border">
@@ -1155,6 +1199,15 @@ const InvoiceReport: React.FC = (): ReactNode => {
                   </div>
                 </td>
                 <td className="px-2 py-1 border">
+                  <input
+                    type="text"
+                    placeholder="-"
+                    value={pphDescFilter}
+                    onChange={(e) => setPphDescFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
                     <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
                     <input
@@ -1196,7 +1249,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={20} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan if needed */}
+                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 21 */}
                     Loading...
                   </td>
                 </tr>
@@ -1336,9 +1389,12 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_dpp)}</td>
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.tax_base_amount)}</td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.tax_base_amount ? invoice.tax_base_amount * 0.11 : null)}
+                        {formatCurrency(invoice.tax_amount)}
                       </td>
-                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.pph_base_amount)}</td>
+                      <td className="px-6 py-4 text-center">{getPphDescription(invoice.pph_id, invoice)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {formatCurrency(invoice.pph_base_amount)}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_amount)}
                       </td>
@@ -1348,7 +1404,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={20} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan if needed */}
+                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 21 */}
                     No data available.
                   </td>
                 </tr>
