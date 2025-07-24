@@ -15,10 +15,12 @@ import {
   API_Stream_File_PO,
   API_Stream_File_Receipt,
   API_Revert_Invoice_Admin,
+  API_Revert_Invoice_In_Process_Admin,
 } from '../api/api';
 import InvoiceReportWizard from './InvoiceReportWizard'; // Import the wizard modal component
 import * as XLSX from 'xlsx';
 import { AiFillFilePdf } from 'react-icons/ai';
+import { MdUndo } from 'react-icons/md';
 
 interface Invoice {
   inv_id: number;
@@ -83,7 +85,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const [taxNumberFilter, setTaxNumberFilter] = useState('');
   const [taxDateFilter, setTaxDateFilter] = useState('');
   const [totalDppFilter, setTotalDppFilter] = useState('');
-  const [taxBaseFilter, setTaxBaseFilter] = useState('');
   const [taxAmountFilter, setTaxAmountFilter] = useState('');
   const [pphDescFilter, setPphDescFilter] = useState('');
   const [pphBaseFilter, setPphBaseFilter] = useState('');
@@ -285,16 +286,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
         });
       }
     }
-    if (taxBaseFilter) {
-      const filterAmount = parseFloat(taxBaseFilter);
-      if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
-          if (!item.tax_base_amount) return false;
-          return Math.abs(item.tax_base_amount - filterAmount) < 0.01 ||
-            item.tax_base_amount.toString().includes(taxBaseFilter);
-        });
-      }
-    }
     if (taxAmountFilter) {
       const filterAmount = parseFloat(taxAmountFilter);
       if (!isNaN(filterAmount)) {
@@ -356,7 +347,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
     taxNumberFilter,
     taxDateFilter,
     totalDppFilter,
-    taxBaseFilter,
     taxAmountFilter,
     pphDescFilter,
     pphBaseFilter,
@@ -426,7 +416,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setTaxNumberFilter('');
     setTaxDateFilter('');
     setTotalDppFilter('');
-    setTaxBaseFilter('');
     setTaxAmountFilter('');
     setPphDescFilter('');
     setPphBaseFilter('');
@@ -598,7 +587,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
       'Tax Number',
       'Tax Date',
       'Total DPP',
-      'Tax Base Amount',
       'Tax Amount (Preview 11%)',
       'PPh Description',
       'PPh Base Amount',
@@ -623,7 +611,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
         inv.inv_faktur || '',
         inv.inv_faktur_date || '',
         inv.total_dpp || '',
-        inv.tax_base_amount || '',
         inv.tax_amount || '',
         getPphDescription(inv.pph_id, inv),
         inv.pph_base_amount || '',
@@ -634,23 +621,22 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     ws['!cols'] = [
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 40 },
-      { wch: 22 },
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 22 },
-      { wch: 26 },
-      { wch: 20 },
-      { wch: 22 },
-      { wch: 22 },
-      { wch: 22 },
+      { wch: 20 }, // Supplier Code
+      { wch: 20 }, // Invoice No
+      { wch: 18 }, // Inv Date
+      { wch: 18 }, // Plan Date
+      { wch: 18 }, // Actual Date
+      { wch: 20 }, // Status
+      { wch: 20 }, // Receipt Doc
+      { wch: 40 }, // Supplier Name
+      { wch: 22 }, // Tax Number
+      { wch: 18 }, // Tax Date
+      { wch: 22 }, // Total DPP
+      { wch: 26 }, // Tax Amount (11%)
+      { wch: 20 }, // PPh Description
+      { wch: 22 }, // PPh Base Amount
+      { wch: 22 }, // PPh Amount
+      { wch: 22 }, // Total Amount
     ];
 
     const wb = XLSX.utils.book_new();
@@ -763,6 +749,78 @@ const InvoiceReport: React.FC = (): ReactNode => {
     } catch (err: any) {
       console.error('Error reverting invoices:', err);
       toast.error(`Error reverting invoices: ${err.message}`);
+    }
+  };
+
+  // NEW: Individual revert method for "Ready To Payment" invoices back to "In Process"
+  const handleRevertToInProcess = async (invoice: Invoice) => {
+    if (invoice.status?.toLowerCase() !== 'ready to payment') {
+      toast.warning('Only invoices with "Ready To Payment" status can be reverted');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        toast.error('No access token found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(
+        API_Revert_Invoice_In_Process_Admin() + `/${invoice.inv_id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Failed to revert invoice ${invoice.inv_no} to In Process`;
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          // If not JSON, use the raw text or default message
+          errorMessage = errorText || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Parse success response
+      const result = await response.json();
+      const successMessage = result.message || `Invoice ${invoice.inv_no} reverted to "In Process" successfully!`;
+      
+      toast.success(successMessage);
+
+      // Update local data - the API clears PPH data and resets total_amount
+      const updatedData = data.map((inv) => {
+        if (inv.inv_id === invoice.inv_id) {
+          return { 
+            ...inv, 
+            status: 'In Process',
+            plan_date: null,
+            receipt_path: null,
+            receipt_number: null,
+            pph_id: null,
+            pph_base_amount: null,
+            pph_amount: null,
+            // API calculates original total_amount (tax_base_amount + tax_amount)
+            total_amount: (inv.tax_base_amount || 0) + (inv.tax_amount || 0)
+          };
+        }
+        return inv;
+      });
+
+      setData(updatedData);
+      setFilteredData(updatedData);
+    } catch (err: any) {
+      toast.error(err.message || 'Error reverting invoice to In Process');
     }
   };
 
@@ -1046,9 +1104,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">
-                  Tax Base Amount
-                </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">
                   Tax Amount (11%)
                 </th>
@@ -1060,6 +1115,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[100px]">Action</th>
               </tr>
               <tr className="bg-gray-100 border">
                 <th colSpan={4}></th>
@@ -1180,18 +1236,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     <input
                       type="number"
                       placeholder="-"
-                      value={taxBaseFilter}
-                      onChange={(e) => setTaxBaseFilter(e.target.value)}
-                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
-                    />
-                  </div>
-                </td>
-                <td className="px-2 py-1 border">
-                  <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
-                    <input
-                      type="number"
-                      placeholder="-"
                       value={taxAmountFilter}
                       onChange={(e) => setTaxAmountFilter(e.target.value)}
                       className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
@@ -1243,6 +1287,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     />
                   </div>
                 </td>
+                <td className="px-2 py-1 border"></td>
               </tr>
             </thead>
 
@@ -1387,7 +1432,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">{invoice.inv_faktur || '-'}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_faktur_date)}</td>
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_dpp)}</td>
-                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.tax_base_amount)}</td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.tax_amount)}
                       </td>
@@ -1399,6 +1443,17 @@ const InvoiceReport: React.FC = (): ReactNode => {
                         {formatCurrency(invoice.pph_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_amount)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {invoice.status?.toLowerCase() === 'ready to payment' && (
+                          <button
+                            onClick={() => handleRevertToInProcess(invoice)}
+                            className="text-orange-600 hover:text-orange-800 transition-colors"
+                            title="Revert to In Process"
+                          >
+                            <MdUndo className="text-xl" />
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })

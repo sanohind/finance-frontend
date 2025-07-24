@@ -58,7 +58,6 @@ const InvoiceReportSup = () => {
   const [taxNumberFilter, setTaxNumberFilter] = useState('');
   const [taxDateFilter, setTaxDateFilter] = useState('');
   const [totalDppFilter, setTotalDppFilter] = useState('');
-  const [taxBaseFilter, setTaxBaseFilter] = useState('');
   const [taxAmountFilter, setTaxAmountFilter] = useState('');
   const [pphDescFilter, setPphDescFilter] = useState('');
   const [pphBaseFilter, setPphBaseFilter] = useState('');
@@ -168,15 +167,6 @@ const InvoiceReportSup = () => {
         });
       }
     }
-    if (taxBaseFilter) {
-      const filterAmount = parseFloat(taxBaseFilter);
-      if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
-          if (!item.tax_base_amount) return false;
-          return Math.abs(item.tax_base_amount - filterAmount) < 0.01 || item.tax_base_amount.toString().includes(taxBaseFilter);
-        });
-      }
-    }
     if (taxAmountFilter) {
       const filterAmount = parseFloat(taxAmountFilter);
       if (!isNaN(filterAmount)) {
@@ -234,7 +224,6 @@ const InvoiceReportSup = () => {
     taxNumberFilter,
     taxDateFilter,
     totalDppFilter,
-    taxBaseFilter,
     taxAmountFilter,
     pphDescFilter,
     pphBaseFilter,
@@ -310,7 +299,6 @@ const InvoiceReportSup = () => {
       'Tax Number',
       'Tax Date',
       'Total DPP',
-      'Tax Base Amount',
       'Tax Amount (Preview 11%)',
       'PPh Description',
       'PPh Base Amount',
@@ -329,7 +317,6 @@ const InvoiceReportSup = () => {
         inv.inv_faktur || '',
         inv.inv_faktur_date || '',
         inv.total_dpp || '',
-        inv.tax_base_amount || '',
         inv.tax_amount || '',
         getPphDescription(inv.pph_id, inv),
         inv.pph_base_amount || '',
@@ -350,7 +337,6 @@ const InvoiceReportSup = () => {
       { wch: 40 },
       { wch: 22 },
       { wch: 18 },
-      { wch: 22 },
       { wch: 22 },
       { wch: 20 },
       { wch: 22 },
@@ -672,7 +658,6 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Base Amount</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Amount</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">PPh Description</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Base Amount</th>
@@ -688,7 +673,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
-                <th colSpan={12}></th>
+                <th colSpan={11}></th>
               </tr>
               {/* Filter inputs row (skip Document columns) */}
               <tr className="bg-gray-50 border">
@@ -798,18 +783,6 @@ const InvoiceReportSup = () => {
                     <input
                       type="number"
                       placeholder="-"
-                      value={taxBaseFilter}
-                      onChange={(e) => setTaxBaseFilter(e.target.value)}
-                      className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
-                    />
-                  </div>
-                </td>
-                <td className="px-2 py-1 border">
-                  <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
-                    <input
-                      type="number"
-                      placeholder="-"
                       value={taxAmountFilter}
                       onChange={(e) => setTaxAmountFilter(e.target.value)}
                       className="border rounded w-full px-2 py-1 text-sm text-center pl-8"
@@ -866,7 +839,7 @@ const InvoiceReportSup = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>
@@ -1004,9 +977,6 @@ const InvoiceReportSup = () => {
                         {formatCurrency(invoice.total_dpp)}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {formatCurrency(invoice.tax_base_amount)}
-                      </td>
-                      <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.tax_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">{getPphDescription(invoice.pph_id, invoice)}</td>
@@ -1024,7 +994,7 @@ const InvoiceReportSup = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
                     No data available.
                   </td>
                 </tr>
