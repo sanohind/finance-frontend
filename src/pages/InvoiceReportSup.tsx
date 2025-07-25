@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
-import { Search, XCircle } from 'lucide-react';
+import { Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AiFillFilePdf } from 'react-icons/ai';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
@@ -39,6 +39,9 @@ const InvoiceReportSup = () => {
   // Detail modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+  // Detail modal pagination states
+  const [detailCurrentPage, setDetailCurrentPage] = useState(1);
+  const [detailRowsPerPage] = useState(7);
   // Filter states
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState('');
@@ -475,6 +478,7 @@ const InvoiceReportSup = () => {
   const closeDetailModal = () => {
     setDetailInvoice(null);
     setDetailModalOpen(false);
+    setDetailCurrentPage(1); // Reset pagination when closing modal
   };
 
   // Date range handlers
@@ -1012,77 +1016,119 @@ const InvoiceReportSup = () => {
       </div>
 
       {/* Detail Modal */}
-      {detailModalOpen && detailInvoice && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-md shadow-lg max-w-3xl w-full">
-            <h2 className="text-xl font-semibold mb-4">
-              Invoice Detail - {detailInvoice.inv_no}
-            </h2>
-            <div className="space-y-2 mb-4">
-              {/* Supplier address if available */}
-              {(() => {
-                // Try to find supplier address from bp_code if available in data
-                // If you have businessPartners data, you can use it here. Otherwise, fallback to bp_name.
-                return (
-                  <p>
-                    <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name || "-"}
-                  </p>
-                );
-              })()}
-              <p>
-                <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
-              </p>
-              <p>
-                <strong>Status:</strong> {detailInvoice.status}
-              </p>
-              <p>
-                <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Invoice Lines</h3>
-              {Array.isArray((detailInvoice as any).inv_lines) && (detailInvoice as any).inv_lines.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-200 text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-3 py-2 border">GR No</th>
-                        <th className="px-3 py-2 border">PO No</th>
-                        <th className="px-3 py-2 border">Part No</th>
-                        <th className="px-3 py-2 border">Item Description</th>
-                        <th className="px-3 py-2 border">Receipt Amount</th>
-                        <th className="px-3 py-2 border">Unit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(detailInvoice as any).inv_lines.map((line: any) => (
-                        <tr key={line.inv_line_id}>
-                          <td className="px-3 py-2 border text-center">{line.gr_no}</td>
-                          <td className="px-3 py-2 border text-center">{line.po_no}</td>
-                          <td className="px-3 py-2 border text-center">{line.part_no}</td>
-                          <td className="px-3 py-2 border">{line.item_desc}</td>
-                          <td className="px-3 py-2 border text-right">{line.receipt_amount}</td>
-                          <td className="px-3 py-2 border text-center">{line.unit}</td>
+      {detailModalOpen && detailInvoice && (() => {
+        // Pagination logic for detail modal
+        const invoiceLines = Array.isArray((detailInvoice as any).inv_lines) 
+          ? (detailInvoice as any).inv_lines 
+          : [];
+        const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
+        const startIndex = (detailCurrentPage - 1) * detailRowsPerPage;
+        const endIndex = startIndex + detailRowsPerPage;
+        const currentItems = invoiceLines.slice(startIndex, endIndex);
+
+        const handleDetailPrevious = () => {
+          setDetailCurrentPage(prev => Math.max(prev - 1, 1));
+        };
+
+        const handleDetailNext = () => {
+          setDetailCurrentPage(prev => Math.min(prev + 1, totalPages));
+        };
+
+        return (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-md shadow-lg max-w-3xl w-full">
+              <h2 className="text-xl font-semibold mb-4">
+                Invoice Detail - {detailInvoice.inv_no}
+              </h2>
+              <div className="space-y-2 mb-4">
+                {/* Supplier address if available */}
+                {(() => {
+                  // Try to find supplier address from bp_code if available in data
+                  // If you have businessPartners data, you can use it here. Otherwise, fallback to bp_name.
+                  return (
+                    <p>
+                      <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name || "-"}
+                    </p>
+                  );
+                })()}
+                <p>
+                  <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+                </p>
+                <p>
+                  <strong>Status:</strong> {detailInvoice.status}
+                </p>
+                <p>
+                  <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Invoice Lines</h3>
+                {invoiceLines.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border border-gray-200 text-sm">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-3 py-2 border">GR No</th>
+                          <th className="px-3 py-2 border">PO No</th>
+                          <th className="px-3 py-2 border">Part No</th>
+                          <th className="px-3 py-2 border">Item Description</th>
+                          <th className="px-3 py-2 border">Receipt Amount</th>
+                          <th className="px-3 py-2 border">Unit</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500">No line items found.</div>
-              )}
-            </div>
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={closeDetailModal}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                Close
-              </button>
+                      </thead>
+                      <tbody>
+                        {currentItems.map((line: any) => (
+                          <tr key={line.inv_line_id}>
+                            <td className="px-3 py-2 border text-center">{line.gr_no}</td>
+                            <td className="px-3 py-2 border text-center">{line.po_no}</td>
+                            <td className="px-3 py-2 border text-center">{line.part_no}</td>
+                            <td className="px-3 py-2 border">{line.item_desc}</td>
+                            <td className="px-3 py-2 border text-right">{line.receipt_amount}</td>
+                            <td className="px-3 py-2 border text-center">{line.unit}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    
+                    {/* Pagination Controls for Detail Modal - InvoiceCreationWizard Style */}
+                    {invoiceLines.length > detailRowsPerPage && (
+                      <div className="flex items-center justify-center gap-3 mt-4">
+                        <button
+                          onClick={handleDetailPrevious}
+                          disabled={detailCurrentPage === 1}
+                          className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-600" />
+                        </button>
+                        <span className="text-gray-700 font-medium text-sm">
+                          Page {detailCurrentPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={handleDetailNext}
+                          disabled={detailCurrentPage === totalPages}
+                          className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-600" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500">No line items found.</div>
+                )}
+              </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={closeDetailModal}
+                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Simple Popup for showing Rejected reason */}
       {showReasonModal && (
