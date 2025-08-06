@@ -101,7 +101,6 @@ interface ColumnFilters {
   invDueDateFilter: string;
   paymentDocFilter: string;
   paymentDateFilter: string;
-  createdDateFilter: string;
 }
 
 const InvoiceCreationSup = () => {
@@ -145,8 +144,7 @@ const InvoiceCreationSup = () => {
     invAmountFilter: '',
     invDueDateFilter: '',
     paymentDocFilter: '',
-    paymentDateFilter: '',
-    createdDateFilter: ''
+    paymentDateFilter: ''
   });
 
   // New state variables for Outstanding section
@@ -173,23 +171,6 @@ const InvoiceCreationSup = () => {
       maximumFractionDigits: 2
     }).format(amount);
   };
-
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return '';
-      }
-      const year = date.getFullYear();
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    } catch (e) {
-      return '';
-    }
-  };
-
   // Apply column filters to data - Updated to match GrTrackingSup 28-column structure
   const applyColumnFilters = (dataToFilter: GrSaRecord[]): GrSaRecord[] => {
     // Make a copy to avoid mutating the original array
@@ -412,13 +393,6 @@ const InvoiceCreationSup = () => {
       );
     }
     
-    // Filter by Created Date
-    if (columnFilters.createdDateFilter) {
-      filtered = filtered.filter(item =>
-        item.created_at?.includes(columnFilters.createdDateFilter)
-      );
-    }
-
     return filtered;
   };
   // Skeleton loader component for table rows
@@ -430,7 +404,7 @@ const InvoiceCreationSup = () => {
             <td className="px-3 py-4 text-center">
               <div className="h-4 w-4 bg-gray-200 rounded mx-auto"></div>
             </td>
-            {[...Array(29)].map((_, j) => (
+            {[...Array(28)].map((_, j) => (
               <td key={`cell-${i}-${j}`} className="px-3 py-4 text-center">
                 <div className="h-4 bg-gray-200 rounded"></div>
               </td>
@@ -494,10 +468,9 @@ const InvoiceCreationSup = () => {
       }
 
       // Filter for null inv_supplier_no and inv_due_date
-      // Filter for items where inv_supplier_no and inv_doc_no are empty
-      filtered = filtered.filter(
-        (item: GrSaRecord) => !item.inv_supplier_no && !item.inv_doc_no
-      );
+      filtered = filtered.filter((item: GrSaRecord) => {
+        return item.inv_supplier_no === null && item.inv_due_date === null;
+      });
 
       setGrSaList(filtered);
       setFilteredData(filtered);
@@ -557,8 +530,7 @@ const InvoiceCreationSup = () => {
       invAmountFilter: '',
       invDueDateFilter: '',
       paymentDocFilter: '',
-      paymentDateFilter: '',
-      createdDateFilter: ''
+      paymentDateFilter: ''
     });
     // Clear selected records and reset selectAll state
     setSelectedRecords([]);
@@ -935,7 +907,6 @@ const InvoiceCreationSup = () => {
                 <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[160px]">Invoice Due Date</th>
                 <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[130px]">Payment Doc</th>
                 <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[130px]">Payment Date</th>
-                <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[130px]">Created Date</th>
               </tr>              {/* Column Filter Row */}
               <tr>
                 <td className="px-2 py-2 border-b">
@@ -969,7 +940,6 @@ const InvoiceCreationSup = () => {
                 <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invDueDateFilter} onChange={(e) => handleColumnFilterChange('invDueDateFilter', e.target.value)} /></td>
                 <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.paymentDocFilter} onChange={(e) => handleColumnFilterChange('paymentDocFilter', e.target.value)} /></td>
                 <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.paymentDateFilter} onChange={(e) => handleColumnFilterChange('paymentDateFilter', e.target.value)} /></td>
-                <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.createdDateFilter} onChange={(e) => handleColumnFilterChange('createdDateFilter', e.target.value)} /></td>
               </tr>
                 </thead>
                 <tbody>
@@ -1011,10 +981,9 @@ const InvoiceCreationSup = () => {
                         <td className="px-6 py-3 text-center border-b">{item.inv_due_date ? new Date(item.inv_due_date).toLocaleDateString() : ''}</td>
                         <td className="px-6 py-3 text-center border-b">{item.payment_doc}</td>
                         <td className="px-6 py-3 text-center border-b">{item.payment_doc_date ? new Date(item.payment_doc_date).toLocaleDateString() : ''}</td>
-                        <td className="px-6 py-3 text-center border-b">{formatDate(item.created_at)}</td>
                       </tr>
                     ))                  ) : (                    <tr>
-                      <td colSpan={30} className="py-4 text-center text-gray-500 border-b">
+                      <td colSpan={29} className="py-4 text-center text-gray-500 border-b">
                         No data available
                       </td>
                     </tr>

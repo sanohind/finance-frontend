@@ -587,11 +587,6 @@ const GrTrackingSup = () => {
           invLineList = result;
         }
   
-        // Filter for items where inv_supplier_no and inv_doc_no are empty
-        invLineList = invLineList.filter(
-          (item: GrTrackingSup) => !item.inv_supplier_no && !item.inv_doc_no
-        );
-
         if (invLineList.length > 0) {
           // Apply client-side filtering if backend doesn't filter
           if (mergedParams.bp_id) {
