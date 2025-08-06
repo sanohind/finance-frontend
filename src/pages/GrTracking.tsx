@@ -306,6 +306,11 @@ const GrTracking = () => {  // --- Currency Formatter Function ---
       else if (result.data && typeof result.data === 'object') invLineList = Object.values(result.data);
       else if (Array.isArray(result)) invLineList = result;
 
+      // Filter for items where inv_supplier_no and inv_doc_no are empty
+      invLineList = invLineList.filter(
+        (item: GrTracking) => !item.inv_supplier_no && !item.inv_doc_no
+      );
+
       // If API filtering failed or returned inconsistent results, apply client-side date filtering as fallback
       if (invLineList.length > 0 && (grDateFrom || grDateTo)) {
         invLineList = filterByDateRange(invLineList, grDateFrom, grDateTo);

@@ -106,7 +106,8 @@ const InvoiceCreation = () => {
     invAmountFilter: '',
     invDueDateFilter: '',
     paymentDocFilter: '',
-    paymentDateFilter: ''
+    paymentDateFilter: '',
+    createdDateFilter: ''
   });
   const [grDateFrom, setGrDateFrom] = useState('');
   const [grDateTo, setGrDateTo] = useState('');
@@ -131,6 +132,22 @@ const InvoiceCreation = () => {
       currency: 'IDR',
       minimumFractionDigits: 2
     }).format(amount);
+  };
+
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      return '';
+    }
   };
 
   useEffect(() => {
@@ -345,6 +362,9 @@ const InvoiceCreation = () => {
     // Filter by Payment Date
     if (columnFilters.paymentDateFilter) filtered = filtered.filter(item => item.payment_doc_date?.includes(columnFilters.paymentDateFilter));
     
+    // Filter by Created Date
+    if (columnFilters.createdDateFilter) filtered = filtered.filter(item => item.created_at?.includes(columnFilters.createdDateFilter));
+
     return filtered;
   };
   const handleColumnFilterChange = (field: keyof typeof columnFilters, value: string) => {
@@ -414,6 +434,11 @@ const InvoiceCreation = () => {
       } else if (Array.isArray(result)) {
         invLineList = result;
       }
+      // Filter for items where inv_supplier_no and inv_doc_no are empty
+      invLineList = invLineList.filter(
+        (item: GrSaRecord) => !item.inv_supplier_no && !item.inv_doc_no
+      );
+
       // Filter on frontend for date range
       let filtered = invLineList;
       Object.entries(filterParams).forEach(([key, value]) => {
@@ -482,7 +507,8 @@ const InvoiceCreation = () => {
       invAmountFilter: '',
       invDueDateFilter: '',
       paymentDocFilter: '',
-      paymentDateFilter: ''
+      paymentDateFilter: '',
+      createdDateFilter: ''
     });
     const formInputs = document.querySelectorAll('input');
     formInputs.forEach((input) => {
@@ -806,6 +832,7 @@ const InvoiceCreation = () => {
                     <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[160px]">Invoice Due Date</th>
                     <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[130px]">Payment Doc</th>
                     <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[130px]">Payment Date</th>
+                    <th className="px-4 py-2 text-gray-700 text-center border-t border-b min-w-[130px]">Created Date</th>
                   </tr>                  {/* Column filter inputs row */}
                   <tr>
                     <td className="px-2 py-2 border-b"></td>
@@ -835,10 +862,11 @@ const InvoiceCreation = () => {
                     <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.invDueDateFilter} onChange={e => handleColumnFilterChange('invDueDateFilter', e.target.value)} /></td>
                     <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.paymentDocFilter} onChange={e => handleColumnFilterChange('paymentDocFilter', e.target.value)} /></td>
                     <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.paymentDateFilter} onChange={e => handleColumnFilterChange('paymentDateFilter', e.target.value)} /></td>
+                    <td className="px-2 py-2 border-b"><input type="text" className="w-full text-xs p-1 border border-gray-300 rounded" value={columnFilters.createdDateFilter} onChange={e => handleColumnFilterChange('createdDateFilter', e.target.value)} /></td>
                   </tr>
                 </thead>                <tbody>                  {isLoading ? (
                     <tr>
-                      <td colSpan={28} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={29} className="px-6 py-4 text-center text-gray-500">
                         Loading...
                       </td>
                     </tr>
@@ -878,10 +906,11 @@ const InvoiceCreation = () => {
                         <td className="px-6 py-3 text-center border-b">{item.inv_due_date}</td>
                         <td className="px-6 py-3 text-center border-b">{item.payment_doc}</td>
                         <td className="px-6 py-3 text-center border-b">{item.payment_doc_date}</td>
+                        <td className="px-6 py-3 text-center border-b">{formatDate(item.created_at)}</td>
                       </tr>
                     ))                  ) : (
                     <tr>
-                      <td colSpan={28} className="py-4 text-center text-gray-500 border-b">
+                      <td colSpan={29} className="py-4 text-center text-gray-500 border-b">
                         {selectedSupplier ? 'No data available for the selected supplier and filters.' : 'Please select a supplier to view data.'}
                       </td>
                     </tr>
