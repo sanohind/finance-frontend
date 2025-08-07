@@ -79,6 +79,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   // Column filter states
   const [invoiceNoFilter, setInvoiceNoFilter] = useState('');
   const [invDateFilter, setInvDateFilter] = useState('');
+  const [submitDateFilter, setSubmitDateFilter] = useState('');
   const [planDateFilter, setPlanDateFilter] = useState('');
   const [actualDateFilter, setActualDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -239,8 +240,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
       );
     }
     if (invDateFilter) {
-      newFiltered = newFiltered.filter(item => 
+      newFiltered = newFiltered.filter(item =>
         item.inv_date?.includes(invDateFilter)
+      );
+    }
+    if (submitDateFilter) {
+      newFiltered = newFiltered.filter(item =>
+        item.created_at?.includes(submitDateFilter)
       );
     }
     if (planDateFilter) {
@@ -339,8 +345,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setCurrentPage(1);
   }, [
     data, 
-    invoiceNoFilter, 
-    invDateFilter, 
+    invoiceNoFilter,
+    invDateFilter,
+    submitDateFilter,
     planDateFilter, 
     actualDateFilter, 
     statusFilter, 
@@ -410,6 +417,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
     // Clear column filters
     setInvoiceNoFilter('');
     setInvDateFilter('');
+    setSubmitDateFilter('');
     setPlanDateFilter('');
     setActualDateFilter('');
     setStatusFilter('');
@@ -581,6 +589,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       'Supplier Code',
       'Invoice No',
       'Inv Date',
+      'Submit Date',
       'Plan Date',
       'Actual Date',
       'Status',
@@ -605,6 +614,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
         inv.bp_code || '',
         inv.inv_no || '',
         inv.inv_date || '',
+        inv.created_at || '',
         inv.plan_date || '',
         inv.actual_date || '',
         inv.status || '',
@@ -626,6 +636,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       { wch: 20 }, // Supplier Code
       { wch: 20 }, // Invoice No
       { wch: 18 }, // Inv Date
+      { wch: 18 }, // Submit Date
       { wch: 18 }, // Plan Date
       { wch: 18 }, // Actual Date
       { wch: 20 }, // Status
@@ -1095,6 +1106,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Submit Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
@@ -1121,7 +1133,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[100px]">Action</th>
               </tr>
               <tr className="bg-gray-100 border">
-                <th colSpan={4}></th>
+                <th colSpan={5}></th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 {/* Document sub-columns */}
@@ -1157,6 +1169,14 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     type="date"
                     value={invDateFilter}
                     onChange={(e) => setInvDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={submitDateFilter}
+                    onChange={(e) => setSubmitDateFilter(e.target.value)}
                     className="border rounded w-full px-2 py-1 text-sm text-center"
                   />
                 </td>
@@ -1297,7 +1317,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 21 */}
+                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 22 */}
                     Loading...
                   </td>
                 </tr>
@@ -1363,6 +1383,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                         </button>
                       </td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_date)}</td>
+                      <td className="px-6 py-4 text-center">{formatDate(invoice.created_at)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.plan_date)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.actual_date)}</td>
                       <td className="px-6 py-4 text-center">
@@ -1462,7 +1483,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 21 */}
+                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 22 */}
                     No data available.
                   </td>
                 </tr>
@@ -1514,6 +1535,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 })()}
                 <p>
                   <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+                </p>
+                <p>
+                  <strong>Submit Date:</strong> {formatDate(detailInvoice.created_at)}
                 </p>
                 <p>
                   <strong>Status:</strong> {detailInvoice.status}

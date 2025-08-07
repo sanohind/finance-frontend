@@ -53,6 +53,7 @@ const InvoiceReportSup = () => {
   // Column filter states
   const [invoiceNoFilter, setInvoiceNoFilter] = useState('');
   const [invDateFilter, setInvDateFilter] = useState('');
+  const [submitDateFilter, setSubmitDateFilter] = useState('');
   const [planDateFilter, setPlanDateFilter] = useState('');
   const [actualDateFilter, setActualDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -140,6 +141,9 @@ const InvoiceReportSup = () => {
     if (invDateFilter) {
       newFiltered = newFiltered.filter(item => item.inv_date?.includes(invDateFilter));
     }
+    if (submitDateFilter) {
+      newFiltered = newFiltered.filter(item => item.created_at?.includes(submitDateFilter));
+    }
     if (planDateFilter) {
       newFiltered = newFiltered.filter(item => item.plan_date?.includes(planDateFilter));
     }
@@ -219,6 +223,7 @@ const InvoiceReportSup = () => {
     data,
     invoiceNoFilter,
     invDateFilter,
+    submitDateFilter,
     planDateFilter,
     actualDateFilter,
     statusFilter,
@@ -295,6 +300,7 @@ const InvoiceReportSup = () => {
       'Supplier Code',
       'Invoice No',
       'Inv Date',
+      'Submit Date',
       'Plan Date',
       'Actual Date',
       'Status',
@@ -313,6 +319,7 @@ const InvoiceReportSup = () => {
         inv.bp_code || '',
         inv.inv_no || '',
         inv.inv_date || '',
+        inv.created_at || '',
         inv.plan_date || '',
         inv.actual_date || '',
         inv.status || '',
@@ -332,6 +339,7 @@ const InvoiceReportSup = () => {
     ws['!cols'] = [
       { wch: 20 },
       { wch: 20 },
+      { wch: 18 },
       { wch: 18 },
       { wch: 18 },
       { wch: 18 },
@@ -650,6 +658,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Submit Date</th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
                   Payment Date
                 </th>
@@ -669,7 +678,7 @@ const InvoiceReportSup = () => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
               </tr>
               <tr className="bg-gray-100 border">
-                <th colSpan={4}></th>
+                <th colSpan={5}></th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
                 <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
                 {/* Document sub-columns */}
@@ -705,6 +714,14 @@ const InvoiceReportSup = () => {
                     type="date"
                     value={invDateFilter}
                     onChange={(e) => setInvDateFilter(e.target.value)}
+                    className="border rounded w-full px-2 py-1 text-sm text-center"
+                  />
+                </td>
+                <td className="px-2 py-1 border">
+                  <input
+                    type="date"
+                    value={submitDateFilter}
+                    onChange={(e) => setSubmitDateFilter(e.target.value)}
                     className="border rounded w-full px-2 py-1 text-sm text-center"
                   />
                 </td>
@@ -843,7 +860,7 @@ const InvoiceReportSup = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>
@@ -884,6 +901,9 @@ const InvoiceReportSup = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         {formatDate(invoice.inv_date)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {formatDate(invoice.created_at)}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {formatDate(invoice.plan_date)}
@@ -998,7 +1018,7 @@ const InvoiceReportSup = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={21} className="px-4 py-4 text-center text-gray-500">
+                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
                     No data available.
                   </td>
                 </tr>
@@ -1053,6 +1073,9 @@ const InvoiceReportSup = () => {
                 })()}
                 <p>
                   <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+                </p>
+                <p>
+                  <strong>Submit Date:</strong> {formatDate(detailInvoice.created_at)}
                 </p>
                 <p>
                   <strong>Status:</strong> {detailInvoice.status}

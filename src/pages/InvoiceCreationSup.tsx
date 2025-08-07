@@ -171,6 +171,22 @@ const InvoiceCreationSup = () => {
       maximumFractionDigits: 2
     }).format(amount);
   };
+
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      return '';
+    }
+  };
   // Apply column filters to data - Updated to match GrTrackingSup 28-column structure
   const applyColumnFilters = (dataToFilter: GrSaRecord[]): GrSaRecord[] => {
     // Make a copy to avoid mutating the original array
@@ -392,7 +408,7 @@ const InvoiceCreationSup = () => {
         item.payment_doc_date?.includes(columnFilters.paymentDateFilter)
       );
     }
-    
+
     return filtered;
   };
   // Skeleton loader component for table rows
@@ -404,7 +420,7 @@ const InvoiceCreationSup = () => {
             <td className="px-3 py-4 text-center">
               <div className="h-4 w-4 bg-gray-200 rounded mx-auto"></div>
             </td>
-            {[...Array(28)].map((_, j) => (
+            {[...Array(29)].map((_, j) => (
               <td key={`cell-${i}-${j}`} className="px-3 py-4 text-center">
                 <div className="h-4 bg-gray-200 rounded"></div>
               </td>
@@ -467,10 +483,10 @@ const InvoiceCreationSup = () => {
         });
       }
 
-      // Filter for null inv_supplier_no and inv_due_date
-      filtered = filtered.filter((item: GrSaRecord) => {
-        return item.inv_supplier_no === null && item.inv_due_date === null;
-      });
+      // Filter for items where inv_supplier_no and inv_doc_no are empty
+      filtered = filtered.filter(
+        (item: GrSaRecord) => !item.inv_supplier_no && !item.inv_doc_no
+      );
 
       setGrSaList(filtered);
       setFilteredData(filtered);
