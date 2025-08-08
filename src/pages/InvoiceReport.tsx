@@ -846,7 +846,17 @@ const InvoiceReport: React.FC = (): ReactNode => {
     if (!dateString) return '-';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('id-ID');
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID') + ' ' + date.toLocaleTimeString('en-GB');
     } catch {
       return dateString;
     }
@@ -1383,7 +1393,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                         </button>
                       </td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.inv_date)}</td>
-                      <td className="px-6 py-4 text-center">{formatDate(invoice.created_at)}</td>
+                      <td className="px-6 py-4 text-center">{formatDateTime(invoice.created_at)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.plan_date)}</td>
                       <td className="px-6 py-4 text-center">{formatDate(invoice.actual_date)}</td>
                       <td className="px-6 py-4 text-center">
@@ -1537,7 +1547,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                   <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
                 </p>
                 <p>
-                  <strong>Submit Date:</strong> {formatDate(detailInvoice.created_at)}
+                  <strong>Submit Date:</strong> {formatDateTime(detailInvoice.created_at)}
                 </p>
                 <p>
                   <strong>Status:</strong> {detailInvoice.status}
