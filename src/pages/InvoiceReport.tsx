@@ -66,7 +66,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const [detailCurrentPage, setDetailCurrentPage] = useState(1);
   const [detailRowsPerPage] = useState(7);
 
-  const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>([]);
+  const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>(
+    [],
+  );
   const [searchSupplier, setSearchSupplier] = useState<string>('');
   // Filter states
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -103,20 +105,21 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
   // Allow multiple 'New' but only single 'In Process' or multiple 'Ready To Payment'
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
-  
+
   // Reason popup state
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
 
   // --- Post Invoice Modal for Actual Date Input ---
-  const [actualDate, setActualDate] = useState<string>("");
+  const [actualDate, setActualDate] = useState<string>('');
   const [postModalOpen, setPostModalOpen] = useState(false);
 
   const supplierOptions = businessPartners.map((bp) => ({
     value: bp.bp_code,
     label: `${bp.bp_code} | ${bp.bp_name}`,
   }));
-  const selectedOption = supplierOptions.find((opt) => opt.value === searchSupplier) || null;
+  const selectedOption =
+    supplierOptions.find((opt) => opt.value === searchSupplier) || null;
 
   // fetch business partners
   const fetchPartners = async () => {
@@ -235,77 +238,92 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
     // Apply all column filters
     if (invoiceNoFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase()),
       );
     }
     if (invDateFilter) {
-      newFiltered = newFiltered.filter(item =>
-        item.inv_date?.includes(invDateFilter)
+      newFiltered = newFiltered.filter(
+        (item) => item.inv_date?.includes(invDateFilter),
       );
     }
     if (submitDateFilter) {
-      newFiltered = newFiltered.filter(item =>
-        item.created_at?.includes(submitDateFilter)
+      newFiltered = newFiltered.filter(
+        (item) => item.created_at?.includes(submitDateFilter),
       );
     }
     if (planDateFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.plan_date?.includes(planDateFilter)
+      newFiltered = newFiltered.filter(
+        (item) => item.plan_date?.includes(planDateFilter),
       );
     }
     if (actualDateFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.actual_date?.includes(actualDateFilter)
+      newFiltered = newFiltered.filter(
+        (item) => item.actual_date?.includes(actualDateFilter),
       );
     }
     if (statusFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.status?.toLowerCase().includes(statusFilter.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.status?.toLowerCase().includes(statusFilter.toLowerCase()),
       );
     }
     if (receiptNoFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.receipt_number?.toLowerCase().includes(receiptNoFilter.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.receipt_number
+            ?.toLowerCase()
+            .includes(receiptNoFilter.toLowerCase()),
       );
     }
     if (supplierCodeFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.bp_code?.toLowerCase().includes(supplierCodeFilter.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.bp_code
+            ?.toLowerCase()
+            .includes(supplierCodeFilter.toLowerCase()),
       );
     }
     if (taxNumberFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.inv_faktur?.toLowerCase().includes(taxNumberFilter.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.inv_faktur
+            ?.toLowerCase()
+            .includes(taxNumberFilter.toLowerCase()),
       );
     }
     if (taxDateFilter) {
-      newFiltered = newFiltered.filter(item => 
-        item.inv_faktur_date?.includes(taxDateFilter)
+      newFiltered = newFiltered.filter(
+        (item) => item.inv_faktur_date?.includes(taxDateFilter),
       );
     }
     if (totalDppFilter) {
       const filterAmount = parseFloat(totalDppFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           if (!item.total_dpp) return false;
-          return Math.abs(item.total_dpp - filterAmount) < 0.01 ||
-            item.total_dpp.toString().includes(totalDppFilter);
+          return (
+            Math.abs(item.total_dpp - filterAmount) < 0.01 ||
+            item.total_dpp.toString().includes(totalDppFilter)
+          );
         });
       }
     }
     if (taxAmountFilter) {
       const filterAmount = parseFloat(taxAmountFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           const taxAmount = item.tax_amount || 0;
-          return Math.abs(taxAmount - filterAmount) < 0.01 ||
-            taxAmount.toString().includes(taxAmountFilter);
+          return (
+            Math.abs(taxAmount - filterAmount) < 0.01 ||
+            taxAmount.toString().includes(taxAmountFilter)
+          );
         });
       }
     }
     if (pphDescFilter) {
-      newFiltered = newFiltered.filter(item => {
+      newFiltered = newFiltered.filter((item) => {
         const pphDesc = getPphDescription(item.pph_id, item);
         return pphDesc.toLowerCase().includes(pphDescFilter.toLowerCase());
       });
@@ -313,30 +331,36 @@ const InvoiceReport: React.FC = (): ReactNode => {
     if (pphBaseFilter) {
       const filterAmount = parseFloat(pphBaseFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           if (!item.pph_base_amount) return false;
-          return Math.abs(item.pph_base_amount - filterAmount) < 0.01 ||
-            item.pph_base_amount.toString().includes(pphBaseFilter);
+          return (
+            Math.abs(item.pph_base_amount - filterAmount) < 0.01 ||
+            item.pph_base_amount.toString().includes(pphBaseFilter)
+          );
         });
       }
     }
     if (pphAmountFilter) {
       const filterAmount = parseFloat(pphAmountFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           const pphAmount = item.pph_amount || 0;
-          return Math.abs(pphAmount - filterAmount) < 0.01 ||
-            pphAmount.toString().includes(pphAmountFilter);
+          return (
+            Math.abs(pphAmount - filterAmount) < 0.01 ||
+            pphAmount.toString().includes(pphAmountFilter)
+          );
         });
       }
     }
     if (totalAmountFilter) {
       const filterAmount = parseFloat(totalAmountFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           if (!item.total_amount) return false;
-          return Math.abs(item.total_amount - filterAmount) < 0.01 ||
-            item.total_amount.toString().includes(totalAmountFilter);
+          return (
+            Math.abs(item.total_amount - filterAmount) < 0.01 ||
+            item.total_amount.toString().includes(totalAmountFilter)
+          );
         });
       }
     }
@@ -344,14 +368,14 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setFilteredData(newFiltered);
     setCurrentPage(1);
   }, [
-    data, 
+    data,
     invoiceNoFilter,
     invDateFilter,
     submitDateFilter,
-    planDateFilter, 
-    actualDateFilter, 
-    statusFilter, 
-    receiptNoFilter, 
+    planDateFilter,
+    actualDateFilter,
+    statusFilter,
+    receiptNoFilter,
     supplierCodeFilter,
     taxNumberFilter,
     taxDateFilter,
@@ -360,30 +384,38 @@ const InvoiceReport: React.FC = (): ReactNode => {
     pphDescFilter,
     pphBaseFilter,
     pphAmountFilter,
-    totalAmountFilter
+    totalAmountFilter,
   ]);
   const handleSearch = () => {
     let newFiltered = [...data];
 
     if (searchSupplier.trim()) {
       newFiltered = newFiltered.filter((row) => {
-        const codeMatch = row.bp_code?.toLowerCase().includes(searchSupplier.toLowerCase());
-        const nameMatch = row.bp_name?.toLowerCase().includes(searchSupplier.toLowerCase());
+        const codeMatch = row.bp_code
+          ?.toLowerCase()
+          .includes(searchSupplier.toLowerCase());
+        const nameMatch = row.bp_name
+          ?.toLowerCase()
+          .includes(searchSupplier.toLowerCase());
         return codeMatch || nameMatch;
       });
     }
     if (invoiceNumber.trim()) {
-      newFiltered = newFiltered.filter((row) =>
-        row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (row) =>
+          row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase()),
       );
     }
     if (invoiceStatus.trim()) {
-      newFiltered = newFiltered.filter((row) =>
-        row.status?.toLowerCase().includes(invoiceStatus.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (row) =>
+          row.status?.toLowerCase().includes(invoiceStatus.toLowerCase()),
       );
     }
     if (paymentPlanningDate) {
-      newFiltered = newFiltered.filter((row) => row.plan_date?.slice(0, 10) === paymentPlanningDate);
+      newFiltered = newFiltered.filter(
+        (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate,
+      );
     }
     // Filter by invoice date range
     if (invoiceDateFrom && invoiceDateTo) {
@@ -406,14 +438,15 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
     setFilteredData(newFiltered);
     setCurrentPage(1);
-  };  const handleClear = () => {
+  };
+  const handleClear = () => {
     setSearchSupplier('');
     setInvoiceNumber('');
     setInvoiceStatus('');
     setPaymentPlanningDate('');
     setInvoiceDateFrom('');
     setInvoiceDateTo('');
-    
+
     // Clear column filters
     setInvoiceNoFilter('');
     setInvDateFilter('');
@@ -431,32 +464,36 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setPphBaseFilter('');
     setPphAmountFilter('');
     setTotalAmountFilter('');
-    
+
     setFilteredData(data);
     setCurrentPage(1);
     setSelectedInvoices([]);
   };
 
   // Date range handlers
-  const handleInvoiceDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInvoiceDateFromChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setInvoiceDateFrom(e.target.value);
   };
 
-  const handleInvoiceDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInvoiceDateToChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setInvoiceDateTo(e.target.value);
   };
 
   // Status color helper (same as ListProgress)
   const getStatusColor = (status: string | null) => {
-    if (!status) return "bg-blue-300";
+    if (!status) return 'bg-blue-300';
     const s = status.toLowerCase();
-    if (s === "ready to payment") return "bg-green-600";
-    if (s === "rejected") return "bg-red-500";
-    if (s === "paid") return "bg-blue-800";
-    if (s === "in process") return "bg-yellow-300";
-    return "bg-blue-400";
+    if (s === 'ready to payment') return 'bg-green-600';
+    if (s === 'rejected') return 'bg-red-500';
+    if (s === 'paid') return 'bg-blue-800';
+    if (s === 'in process') return 'bg-yellow-300';
+    return 'bg-blue-400';
   };
-  
+
   // Show rejected reason popup
   const handleShowRejectedReason = (reason: string | null) => {
     if (!reason) return;
@@ -467,9 +504,11 @@ const InvoiceReport: React.FC = (): ReactNode => {
     const { status } = invoice;
     const statusLower = status?.toLowerCase();
 
-    setSelectedInvoices(prevSelectedInvoices => {
+    setSelectedInvoices((prevSelectedInvoices) => {
       let newSelectedInvoices: Invoice[] = [];
-      const isCurrentlySelected = prevSelectedInvoices.some(inv => inv.inv_id === invoice.inv_id);
+      const isCurrentlySelected = prevSelectedInvoices.some(
+        (inv) => inv.inv_id === invoice.inv_id,
+      );
 
       if (statusLower === 'new' || statusLower === 'in process') {
         // Single select logic for 'New' or 'In Process'
@@ -481,22 +520,33 @@ const InvoiceReport: React.FC = (): ReactNode => {
       } else if (statusLower === 'ready to payment' || statusLower === 'paid') {
         // Multi-select logic for 'Ready To Payment' or 'Paid'
         if (isCurrentlySelected) {
-          newSelectedInvoices = prevSelectedInvoices.filter(inv => inv.inv_id !== invoice.inv_id);
+          newSelectedInvoices = prevSelectedInvoices.filter(
+            (inv) => inv.inv_id !== invoice.inv_id,
+          );
         } else {
           const hasNewOrInProcessSelected = prevSelectedInvoices.some(
-            inv => inv.status?.toLowerCase() === 'new' || inv.status?.toLowerCase() === 'in process'
+            (inv) =>
+              inv.status?.toLowerCase() === 'new' ||
+              inv.status?.toLowerCase() === 'in process',
           );
 
           if (hasNewOrInProcessSelected) {
             newSelectedInvoices = [invoice]; // Start fresh if 'New' or 'In Process' was selected
           } else {
-            const currentSelectionType = prevSelectedInvoices.length > 0 ? prevSelectedInvoices[0].status?.toLowerCase() : null;
+            const currentSelectionType =
+              prevSelectedInvoices.length > 0
+                ? prevSelectedInvoices[0].status?.toLowerCase()
+                : null;
             // If there's an existing selection and its type is different from the clicked item's type
             // (and both are multi-selectable types like 'ready to payment' or 'paid')
             // then start a new selection with the clicked item.
-            if (currentSelectionType && currentSelectionType !== statusLower &&
-                (currentSelectionType === 'ready to payment' || currentSelectionType === 'paid') &&
-                (statusLower === 'ready to payment' || statusLower === 'paid')) {
+            if (
+              currentSelectionType &&
+              currentSelectionType !== statusLower &&
+              (currentSelectionType === 'ready to payment' ||
+                currentSelectionType === 'paid') &&
+              (statusLower === 'ready to payment' || statusLower === 'paid')
+            ) {
               newSelectedInvoices = [invoice];
             } else {
               // Otherwise, add to the current selection (or start a new one if no prior selection)
@@ -533,7 +583,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
           }
 
           const response = await fetch(
-            API_Update_Status_To_In_Process_Finance() + `/${selectedInvoice.inv_id}`,
+            API_Update_Status_To_In_Process_Finance() +
+              `/${selectedInvoice.inv_id}`,
             {
               method: 'PUT',
               headers: {
@@ -541,11 +592,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ status: 'In Process' }),
-            }
+            },
           );
 
           if (!response.ok) {
-            throw new Error(`Failed to update invoice ${selectedInvoice.inv_no}`);
+            throw new Error(
+              `Failed to update invoice ${selectedInvoice.inv_no}`,
+            );
           }
 
           toast.success('Invoice updated to "In Process"!');
@@ -563,7 +616,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
         } catch (err: any) {
           toast.error(err.message || 'Error updating invoice status');
           return;
-        }      }
+        }
+      }
       // Open the wizard with the invoice ID (for both 'new' and 'in process')
       setModalInvoiceNumber(selectedInvoice.inv_id.toString());
       setWizardOpen(true);
@@ -604,10 +658,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
       'PPh Amount', // Header remains the same
       'Total Amount',
     ];
-    const bpAdrMap = businessPartners.reduce((acc, bp) => {
-      acc[bp.bp_code] = bp.adr_line_1;
-      return acc;
-    }, {} as Record<string, string>);
+    const bpAdrMap = businessPartners.reduce(
+      (acc, bp) => {
+        acc[bp.bp_code] = bp.adr_line_1;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
 
     const rows = filteredData.map((inv) => {
       return [
@@ -660,16 +717,17 @@ const InvoiceReport: React.FC = (): ReactNode => {
   // --- Post Invoice handler ---
   const handlePostInvoice = () => {
     const readyToPaymentInvoices = selectedInvoices.filter(
-      inv => inv.status?.toLowerCase() === 'ready to payment'
+      (inv) => inv.status?.toLowerCase() === 'ready to payment',
     );
     if (readyToPaymentInvoices.length === 0) {
       toast.warning('Please select invoices with "Ready To Payment" status');
       return;
     }
     setPostModalOpen(true);
-  };  const handleSubmitActualDate = async () => {
+  };
+  const handleSubmitActualDate = async () => {
     const readyToPaymentInvoices = selectedInvoices.filter(
-      inv => inv.status?.toLowerCase() === 'ready to payment'
+      (inv) => inv.status?.toLowerCase() === 'ready to payment',
     );
     if (!actualDate) {
       toast.error('Please select an Actual Date');
@@ -682,9 +740,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
         return;
       }
       // Use inv_id for individual invoice updates (only selected invoices)
-      const invNos = readyToPaymentInvoices.map(inv => inv.inv_id);      const response = await fetch(API_Upload_Payment_Admin(), {
+      const invNos = readyToPaymentInvoices.map((inv) => inv.inv_id);
+      const response = await fetch(API_Upload_Payment_Admin(), {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ inv_ids: invNos, actual_date: actualDate }),
       });
       if (!response.ok) {
@@ -697,12 +759,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
       fetchInvoices();
     } catch (error: any) {
       toast.error(error.message || 'Error updating actual date');
-    }};  // NEW: Bulk revert method for multiple "Paid" invoices
+    }
+  }; // NEW: Bulk revert method for multiple "Paid" invoices
   const handleBulkRevertInvoices = async () => {
     const paidInvoices = selectedInvoices.filter(
-      inv => inv.status?.toLowerCase() === 'paid'
+      (inv) => inv.status?.toLowerCase() === 'paid',
     );
-    
+
     if (paidInvoices.length === 0) {
       toast.warning('Please select invoices with "Paid" status to revert');
       return;
@@ -710,22 +773,23 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No access token found. Please log in again.');
+      if (!token)
+        throw new Error('No access token found. Please log in again.');
 
       // Use inv_id (invoice IDs) to revert only the specifically selected invoices
-      const invoiceNumbers = paidInvoices.map(inv => inv.inv_id);      
+      const invoiceNumbers = paidInvoices.map((inv) => inv.inv_id);
       const response = await fetch(API_Revert_Invoice_Admin(), {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ invoice_numbers: invoiceNumbers })
+        body: JSON.stringify({ invoice_numbers: invoiceNumbers }),
       });
 
       if (response.ok) {
         let successMessage = `${invoiceNumbers.length} invoice(s) reverted to Ready To Payment status.`;
-        
+
         try {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
@@ -735,28 +799,30 @@ const InvoiceReport: React.FC = (): ReactNode => {
         } catch (jsonError) {
           console.warn('Could not parse success response as JSON:', jsonError);
         }
-        
+
         toast.success(successMessage);
         fetchInvoices();
         setSelectedInvoices([]);
       } else {
         let errorMessage = `Failed to revert invoices. Status: ${response.status}`;
-        
+
         try {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const errorResult = await response.json();
             errorMessage = errorResult.message || errorMessage;
-            
+
             // If there are specific invoices that weren't found, show them
             if (errorResult.not_found && Array.isArray(errorResult.not_found)) {
-              errorMessage += `\nInvoices not found or not in Paid status: ${errorResult.not_found.join(', ')}`;
+              errorMessage += `\nInvoices not found or not in Paid status: ${errorResult.not_found.join(
+                ', ',
+              )}`;
             }
           }
         } catch (jsonError) {
           console.warn('Could not parse error response as JSON:', jsonError);
         }
-        
+
         toast.error(errorMessage);
       }
     } catch (err: any) {
@@ -768,7 +834,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
   // NEW: Individual revert method for "Ready To Payment" invoices back to "In Process"
   const handleRevertToInProcess = async (invoice: Invoice) => {
     if (invoice.status?.toLowerCase() !== 'ready to payment') {
-      toast.warning('Only invoices with "Ready To Payment" status can be reverted');
+      toast.warning(
+        'Only invoices with "Ready To Payment" status can be reverted',
+      );
       return;
     }
 
@@ -787,13 +855,13 @@ const InvoiceReport: React.FC = (): ReactNode => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage = `Failed to revert invoice ${invoice.inv_no} to In Process`;
-        
+
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.message || errorMessage;
@@ -801,21 +869,23 @@ const InvoiceReport: React.FC = (): ReactNode => {
           // If not JSON, use the raw text or default message
           errorMessage = errorText || errorMessage;
         }
-        
+
         throw new Error(errorMessage);
       }
 
       // Parse success response
       const result = await response.json();
-      const successMessage = result.message || `Invoice ${invoice.inv_no} reverted to "In Process" successfully!`;
-      
+      const successMessage =
+        result.message ||
+        `Invoice ${invoice.inv_no} reverted to "In Process" successfully!`;
+
       toast.success(successMessage);
 
       // Update local data - the API clears PPH data and resets total_amount
       const updatedData = data.map((inv) => {
         if (inv.inv_id === invoice.inv_id) {
-          return { 
-            ...inv, 
+          return {
+            ...inv,
             status: 'In Process',
             plan_date: null,
             receipt_path: null,
@@ -824,7 +894,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
             pph_base_amount: null,
             pph_amount: null,
             // API calculates original total_amount (tax_base_amount + tax_amount)
-            total_amount: (inv.tax_base_amount || 0) + (inv.tax_amount || 0)
+            total_amount: (inv.tax_base_amount || 0) + (inv.tax_amount || 0),
           };
         }
         return inv;
@@ -839,7 +909,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    currentPage * rowsPerPage,
   );
 
   const formatDate = (dateString: string | null) => {
@@ -856,7 +926,11 @@ const InvoiceReport: React.FC = (): ReactNode => {
     if (!dateString) return '-';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('id-ID') + ' ' + date.toLocaleTimeString('en-GB');
+      return (
+        date.toLocaleDateString('id-ID') +
+        ' ' +
+        date.toLocaleTimeString('en-GB')
+      );
     } catch {
       return dateString;
     }
@@ -875,7 +949,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
   };
 
   // Get PPh Description based on pph_id (same logic as InvoiceReportWizard)
-  const getPphDescription = (pphId: string | number | null | undefined, invoice?: any): string => {
+  const getPphDescription = (
+    pphId: string | number | null | undefined,
+    invoice?: any,
+  ): string => {
     if (pphId === null || pphId === undefined) {
       // Check if there are PPh amounts even when pph_id is null
       if (invoice && (invoice.pph_amount > 0 || invoice.pph_base_amount > 0)) {
@@ -921,7 +998,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Report" />
       <ToastContainer />
-
       <div className="space-y-2">
         <div className="w-1/3 items-center">
           <Select
@@ -942,7 +1018,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
             placeholder="Select Supplier"
           />
         </div>
-      </div>      <form className="space-y-4">
+      </div>{' '}
+      <form className="space-y-4">
         <div className="flex space-x-4">
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
@@ -955,14 +1032,15 @@ const InvoiceReport: React.FC = (): ReactNode => {
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
             />
-          </div>          <div className="flex w-1/3 items-center gap-2">
+          </div>{' '}
+          <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
               Invoice Date
             </label>
             <div className="flex w-3/4 space-x-2 items-center">
               <div className="relative w-1/2">
                 <input
-                  type="date" 
+                  type="date"
                   className="input w-full border border-violet-200 p-2 rounded-md text-xs"
                   placeholder="From Date"
                   value={invoiceDateFrom}
@@ -980,8 +1058,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
               </div>
               <span className="text-sm">to</span>
               <div className="relative w-1/2">
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className="input w-full border border-violet-200 p-2 rounded-md text-xs"
                   placeholder="To Date"
                   value={invoiceDateTo}
@@ -1038,9 +1116,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
           </div>
         </div>
       </form>
-
       <div className="flex justify-end items-center gap-4">
-        <button 
+        <button
           type="button"
           onClick={handleSearch}
           className="flex items-center gap-2 bg-purple-900 text-sm text-white px-6 py-2 rounded shadow-md hover:bg-purple-800 disabled:opacity-50 transition"
@@ -1058,19 +1135,27 @@ const InvoiceReport: React.FC = (): ReactNode => {
           Clear
         </button>
       </div>
-
-      <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>      <div className="bg-white p-6 space-y-6 mt-8">        <div className="flex justify-between mb-8">
+      <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>{' '}
+      <div className="bg-white p-6 space-y-6 mt-8">
+        {' '}
+        <div className="flex justify-between mb-8">
           <div style={{ display: 'flex', gap: '1rem' }}>
             {/* New bulk revert button for Paid invoices */}
             <button
               className={`text-sm text-white px-4 py-2 rounded ${
-                selectedInvoices.some(inv => inv.status?.toLowerCase() === 'paid')
+                selectedInvoices.some(
+                  (inv) => inv.status?.toLowerCase() === 'paid',
+                )
                   ? 'bg-orange-600 hover:bg-orange-700'
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
               onClick={handleBulkRevertInvoices}
               type="button"
-              disabled={!selectedInvoices.some(inv => inv.status?.toLowerCase() === 'paid')}
+              disabled={
+                !selectedInvoices.some(
+                  (inv) => inv.status?.toLowerCase() === 'paid',
+                )
+              }
               title="Revert selected Paid invoices back to Ready To Payment status"
             >
               Revert Invoices
@@ -1094,41 +1179,70 @@ const InvoiceReport: React.FC = (): ReactNode => {
             </button>
             <button
               className={`text-sm text-white px-4 py-2 rounded ml-4 ${
-                selectedInvoices.some(inv => inv.status?.toLowerCase() === 'ready to payment')
+                selectedInvoices.some(
+                  (inv) => inv.status?.toLowerCase() === 'ready to payment',
+                )
                   ? 'bg-blue-900 hover:bg-blue-800'
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
               onClick={handlePostInvoice}
               type="button"
-              disabled={!selectedInvoices.some(inv => inv.status?.toLowerCase() === 'ready to payment')}
+              disabled={
+                !selectedInvoices.some(
+                  (inv) => inv.status?.toLowerCase() === 'ready to payment',
+                )
+              }
             >
               Post Invoice
             </button>
           </div>
         </div>
-
         {/* Updated Table Design */}
         <div className="overflow-x-auto shadow-md border rounded-lg">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 uppercase">
               <tr>
                 <th className="px-3 py-2 text-gray-700 text-center border w-10"></th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Submit Date</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">
+                  Supplier Code
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">
+                  Invoice No
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">
+                  Inv Date
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">
+                  Submit Date
+                </th>
+                <th
+                  className="px-3 py-2 text-gray-700 text-center border min-w-[120px]"
+                  colSpan={2}
+                >
                   Payment Date
                 </th>
                 {/* Document column with 4 sub-columns */}
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[300px]" colSpan={4}>
+                <th
+                  className="px-3 py-2 text-gray-700 text-center border min-w-[300px]"
+                  colSpan={4}
+                >
                   Document
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">Status</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt Doc</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">
+                  Status
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">
+                  Receipt Doc
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">
+                  Tax Number
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">
+                  Tax Date
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  Total DPP
+                </th>
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">
                   Tax Amount (11%)
                 </th>
@@ -1138,19 +1252,37 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 <th className="px-3 py-2 text-gray-700 text-center border min-w-[180px]">
                   PPh Base Amount
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[100px]">Action</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  PPh Amount
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  Total Amount
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[100px]">
+                  Action
+                </th>
               </tr>
               <tr className="bg-gray-100 border">
                 <th colSpan={5}></th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">
+                  Plan
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">
+                  Actual
+                </th>
                 {/* Document sub-columns */}
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">INVOICE</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  INVOICE
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  FAKTUR
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  SURAT JALAN
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  PO
+                </th>
                 <th colSpan={11}></th>
               </tr>
               {/* Filter inputs row (skip Document columns) */}
@@ -1232,7 +1364,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
                     value={receiptNoFilter}
                     onChange={(e) => setReceiptNoFilter(e.target.value)}
                     className="border rounded w-full px-2 py-1 text-sm text-center"
-                  />                
+                  />
                 </td>
                 <td className="px-2 py-1 border">
                   <input
@@ -1253,7 +1385,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -1265,7 +1399,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -1286,7 +1422,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -1298,7 +1436,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -1310,7 +1450,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -1327,35 +1469,50 @@ const InvoiceReport: React.FC = (): ReactNode => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 22 */}
+                  <td
+                    colSpan={22}
+                    className="px-4 py-4 text-center text-gray-500"
+                  >
+                    {' '}
+                    {/* Adjusted colSpan to 22 */}
                     Loading...
                   </td>
                 </tr>
-              ) : filteredData.length > 0 ? (                paginatedData.map((invoice) => {
+              ) : filteredData.length > 0 ? (
+                paginatedData.map((invoice) => {
                   const isSelected = selectedInvoices.some(
-                    (inv) => inv.inv_id === invoice.inv_id
+                    (inv) => inv.inv_id === invoice.inv_id,
                   );
-                  const currentInvoiceStatusLower = invoice.status?.toLowerCase();
+                  const currentInvoiceStatusLower =
+                    invoice.status?.toLowerCase();
                   let showCheckbox = false;
 
-                  if (currentInvoiceStatusLower === 'new' || 
-                      currentInvoiceStatusLower === 'in process' || 
-                      currentInvoiceStatusLower === 'ready to payment' || 
-                      currentInvoiceStatusLower === 'paid') {
-                        
+                  if (
+                    currentInvoiceStatusLower === 'new' ||
+                    currentInvoiceStatusLower === 'in process' ||
+                    currentInvoiceStatusLower === 'ready to payment' ||
+                    currentInvoiceStatusLower === 'paid'
+                  ) {
                     if (selectedInvoices.length === 0) {
                       // Case 1: Nothing is selected. Show checkbox for any selectable type.
                       showCheckbox = true;
                     } else {
                       // Case 2: Something is selected.
                       const firstSelectedInvoice = selectedInvoices[0];
-                      const firstSelectedStatusLower = firstSelectedInvoice.status?.toLowerCase();                      if (firstSelectedStatusLower === 'new' || firstSelectedStatusLower === 'in process') {
+                      const firstSelectedStatusLower =
+                        firstSelectedInvoice.status?.toLowerCase();
+                      if (
+                        firstSelectedStatusLower === 'new' ||
+                        firstSelectedStatusLower === 'in process'
+                      ) {
                         // Subcase 2a: A 'New' or 'In Process' invoice is selected.
                         // Show checkbox ONLY for that specific selected invoice.
                         if (invoice.inv_id === firstSelectedInvoice.inv_id) {
                           showCheckbox = true;
                         }
-                      } else if (firstSelectedStatusLower === 'ready to payment') {
+                      } else if (
+                        firstSelectedStatusLower === 'ready to payment'
+                      ) {
                         // Subcase 2b: 'Ready to Payment' invoice(s) are selected.
                         // Show checkbox ONLY for other 'Ready to Payment' invoices.
                         if (currentInvoiceStatusLower === 'ready to payment') {
@@ -1372,7 +1529,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
                   }
 
                   return (
-                    <tr key={invoice.inv_id} className="border-b hover:bg-gray-50">
+                    <tr
+                      key={invoice.inv_id}
+                      className="border-b hover:bg-gray-50"
+                    >
                       <td className="px-4 py-2 text-center">
                         {showCheckbox && (
                           <input
@@ -1383,7 +1543,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                           />
                         )}
                       </td>
-                      <td className="px-6 py-4 text-center">{invoice.bp_code || '-'}</td>
+                      <td className="px-6 py-4 text-center">
+                        {invoice.bp_code || '-'}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleShowDetail(invoice)}
@@ -1392,14 +1554,30 @@ const InvoiceReport: React.FC = (): ReactNode => {
                           {invoice.inv_no}
                         </button>
                       </td>
-                      <td className="px-6 py-4 text-center">{formatDate(invoice.inv_date)}</td>
-                      <td className="px-6 py-4 text-center">{formatDateTime(invoice.created_at)}</td>
-                      <td className="px-6 py-4 text-center">{formatDate(invoice.plan_date)}</td>
-                      <td className="px-6 py-4 text-center">{formatDate(invoice.actual_date)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {formatDate(invoice.inv_date)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {formatDateTime(invoice.created_at)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {formatDate(invoice.plan_date)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {formatDate(invoice.actual_date)}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() =>
+                              window.open(
+                                `${API_Stream_File_Invoice()}/INVOICE_${
+                                  invoice.inv_id
+                                }.pdf`,
+                                '_blank',
+                                'noopener,noreferrer',
+                              )
+                            }
                             title="View Invoice PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
@@ -1409,7 +1587,15 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() =>
+                              window.open(
+                                `${API_Stream_File_Faktur()}/FAKTURPAJAK_${
+                                  invoice.inv_id
+                                }.pdf`,
+                                '_blank',
+                                'noopener,noreferrer',
+                              )
+                            }
                             title="View Faktur Pajak PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
@@ -1419,7 +1605,15 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() =>
+                              window.open(
+                                `${API_Stream_File_Suratjalan()}/SURATJALAN_${
+                                  invoice.inv_id
+                                }.pdf`,
+                                '_blank',
+                                'noopener,noreferrer',
+                              )
+                            }
                             title="View Surat Jalan PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
@@ -1429,15 +1623,30 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_no && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_PO()}/PO_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() =>
+                              window.open(
+                                `${API_Stream_File_PO()}/PO_${
+                                  invoice.inv_id
+                                }.pdf`,
+                                '_blank',
+                                'noopener,noreferrer',
+                              )
+                            }
                             title="View Purchase Order PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
                           </button>
                         )}
-                      </td>                      <td className="px-6 py-4 text-center">                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(invoice.status)} ${
-                            invoice.status?.toLowerCase() === 'rejected' ? 'cursor-pointer hover:underline' : ''
+                      </td>{' '}
+                      <td className="px-6 py-4 text-center">
+                        {' '}
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(
+                            invoice.status,
+                          )} ${
+                            invoice.status?.toLowerCase() === 'rejected'
+                              ? 'cursor-pointer hover:underline'
+                              : ''
                           }`}
                           onClick={() => {
                             if (invoice.status?.toLowerCase() === 'rejected') {
@@ -1456,29 +1665,48 @@ const InvoiceReport: React.FC = (): ReactNode => {
                       <td className="px-6 py-4 text-center">
                         {invoice.inv_id && (
                           <button
-                            onClick={() => window.open(`${API_Stream_File_Receipt()}/RECEIPT_${invoice.inv_id}.pdf`, '_blank', 'noopener,noreferrer')}
+                            onClick={() =>
+                              window.open(
+                                `${API_Stream_File_Receipt()}/RECEIPT_${
+                                  invoice.inv_id
+                                }.pdf`,
+                                '_blank',
+                                'noopener,noreferrer',
+                              )
+                            }
                             title="View Receipt PDF"
                           >
                             <AiFillFilePdf className="inline text-red-600 text-xl cursor-pointer" />
                           </button>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-center">{invoice.inv_faktur || '-'}</td>
-                      <td className="px-6 py-4 text-center">{formatDate(invoice.inv_faktur_date)}</td>
-                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_dpp)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {invoice.inv_faktur || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {formatDate(invoice.inv_faktur_date)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {formatCurrency(invoice.total_dpp)}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.tax_amount)}
                       </td>
-                      <td className="px-6 py-4 text-center">{getPphDescription(invoice.pph_id, invoice)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {getPphDescription(invoice.pph_id, invoice)}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_base_amount)}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_amount)}
                       </td>
-                      <td className="px-6 py-4 text-center">{formatCurrency(invoice.total_amount)}</td>
                       <td className="px-6 py-4 text-center">
-                        {invoice.status?.toLowerCase() === 'ready to payment' && (
+                        {formatCurrency(invoice.total_amount)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {invoice.status?.toLowerCase() ===
+                          'ready to payment' && (
                           <button
                             onClick={() => handleRevertToInProcess(invoice)}
                             className="text-orange-600 hover:text-orange-800 transition-colors"
@@ -1493,7 +1721,12 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500"> {/* Adjusted colSpan to 22 */}
+                  <td
+                    colSpan={22}
+                    className="px-4 py-4 text-center text-gray-500"
+                  >
+                    {' '}
+                    {/* Adjusted colSpan to 22 */}
                     No data available.
                   </td>
                 </tr>
@@ -1501,7 +1734,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
             </tbody>
           </table>
         </div>
-
         <Pagination
           totalRows={filteredData.length}
           rowsPerPage={rowsPerPage}
@@ -1509,124 +1741,171 @@ const InvoiceReport: React.FC = (): ReactNode => {
           onPageChange={setCurrentPage}
         />
       </div>
-
       {/* Detail Modal */}
-      {detailModalOpen && detailInvoice && (() => {
-        const invoiceLines = (detailInvoice as any).inv_lines || [];
-        
-        // Pagination logic for detail modal
-        const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
-        const startIndex = (detailCurrentPage - 1) * detailRowsPerPage;
-        const endIndex = startIndex + detailRowsPerPage;
-        const currentItems = invoiceLines.slice(startIndex, endIndex);
+      {detailModalOpen &&
+        detailInvoice &&
+        (() => {
+          const invoiceLines = (detailInvoice as any).inv_lines || [];
 
-        const handleDetailPrevious = () => {
-          setDetailCurrentPage(prev => Math.max(prev - 1, 1));
-        };
+          // Pagination logic for detail modal
+          const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
+          const startIndex = (detailCurrentPage - 1) * detailRowsPerPage;
+          const endIndex = startIndex + detailRowsPerPage;
+          const currentItems = invoiceLines.slice(startIndex, endIndex);
 
-        const handleDetailNext = () => {
-          setDetailCurrentPage(prev => Math.min(prev + 1, totalPages));
-        };
+          const handleDetailPrevious = () => {
+            setDetailCurrentPage((prev) => Math.max(prev - 1, 1));
+          };
 
-        return (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-6 rounded-md shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-semibold mb-4">
-                Invoice Detail - {detailInvoice.inv_no}
-              </h2>
-              <div className="space-y-2 mb-4">
-                {(() => {
-                  const partner = businessPartners.find(bp => bp.bp_code === detailInvoice.bp_code);
-                  return (
-                    <p>
-                      <strong>Supplier:</strong> {detailInvoice.bp_code} — {partner ? partner.adr_line_1 : "-"}
-                    </p>
-                  );
-                })()}
-                <p>
-                  <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
-                </p>
-                <p>
-                  <strong>Submit Date:</strong> {formatDateTime(detailInvoice.created_at)}
-                </p>
-                <p>
-                  <strong>Status:</strong> {detailInvoice.status}
-                </p>
-                <p>
-                  <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Invoice Lines</h3>
-                {Array.isArray(invoiceLines) && invoiceLines.length > 0 ? (
-                  <div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full border border-gray-200 text-sm">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-3 py-2 border">GR No</th>
-                            <th className="px-3 py-2 border">PO No</th>
-                            <th className="px-3 py-2 border">Part No</th>
-                            <th className="px-3 py-2 border">Item Description</th>
-                            <th className="px-3 py-2 border">Receipt Amount</th>
-                            <th className="px-3 py-2 border">Unit</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {currentItems.map((line: any) => (
-                            <tr key={line.inv_line_id}>
-                              <td className="px-3 py-2 border text-center">{line.gr_no}</td>
-                              <td className="px-3 py-2 border text-center">{line.po_no}</td>
-                              <td className="px-3 py-2 border text-center">{line.part_no}</td>
-                              <td className="px-3 py-2 border">{line.item_desc}</td>
-                              <td className="px-3 py-2 border text-right">{line.receipt_amount?.toLocaleString()}</td>
-                              <td className="px-3 py-2 border text-center">{line.unit}</td>
+          const handleDetailNext = () => {
+            setDetailCurrentPage((prev) => Math.min(prev + 1, totalPages));
+          };
+
+          return (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white p-6 rounded-md shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <h2 className="text-xl font-semibold mb-4">
+                  Invoice Detail - {detailInvoice.inv_no}
+                </h2>
+                <div className="space-y-2 mb-4">
+                  {(() => {
+                    const partner = businessPartners.find(
+                      (bp) => bp.bp_code === detailInvoice.bp_code,
+                    );
+                    return (
+                      <p>
+                        <strong>Supplier:</strong> {detailInvoice.bp_code} —{' '}
+                        {partner ? partner.adr_line_1 : '-'}
+                      </p>
+                    );
+                  })()}
+                  <p>
+                    <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+                  </p>
+                  <p>
+                    <strong>Submit Date:</strong>{' '}
+                    {formatDateTime(detailInvoice.created_at)}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> {detailInvoice.status}
+                  </p>
+                  <p>
+                    <strong>Total Amount:</strong>{' '}
+                    {formatCurrency(detailInvoice.total_amount)}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Invoice Lines</h3>
+                  {Array.isArray(invoiceLines) && invoiceLines.length > 0 ? (
+                    <div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-200 text-sm">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-3 py-2 border">GR No</th>
+                              <th className="px-3 py-2 border">PO No</th>
+                              <th className="px-3 py-2 border">Part No</th>
+                              <th className="px-3 py-2 border">
+                                Item Description
+                              </th>
+                              <th className="px-3 py-2 border">Qty Receipt</th>
+                              <th className="px-3 py-2 border">Unit Price</th>
+                              <th className="px-3 py-2 border">
+                                Receipt Amount
+                              </th>
+                              <th className="px-3 py-2 border">Unit</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                    {/* Pagination Controls for Detail Modal - InvoiceCreationWizard Style */}
-                    {invoiceLines.length > detailRowsPerPage && (
-                      <div className="flex items-center justify-center gap-3 mt-4">
-                        <button
-                          onClick={handleDetailPrevious}
-                          disabled={detailCurrentPage === 1}
-                          className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          <ChevronLeft className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <span className="text-gray-700 font-medium text-sm">
-                          Page {detailCurrentPage} of {totalPages}
-                        </span>
-                        <button
-                          onClick={handleDetailNext}
-                          disabled={detailCurrentPage === totalPages}
-                          className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          <ChevronRight className="w-5 h-5 text-gray-600" />
-                        </button>
+                          </thead>
+                          <tbody>
+                            {currentItems.map((line: any) => (
+                              <tr key={line.inv_line_id}>
+                                <td className="px-3 py-2 border text-center">
+                                  {line.gr_no}
+                                </td>
+                                <td className="px-3 py-2 border text-center">
+                                  {line.po_no}
+                                </td>
+                                <td className="px-3 py-2 border text-center">
+                                  {line.part_no}
+                                </td>
+                                <td className="px-3 py-2 border">
+                                  {line.item_desc}
+                                </td>
+                                <td className="px-3 py-2 border text-right">
+                                  {line.actual_receipt_qty?.toLocaleString()}
+                                </td>
+                                <td className="px-3 py-2 border text-right">
+                                  {line.receipt_unit_price != null
+                                    ? Number(
+                                        line.receipt_unit_price,
+                                      ).toLocaleString('id-ID', {
+                                        style: 'currency',
+                                        currency: 'IDR',
+                                        minimumFractionDigits: 2,
+                                      })
+                                    : '-'}
+                                </td>
+                                <td className="px-3 py-2 border text-right">
+                                  {line.receipt_amount != null
+                                    ? Number(
+                                        line.receipt_amount,
+                                      ).toLocaleString('id-ID', {
+                                        style: 'currency',
+                                        currency: 'IDR',
+                                        minimumFractionDigits: 2,
+                                      })
+                                    : '-'}
+                                </td>
+                                <td className="px-3 py-2 border text-center">
+                                  {line.unit}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500">No line items found.</div>
-                )}
-              </div>
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={closeDetailModal}
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                >
-                  Close
-                </button>
+
+                      {/* Pagination Controls for Detail Modal - InvoiceCreationWizard Style */}
+                      {invoiceLines.length > detailRowsPerPage && (
+                        <div className="flex items-center justify-center gap-3 mt-4">
+                          <button
+                            onClick={handleDetailPrevious}
+                            disabled={detailCurrentPage === 1}
+                            className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
+                          >
+                            <ChevronLeft className="w-5 h-5 text-gray-600" />
+                          </button>
+                          <span className="text-gray-700 font-medium text-sm">
+                            Page {detailCurrentPage} of {totalPages}
+                          </span>
+                          <button
+                            onClick={handleDetailNext}
+                            disabled={detailCurrentPage === totalPages}
+                            className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
+                          >
+                            <ChevronRight className="w-5 h-5 text-gray-600" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      No line items found.
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={closeDetailModal}
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
-
+          );
+        })()}
       {/* Render the wizard modal here */}
       <InvoiceReportWizard
         isOpen={wizardOpen}
@@ -1636,7 +1915,6 @@ const InvoiceReport: React.FC = (): ReactNode => {
         }}
         invoiceNumberProp={modalInvoiceNumber}
       />
-      
       {/* Simple Popup for showing Rejected reason */}
       {showReasonModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1651,18 +1929,19 @@ const InvoiceReport: React.FC = (): ReactNode => {
           </div>
         </div>
       )}
-
       {/* Post Invoice Modal for Actual Date */}
       {postModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-md shadow-lg w-96">
             <h2 className="text-xl font-semibold mb-4">Set Actual Date</h2>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Actual Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Actual Date
+              </label>
               <input
                 type="date"
                 value={actualDate}
-                onChange={e => setActualDate(e.target.value)}
+                onChange={(e) => setActualDate(e.target.value)}
                 className="w-full border border-gray-300 rounded-md p-2"
               />
             </div>

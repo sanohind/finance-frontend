@@ -4,7 +4,15 @@ import { Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AiFillFilePdf } from 'react-icons/ai';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
-import { API_Inv_Header_Admin, API_Update_Inv_Header_Rejected, API_Stream_File_Invoice, API_Stream_File_Faktur, API_Stream_File_Suratjalan, API_Stream_File_PO, API_Stream_File_Receipt } from '../api/api';
+import {
+  API_Inv_Header_Admin,
+  API_Update_Inv_Header_Rejected,
+  API_Stream_File_Invoice,
+  API_Stream_File_Faktur,
+  API_Stream_File_Suratjalan,
+  API_Stream_File_PO,
+  API_Stream_File_Receipt,
+} from '../api/api';
 import * as XLSX from 'xlsx';
 
 interface Invoice {
@@ -79,7 +87,9 @@ const InvoiceReportSup = () => {
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [rejectedReason, setRejectedReason] = useState<string | null>(null);
   // State for selected invoice (only one allowed)
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(
+    null,
+  );
   // State for reason input modal
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -136,55 +146,92 @@ const InvoiceReportSup = () => {
   useEffect(() => {
     let newFiltered = [...data];
     if (invoiceNoFilter) {
-      newFiltered = newFiltered.filter(item => item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase()));
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase()),
+      );
     }
     if (invDateFilter) {
-      newFiltered = newFiltered.filter(item => item.inv_date?.includes(invDateFilter));
+      newFiltered = newFiltered.filter(
+        (item) => item.inv_date?.includes(invDateFilter),
+      );
     }
     if (submitDateFilter) {
-      newFiltered = newFiltered.filter(item => item.created_at?.includes(submitDateFilter));
+      newFiltered = newFiltered.filter(
+        (item) => item.created_at?.includes(submitDateFilter),
+      );
     }
     if (planDateFilter) {
-      newFiltered = newFiltered.filter(item => item.plan_date?.includes(planDateFilter));
+      newFiltered = newFiltered.filter(
+        (item) => item.plan_date?.includes(planDateFilter),
+      );
     }
     if (actualDateFilter) {
-      newFiltered = newFiltered.filter(item => item.actual_date?.includes(actualDateFilter));
+      newFiltered = newFiltered.filter(
+        (item) => item.actual_date?.includes(actualDateFilter),
+      );
     }
     if (statusFilter) {
-      newFiltered = newFiltered.filter(item => item.status?.toLowerCase().includes(statusFilter.toLowerCase()));
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.status?.toLowerCase().includes(statusFilter.toLowerCase()),
+      );
     }
     if (receiptNoFilter) {
-      newFiltered = newFiltered.filter(item => item.receipt_number?.toLowerCase().includes(receiptNoFilter.toLowerCase()));
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.receipt_number
+            ?.toLowerCase()
+            .includes(receiptNoFilter.toLowerCase()),
+      );
     }
     if (supplierCodeFilter) {
-      newFiltered = newFiltered.filter(item => item.bp_code?.toLowerCase().includes(supplierCodeFilter.toLowerCase()));
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.bp_code
+            ?.toLowerCase()
+            .includes(supplierCodeFilter.toLowerCase()),
+      );
     }
     if (taxNumberFilter) {
-      newFiltered = newFiltered.filter(item => item.inv_faktur?.toLowerCase().includes(taxNumberFilter.toLowerCase()));
+      newFiltered = newFiltered.filter(
+        (item) =>
+          item.inv_faktur
+            ?.toLowerCase()
+            .includes(taxNumberFilter.toLowerCase()),
+      );
     }
     if (taxDateFilter) {
-      newFiltered = newFiltered.filter(item => item.inv_faktur_date?.includes(taxDateFilter));
+      newFiltered = newFiltered.filter(
+        (item) => item.inv_faktur_date?.includes(taxDateFilter),
+      );
     }
     if (totalDppFilter) {
       const filterAmount = parseFloat(totalDppFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           if (!item.total_dpp) return false;
-          return Math.abs(item.total_dpp - filterAmount) < 0.01 || item.total_dpp.toString().includes(totalDppFilter);
+          return (
+            Math.abs(item.total_dpp - filterAmount) < 0.01 ||
+            item.total_dpp.toString().includes(totalDppFilter)
+          );
         });
       }
     }
     if (taxAmountFilter) {
       const filterAmount = parseFloat(taxAmountFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           const taxAmount = item.tax_amount || 0;
-          return Math.abs(taxAmount - filterAmount) < 0.01 || taxAmount.toString().includes(taxAmountFilter);
+          return (
+            Math.abs(taxAmount - filterAmount) < 0.01 ||
+            taxAmount.toString().includes(taxAmountFilter)
+          );
         });
       }
     }
     if (pphDescFilter) {
-      newFiltered = newFiltered.filter(item => {
+      newFiltered = newFiltered.filter((item) => {
         const pphDesc = getPphDescription(item.pph_id, item);
         return pphDesc.toLowerCase().includes(pphDescFilter.toLowerCase());
       });
@@ -192,28 +239,36 @@ const InvoiceReportSup = () => {
     if (pphBaseFilter) {
       const filterAmount = parseFloat(pphBaseFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           if (!item.pph_base_amount) return false;
-          return Math.abs(item.pph_base_amount - filterAmount) < 0.01 || item.pph_base_amount.toString().includes(pphBaseFilter);
+          return (
+            Math.abs(item.pph_base_amount - filterAmount) < 0.01 ||
+            item.pph_base_amount.toString().includes(pphBaseFilter)
+          );
         });
       }
     }
     if (pphAmountFilter) {
       const filterAmount = parseFloat(pphAmountFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           const pphAmount = item.pph_amount || 0;
-          return Math.abs(pphAmount - filterAmount) < 0.01 ||
-            pphAmount.toString().includes(pphAmountFilter);
+          return (
+            Math.abs(pphAmount - filterAmount) < 0.01 ||
+            pphAmount.toString().includes(pphAmountFilter)
+          );
         });
       }
     }
     if (totalAmountFilter) {
       const filterAmount = parseFloat(totalAmountFilter);
       if (!isNaN(filterAmount)) {
-        newFiltered = newFiltered.filter(item => {
+        newFiltered = newFiltered.filter((item) => {
           if (!item.total_amount) return false;
-          return Math.abs(item.total_amount - filterAmount) < 0.01 || item.total_amount.toString().includes(totalAmountFilter);
+          return (
+            Math.abs(item.total_amount - filterAmount) < 0.01 ||
+            item.total_amount.toString().includes(totalAmountFilter)
+          );
         });
       }
     }
@@ -236,24 +291,26 @@ const InvoiceReportSup = () => {
     pphDescFilter,
     pphBaseFilter,
     pphAmountFilter,
-    totalAmountFilter
+    totalAmountFilter,
   ]);
   const handleSearch = () => {
     let newFiltered = [...data];
 
     if (invoiceNumber.trim()) {
-      newFiltered = newFiltered.filter((row) =>
-        row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (row) =>
+          row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase()),
       );
     }
     if (invoiceStatus.trim()) {
-      newFiltered = newFiltered.filter((row) =>
-        row.status?.toLowerCase().includes(invoiceStatus.toLowerCase())
+      newFiltered = newFiltered.filter(
+        (row) =>
+          row.status?.toLowerCase().includes(invoiceStatus.toLowerCase()),
       );
     }
     if (paymentPlanningDate) {
       newFiltered = newFiltered.filter(
-        (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate
+        (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate,
       );
     }
     // Filter by invoice date range
@@ -373,7 +430,11 @@ const InvoiceReportSup = () => {
     if (!dateString) return '-';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('id-ID') + ' ' + date.toLocaleTimeString('en-GB');
+      return (
+        date.toLocaleDateString('id-ID') +
+        ' ' +
+        date.toLocaleTimeString('en-GB')
+      );
     } catch {
       return dateString;
     }
@@ -384,7 +445,10 @@ const InvoiceReportSup = () => {
   };
 
   // Get PPh Description based on pph_id (same logic as InvoiceReport)
-  const getPphDescription = (pphId: string | number | null | undefined, invoice?: any): string => {
+  const getPphDescription = (
+    pphId: string | number | null | undefined,
+    invoice?: any,
+  ): string => {
     if (pphId === null || pphId === undefined) {
       // Check if there are PPh amounts even when pph_id is null
       if (invoice && (invoice.pph_amount > 0 || invoice.pph_base_amount > 0)) {
@@ -427,7 +491,8 @@ const InvoiceReportSup = () => {
       toast.error('Please provide a reason for rejection.');
       return;
     }
-    setRejectLoading(true);    try {
+    setRejectLoading(true);
+    try {
       const token = localStorage.getItem('access_token');
       const response = await fetch(
         API_Update_Inv_Header_Rejected() + `/${selectedInvoiceId}`,
@@ -438,7 +503,7 @@ const InvoiceReportSup = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ status: 'Rejected', reason: rejectReason }),
-        }
+        },
       );
       if (!response.ok) {
         const errorText = await response.text();
@@ -449,7 +514,7 @@ const InvoiceReportSup = () => {
       const updatedData = data.map((inv) =>
         inv.inv_id === selectedInvoiceId
           ? { ...inv, status: 'Rejected', reason: rejectReason }
-          : inv
+          : inv,
       );
       setData(updatedData);
       setFilteredData(updatedData);
@@ -465,13 +530,13 @@ const InvoiceReportSup = () => {
 
   // Status color helper (same as ListProgress)
   const getStatusColor = (status: string | null) => {
-    if (!status) return "bg-blue-300";
+    if (!status) return 'bg-blue-300';
     const s = status.toLowerCase();
-    if (s === "ready to payment") return "bg-green-600";
-    if (s === "rejected") return "bg-red-500";
-    if (s === "paid") return "bg-blue-800";
-    if (s === "in process") return "bg-yellow-300";
-    return "bg-blue-400";
+    if (s === 'ready to payment') return 'bg-green-600';
+    if (s === 'rejected') return 'bg-red-500';
+    if (s === 'paid') return 'bg-blue-800';
+    if (s === 'in process') return 'bg-yellow-300';
+    return 'bg-blue-400';
   };
 
   // Show rejected reason popup
@@ -484,7 +549,7 @@ const InvoiceReportSup = () => {
   // Add paginatedData for pagination
   const paginatedData = filteredData.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    currentPage * rowsPerPage,
   );
 
   // Show detail modal for invoice
@@ -500,18 +565,22 @@ const InvoiceReportSup = () => {
   };
 
   // Date range handlers
-  const handleInvoiceDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInvoiceDateFromChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setInvoiceDateFrom(e.target.value);
   };
 
-  const handleInvoiceDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInvoiceDateToChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setInvoiceDateTo(e.target.value);
   };
 
   return (
     <div className="space-y-6">
       <Breadcrumb pageName="Invoice Report" />
-      <ToastContainer />      {/* Filters */}
+      <ToastContainer /> {/* Filters */}
       <form className="space-y-4">
         <div className="flex space-x-4">
           {/* Invoice Number */}
@@ -536,7 +605,7 @@ const InvoiceReportSup = () => {
             <div className="flex w-3/4 space-x-2 items-center">
               <div className="relative w-1/2">
                 <input
-                  type="date" 
+                  type="date"
                   className="input w-full border border-violet-200 p-2 rounded-md text-xs"
                   placeholder="From Date"
                   value={invoiceDateFrom}
@@ -554,8 +623,8 @@ const InvoiceReportSup = () => {
               </div>
               <span className="text-sm">to</span>
               <div className="relative w-1/2">
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className="input w-full border border-violet-200 p-2 rounded-md text-xs"
                   placeholder="To Date"
                   value={invoiceDateTo}
@@ -572,7 +641,7 @@ const InvoiceReportSup = () => {
                 )}
               </div>
             </div>
-          </div>          
+          </div>
           {/* Invoice Status */}
           <div className="flex w-1/3 items-center gap-2">
             <label className="w-1/4 text-sm font-medium text-gray-700">
@@ -614,10 +683,9 @@ const InvoiceReportSup = () => {
           </div>
         </div>
       </form>
-
       {/* Buttons */}
       <div className="flex justify-end items-center gap-4">
-        <button 
+        <button
           type="button"
           onClick={handleSearch}
           className="flex items-center gap-2 bg-purple-900 text-sm text-white px-6 py-2 rounded shadow-md hover:bg-purple-800 disabled:opacity-50 transition"
@@ -635,7 +703,6 @@ const InvoiceReportSup = () => {
           Clear
         </button>
       </div>
-
       {/* Table */}
       <h3 className="text-xl font-semibold text-gray-700">Invoice List</h3>
       <div className="bg-white p-6 space-y-6 mt-8">
@@ -665,37 +732,83 @@ const InvoiceReportSup = () => {
             <thead className="bg-gray-100 uppercase">
               <tr>
                 <th className="px-3 py-2 text-gray-700 text-center border w-10"></th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Supplier Code</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">Invoice No</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Inv Date</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Submit Date</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]" colSpan={2}>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">
+                  Supplier Code
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[150px]">
+                  Invoice No
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">
+                  Inv Date
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">
+                  Submit Date
+                </th>
+                <th
+                  className="px-3 py-2 text-gray-700 text-center border min-w-[120px]"
+                  colSpan={2}
+                >
                   Payment Date
                 </th>
                 {/* Document column with 4 sub-columns */}
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[300px]" colSpan={4}>
+                <th
+                  className="px-3 py-2 text-gray-700 text-center border min-w-[300px]"
+                  colSpan={4}
+                >
                   Document
                 </th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">Status</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Receipt Doc</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">Tax Number</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">Tax Date</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total DPP</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Tax Amount</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">PPh Description</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Base Amount</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">PPh Amount</th>
-                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">Total Amount</th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[190px]">
+                  Status
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">
+                  Receipt Doc
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[130px]">
+                  Tax Number
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[120px]">
+                  Tax Date
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  Total DPP
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  Tax Amount
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[160px]">
+                  PPh Description
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  PPh Base Amount
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  PPh Amount
+                </th>
+                <th className="px-3 py-2 text-gray-700 text-center border min-w-[170px]">
+                  Total Amount
+                </th>
               </tr>
               <tr className="bg-gray-100 border">
                 <th colSpan={5}></th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Plan</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">Actual</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">
+                  Plan
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[120px]">
+                  Actual
+                </th>
                 {/* Document sub-columns */}
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">INVOICE</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">FAKTUR</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">SURAT JALAN</th>
-                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">PO</th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  INVOICE
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  FAKTUR
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  SURAT JALAN
+                </th>
+                <th className="px-3 py-2 text-md text-gray-600 text-center border min-w-[75px]">
+                  PO
+                </th>
                 <th colSpan={11}></th>
               </tr>
               {/* Filter inputs row (skip Document columns) */}
@@ -798,7 +911,9 @@ const InvoiceReportSup = () => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -810,7 +925,9 @@ const InvoiceReportSup = () => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -831,7 +948,9 @@ const InvoiceReportSup = () => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -843,7 +962,9 @@ const InvoiceReportSup = () => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -855,7 +976,9 @@ const InvoiceReportSup = () => {
                 </td>
                 <td className="px-2 py-1 border">
                   <div className="relative flex items-center">
-                    <span className="absolute left-2 text-gray-500 text-xs">Rp.</span>
+                    <span className="absolute left-2 text-gray-500 text-xs">
+                      Rp.
+                    </span>
                     <input
                       type="number"
                       placeholder="-"
@@ -870,22 +993,28 @@ const InvoiceReportSup = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={22}
+                    className="px-4 py-4 text-center text-gray-500"
+                  >
                     Loading...
                   </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
                 paginatedData.map((invoice: Invoice, index: number) => {
-                  const status = invoice.status || "New";
-                  const statusColor = getStatusColor(status);                  // Only show checkbox for 'New' status
+                  const status = invoice.status || 'New';
+                  const statusColor = getStatusColor(status); // Only show checkbox for 'New' status
                   const isNew = status.toLowerCase() === 'new';
                   const isChecked = selectedInvoiceId === invoice.inv_id;
                   // Only show checkbox if no selection or this is the selected one
-                  const showCheckbox = isNew && (!selectedInvoiceId || isChecked);
+                  const showCheckbox =
+                    isNew && (!selectedInvoiceId || isChecked);
 
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 text-center">                        {showCheckbox ? (
+                      <td className="px-6 py-4 text-center">
+                        {' '}
+                        {showCheckbox ? (
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -926,7 +1055,9 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_Invoice()}/INVOICE_${invoice.inv_id}.pdf`;
+                            const url = `${API_Stream_File_Invoice()}/INVOICE_${
+                              invoice.inv_id
+                            }.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View Invoice PDF"
@@ -938,7 +1069,9 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${invoice.inv_id}.pdf`;
+                            const url = `${API_Stream_File_Faktur()}/FAKTURPAJAK_${
+                              invoice.inv_id
+                            }.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View Faktur PDF"
@@ -950,7 +1083,9 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${invoice.inv_id}.pdf`;
+                            const url = `${API_Stream_File_Suratjalan()}/SURATJALAN_${
+                              invoice.inv_id
+                            }.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View Surat Jalan PDF"
@@ -962,7 +1097,9 @@ const InvoiceReportSup = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${API_Stream_File_PO()}/PO_${invoice.inv_id}.pdf`;
+                            const url = `${API_Stream_File_PO()}/PO_${
+                              invoice.inv_id
+                            }.pdf`;
                             window.open(url, '_blank', 'noopener,noreferrer');
                           }}
                           title="View PO PDF"
@@ -974,10 +1111,12 @@ const InvoiceReportSup = () => {
                       <td className="px-6 py-4 text-center">
                         <span
                           className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-white text-xs font-medium ${statusColor} ${
-                            status.toLowerCase() === "rejected" ? "cursor-pointer" : ""
+                            status.toLowerCase() === 'rejected'
+                              ? 'cursor-pointer'
+                              : ''
                           }`}
                           onClick={() => {
-                            if (status.toLowerCase() === "rejected") {
+                            if (status.toLowerCase() === 'rejected') {
                               handleShowRejectedReason(invoice.reason);
                             }
                           }}
@@ -990,7 +1129,9 @@ const InvoiceReportSup = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              const url = `${API_Stream_File_Receipt()}/RECEIPT_${invoice.inv_id}.pdf`;
+                              const url = `${API_Stream_File_Receipt()}/RECEIPT_${
+                                invoice.inv_id
+                              }.pdf`;
                               window.open(url, '_blank', 'noopener,noreferrer');
                             }}
                             title="View Receipt PDF"
@@ -1013,7 +1154,9 @@ const InvoiceReportSup = () => {
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.tax_amount)}
                       </td>
-                      <td className="px-6 py-4 text-center">{getPphDescription(invoice.pph_id, invoice)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {getPphDescription(invoice.pph_id, invoice)}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {formatCurrency(invoice.pph_base_amount)}
                       </td>
@@ -1028,7 +1171,10 @@ const InvoiceReportSup = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={22} className="px-4 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={22}
+                    className="px-4 py-4 text-center text-gray-500"
+                  >
                     No data available.
                   </td>
                 </tr>
@@ -1044,125 +1190,146 @@ const InvoiceReportSup = () => {
           onPageChange={setCurrentPage}
         />
       </div>
-
       {/* Detail Modal */}
-      {detailModalOpen && detailInvoice && (() => {
-        // Pagination logic for detail modal
-        const invoiceLines = Array.isArray((detailInvoice as any).inv_lines) 
-          ? (detailInvoice as any).inv_lines 
-          : [];
-        const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
-        const startIndex = (detailCurrentPage - 1) * detailRowsPerPage;
-        const endIndex = startIndex + detailRowsPerPage;
-        const currentItems = invoiceLines.slice(startIndex, endIndex);
+      {detailModalOpen &&
+        detailInvoice &&
+        (() => {
+          // Pagination logic for detail modal
+          const invoiceLines = Array.isArray((detailInvoice as any).inv_lines)
+            ? (detailInvoice as any).inv_lines
+            : [];
+          const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
+          const startIndex = (detailCurrentPage - 1) * detailRowsPerPage;
+          const endIndex = startIndex + detailRowsPerPage;
+          const currentItems = invoiceLines.slice(startIndex, endIndex);
 
-        const handleDetailPrevious = () => {
-          setDetailCurrentPage(prev => Math.max(prev - 1, 1));
-        };
+          const handleDetailPrevious = () => {
+            setDetailCurrentPage((prev) => Math.max(prev - 1, 1));
+          };
 
-        const handleDetailNext = () => {
-          setDetailCurrentPage(prev => Math.min(prev + 1, totalPages));
-        };
+          const handleDetailNext = () => {
+            setDetailCurrentPage((prev) => Math.min(prev + 1, totalPages));
+          };
 
-        return (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-6 rounded-md shadow-lg max-w-3xl w-full">
-              <h2 className="text-xl font-semibold mb-4">
-                Invoice Detail - {detailInvoice.inv_no}
-              </h2>
-              <div className="space-y-2 mb-4">
-                {/* Supplier address if available */}
-                {(() => {
-                  // Try to find supplier address from bp_code if available in data
-                  // If you have businessPartners data, you can use it here. Otherwise, fallback to bp_name.
-                  return (
-                    <p>
-                      <strong>Supplier:</strong> {detailInvoice.bp_code} — {detailInvoice.bp_name || "-"}
-                    </p>
-                  );
-                })()}
-                <p>
-                  <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
-                </p>
-                <p>
-                  <strong>Submit Date:</strong> {formatDateTime(detailInvoice.created_at)}
-                </p>
-                <p>
-                  <strong>Status:</strong> {detailInvoice.status}
-                </p>
-                <p>
-                  <strong>Total Amount:</strong> {formatCurrency(detailInvoice.total_amount)}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Invoice Lines</h3>
-                {invoiceLines.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200 text-sm">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-3 py-2 border">GR No</th>
-                          <th className="px-3 py-2 border">PO No</th>
-                          <th className="px-3 py-2 border">Part No</th>
-                          <th className="px-3 py-2 border">Item Description</th>
-                          <th className="px-3 py-2 border">Receipt Amount</th>
-                          <th className="px-3 py-2 border">Unit</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {currentItems.map((line: any) => (
-                          <tr key={line.inv_line_id}>
-                            <td className="px-3 py-2 border text-center">{line.gr_no}</td>
-                            <td className="px-3 py-2 border text-center">{line.po_no}</td>
-                            <td className="px-3 py-2 border text-center">{line.part_no}</td>
-                            <td className="px-3 py-2 border">{line.item_desc}</td>
-                            <td className="px-3 py-2 border text-right">{line.receipt_amount}</td>
-                            <td className="px-3 py-2 border text-center">{line.unit}</td>
+          return (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white p-6 rounded-md shadow-lg max-w-3xl w-full">
+                <h2 className="text-xl font-semibold mb-4">
+                  Invoice Detail - {detailInvoice.inv_no}
+                </h2>
+                <div className="space-y-2 mb-4">
+                  {/* Supplier address if available */}
+                  {(() => {
+                    // Try to find supplier address from bp_code if available in data
+                    // If you have businessPartners data, you can use it here. Otherwise, fallback to bp_name.
+                    return (
+                      <p>
+                        <strong>Supplier:</strong> {detailInvoice.bp_code} —{' '}
+                        {detailInvoice.bp_name || '-'}
+                      </p>
+                    );
+                  })()}
+                  <p>
+                    <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
+                  </p>
+                  <p>
+                    <strong>Submit Date:</strong>{' '}
+                    {formatDateTime(detailInvoice.created_at)}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> {detailInvoice.status}
+                  </p>
+                  <p>
+                    <strong>Total Amount:</strong>{' '}
+                    {formatCurrency(detailInvoice.total_amount)}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Invoice Lines</h3>
+                  {invoiceLines.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border border-gray-200 text-sm">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-3 py-2 border">GR No</th>
+                            <th className="px-3 py-2 border">PO No</th>
+                            <th className="px-3 py-2 border">Part No</th>
+                            <th className="px-3 py-2 border">
+                              Item Description
+                            </th>
+                            <th className="px-3 py-2 border">Qty Receipt</th>
+                            <th className="px-3 py-2 border">Unit Price</th>
+                            <th className="px-3 py-2 border">Receipt Amount</th>
+                            <th className="px-3 py-2 border">Unit</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    
-                    {/* Pagination Controls for Detail Modal - InvoiceCreationWizard Style */}
-                    {invoiceLines.length > detailRowsPerPage && (
-                      <div className="flex items-center justify-center gap-3 mt-4">
-                        <button
-                          onClick={handleDetailPrevious}
-                          disabled={detailCurrentPage === 1}
-                          className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          <ChevronLeft className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <span className="text-gray-700 font-medium text-sm">
-                          Page {detailCurrentPage} of {totalPages}
-                        </span>
-                        <button
-                          onClick={handleDetailNext}
-                          disabled={detailCurrentPage === totalPages}
-                          className="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          <ChevronRight className="w-5 h-5 text-gray-600" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500">No line items found.</div>
-                )}
-              </div>
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={closeDetailModal}
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                >
-                  Close
-                </button>
+                        </thead>
+                        <tbody>
+                          {currentItems.map((line: any) => (
+                            <tr key={line.inv_line_id}>
+                              <td className="px-3 py-2 border text-center">
+                                {line.gr_no}
+                              </td>
+                              <td className="px-3 py-2 border text-center">
+                                {line.po_no}
+                              </td>
+                              <td className="px-3 py-2 border text-center">
+                                {line.part_no}
+                              </td>
+                              <td className="px-3 py-2 border">
+                                {line.item_desc}
+                              </td>
+                              <td className="px-3 py-2 border text-right">
+                                {line.actual_receipt_qty?.toLocaleString()}
+                              </td>
+                              <td className="px-3 py-2 border text-right">
+                                {line.receipt_unit_price != null
+                                  ? Number(
+                                      line.receipt_unit_price,
+                                    ).toLocaleString('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      minimumFractionDigits: 2,
+                                    })
+                                  : '-'}
+                              </td>
+                              <td className="px-3 py-2 border text-right">
+                                {line.receipt_amount != null
+                                  ? Number(line.receipt_amount).toLocaleString(
+                                      'id-ID',
+                                      {
+                                        style: 'currency',
+                                        currency: 'IDR',
+                                        minimumFractionDigits: 2,
+                                      },
+                                    )
+                                  : '-'}
+                              </td>
+                              <td className="px-3 py-2 border text-center">
+                                {line.unit}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      No line items found.
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={closeDetailModal}
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
-
+          );
+        })()}
       {/* Simple Popup for showing Rejected reason */}
       {showReasonModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1177,18 +1344,19 @@ const InvoiceReportSup = () => {
           </div>
         </div>
       )}
-
       {/* Reject Reason Modal */}
       {showRejectInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4">Reject Invoice</h2>
-            <label className="block mb-2 text-sm font-medium text-gray-700">Reason for rejection</label>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              Reason for rejection
+            </label>
             <textarea
               className="w-full border border-gray-300 rounded p-2 mb-4"
               rows={3}
               value={rejectReason}
-              onChange={e => setRejectReason(e.target.value)}
+              onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Enter reason..."
               disabled={rejectLoading}
             />
