@@ -508,12 +508,12 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
                 {documents.map((doc, index) => {
                   let apiFn = null;
                   let filePrefix = '';
-                  if (doc.type.toLowerCase().includes('invoice')) {
-                    apiFn = API_Stream_File_Invoice;
-                    filePrefix = 'INVOICE_';
-                  } else if (doc.type.toLowerCase().includes('tax')) {
+                  if (doc.type.toLowerCase().includes('tax')) {
                     apiFn = API_Stream_File_Faktur;
                     filePrefix = 'FAKTURPAJAK_';
+                  } else if (doc.type.toLowerCase().includes('invoice')) {
+                    apiFn = API_Stream_File_Invoice;
+                    filePrefix = 'INVOICE_';
                   } else if (doc.type.toLowerCase().includes('delivery')) {
                     apiFn = API_Stream_File_Suratjalan;
                     filePrefix = 'SURATJALAN_';
