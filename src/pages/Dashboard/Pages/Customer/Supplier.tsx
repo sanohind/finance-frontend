@@ -209,12 +209,19 @@ const DashboardSupplier: React.FC = () => {
     });
   };
 
-  const newsWithTitle = news.filter(
-    (item) =>
-      item.title &&
-      item.title.trim() !== '' &&
-      item.title.trim().toLowerCase() !== 'untitled news',
-  );
+  const newsWithTitle = news
+    .filter(
+      (item) =>
+        item.title &&
+        item.title.trim() !== '' &&
+        item.title.trim().toLowerCase() !== 'untitled news',
+    )
+    .sort((a, b) => {
+      // Sort by created_at in descending order (newest first)
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return dateB - dateA;
+    });
 
   const allCarouselImages: CarouselImage[] = news.reduce(
     (acc: CarouselImage[], item) => {
@@ -346,7 +353,6 @@ const DashboardSupplier: React.FC = () => {
             )}
           </div>
         </div>
-
 
         {/* Right Side: News Table */}
         <div className="col-span-1">

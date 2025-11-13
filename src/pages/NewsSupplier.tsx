@@ -56,12 +56,15 @@ const NewsSupplier: React.FC = () => {
 
   // Auto-play carousel every 5 seconds
   useEffect(() => {
-    const allCarouselImages: CarouselImage[] = news.reduce((acc: CarouselImage[], item) => {
-      if (item.carousel_images && item.carousel_images.length > 0) {
-        return [...acc, ...item.carousel_images];
-      }
-      return acc;
-    }, []);
+    const allCarouselImages: CarouselImage[] = news.reduce(
+      (acc: CarouselImage[], item) => {
+        if (item.carousel_images && item.carousel_images.length > 0) {
+          return [...acc, ...item.carousel_images];
+        }
+        return acc;
+      },
+      [],
+    );
 
     if (allCarouselImages.length > 1) {
       const interval = setInterval(() => {
@@ -110,7 +113,7 @@ const NewsSupplier: React.FC = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch news');
       const result = await response.json();
-      
+
       // Handle different response structures
       let newsData: NewsItem[] = [];
       if (result.data && Array.isArray(result.data)) {
@@ -120,20 +123,25 @@ const NewsSupplier: React.FC = () => {
       }
 
       // Normalize carousel_images to always be an array
-      newsData = newsData.map(item => ({
+      newsData = newsData.map((item) => ({
         ...item,
-        carousel_images: Array.isArray(item.carousel_images) ? item.carousel_images : []
+        carousel_images: Array.isArray(item.carousel_images)
+          ? item.carousel_images
+          : [],
       }));
 
       console.log('Fetched news data:', newsData);
-      
+
       // Count total carousel images
       const totalCarouselImages = newsData.reduce(
-        (sum, item) => sum + (item.carousel_images?.length || 0), 
-        0
+        (sum, item) => sum + (item.carousel_images?.length || 0),
+        0,
       );
-      console.log('Total carousel images across all news:', totalCarouselImages);
-      
+      console.log(
+        'Total carousel images across all news:',
+        totalCarouselImages,
+      );
+
       setNews(newsData);
       setCurrentImageIndex(0);
     } catch (error) {
@@ -205,20 +213,31 @@ const NewsSupplier: React.FC = () => {
   };
 
   // Filter news that have title (exclude "Untitled News" which are carousel-only)
-  const newsWithTitle = news.filter(
-    (item) =>
-      item.title &&
-      item.title.trim() !== '' &&
-      item.title.trim().toLowerCase() !== 'untitled news'
-  );
+  // Sort by created_at in descending order (newest first)
+  const newsWithTitle = news
+    .filter(
+      (item) =>
+        item.title &&
+        item.title.trim() !== '' &&
+        item.title.trim().toLowerCase() !== 'untitled news',
+    )
+    .sort((a, b) => {
+      // Sort by created_at in descending order (newest first)
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return dateB - dateA;
+    });
 
   // Collect ALL carousel images from ALL news items into a single array
-  const allCarouselImages: CarouselImage[] = news.reduce((acc: CarouselImage[], item) => {
-    if (item.carousel_images && item.carousel_images.length > 0) {
-      return [...acc, ...item.carousel_images];
-    }
-    return acc;
-  }, []);
+  const allCarouselImages: CarouselImage[] = news.reduce(
+    (acc: CarouselImage[], item) => {
+      if (item.carousel_images && item.carousel_images.length > 0) {
+        return [...acc, ...item.carousel_images];
+      }
+      return acc;
+    },
+    [],
+  );
 
   console.log('All carousel images combined:', allCarouselImages.length);
 
@@ -233,7 +252,8 @@ const NewsSupplier: React.FC = () => {
   const prevImage = () => {
     if (allCarouselImages.length > 0) {
       setCurrentImageIndex(
-        (prev) => (prev - 1 + allCarouselImages.length) % allCarouselImages.length,
+        (prev) =>
+          (prev - 1 + allCarouselImages.length) % allCarouselImages.length,
       );
     }
   };
@@ -370,10 +390,7 @@ const NewsSupplier: React.FC = () => {
                       </tr>
                     ) : newsWithTitle.length > 0 ? (
                       newsWithTitle.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-gray-50"
-                        >
+                        <tr key={item.id} className="hover:bg-gray-50">
                           <td className="px-3 py-3 text-center whitespace-nowrap">
                             {item.title || '-'}
                           </td>
