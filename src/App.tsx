@@ -5,15 +5,16 @@ import SignIn from './pages/Authentication/Pages/SignIn';
 import Dashboard from './pages/Dashboard/Dashboard';
 import DefaultLayout from './layout/DefaultLayout';
 import ProtectedRoute from './pages/Authentication/ProtectedRoute';
-import ManageProfile from './pages/ManageUser/Pages/ManageProfile';  // Ensure this path is correct
-import ManageUser from './pages/ManageUser/Pages/ManageUser';  // Ensure this path is correct
-import AddUser from './pages/ManageUser/Pages/AddUser';  // Ensure this path is correct
-import EditUser from './pages/ManageUser/Pages/EditUser';  // Ensure this path is correct
+import ManageProfile from './pages/ManageUser/Pages/ManageProfile'; // Ensure this path is correct
+import ManageUser from './pages/ManageUser/Pages/ManageUser'; // Ensure this path is correct
+import AddUser from './pages/ManageUser/Pages/AddUser'; // Ensure this path is correct
+import EditUser from './pages/ManageUser/Pages/EditUser'; // Ensure this path is correct
 import { AuthProvider } from './pages/Authentication/AuthContext';
 import GrTracking from './pages/GrTracking';
 import GrTrackingSup from './pages/GrTrackingSup';
 import InvoiceCreation from './pages/InvoiceCreation';
 import News from './pages/News';
+import NewsSupplier from './pages/NewsSupplier';
 import InvoiceCreationSup from './pages/InvoiceCreationSup';
 import InvoiceReport from './pages/InvoiceReport';
 import InvoiceReportSup from './pages/InvoiceReportSup';
@@ -26,7 +27,7 @@ const App = () => {
   }, []);
 
   if (loading) {
-    return <Loader />;  // Show loading screen while loading
+    return <Loader />; // Show loading screen while loading
   }
 
   return (
@@ -36,20 +37,20 @@ const App = () => {
           {/* Public Route */}
           <Route path="/auth/login" element={<SignIn />} />
 
-          <Route element={<DefaultLayout/>}>
+          <Route element={<DefaultLayout />}>
             <Route
               path="/"
               element={
-                <ProtectedRoute allowedRoles={['1','2','3']}>
+                <ProtectedRoute allowedRoles={['1', '2', '3']}>
                   <Dashboard />
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['1','2','3']}>
+                <ProtectedRoute allowedRoles={['1', '2', '3']}>
                   <Dashboard />
                 </ProtectedRoute>
               }
@@ -58,7 +59,7 @@ const App = () => {
             <Route
               path="/profile"
               element={
-                <ProtectedRoute allowedRoles={['2','3']}>
+                <ProtectedRoute allowedRoles={['2', '3']}>
                   <ManageProfile />
                 </ProtectedRoute>
               }
@@ -74,10 +75,19 @@ const App = () => {
             />
 
             <Route
+              path="/newssupplier"
+              element={
+                <ProtectedRoute allowedRoles={['3']}>
+                  <NewsSupplier />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/list-user"
               element={
                 <ProtectedRoute allowedRoles={['1']}>
-                  <ManageUser/>
+                  <ManageUser />
                 </ProtectedRoute>
               }
             />
@@ -86,7 +96,7 @@ const App = () => {
               path="/add-user"
               element={
                 <ProtectedRoute allowedRoles={['1']}>
-                  <AddUser/>
+                  <AddUser />
                 </ProtectedRoute>
               }
             />
@@ -95,7 +105,7 @@ const App = () => {
               path="/edit-user"
               element={
                 <ProtectedRoute allowedRoles={['1']}>
-                  <EditUser/>
+                  <EditUser />
                 </ProtectedRoute>
               }
             />
@@ -104,7 +114,7 @@ const App = () => {
               path="/gr-tracking"
               element={
                 <ProtectedRoute allowedRoles={['1', '2']}>
-                  <GrTracking/>
+                  <GrTracking />
                 </ProtectedRoute>
               }
             />
@@ -113,7 +123,7 @@ const App = () => {
               path="/grtracking"
               element={
                 <ProtectedRoute allowedRoles={['3']}>
-                  <GrTrackingSup/>
+                  <GrTrackingSup />
                 </ProtectedRoute>
               }
             />
@@ -122,7 +132,7 @@ const App = () => {
               path="/invoice-creation"
               element={
                 <ProtectedRoute allowedRoles={['2']}>
-                  <InvoiceCreation/>
+                  <InvoiceCreation />
                 </ProtectedRoute>
               }
             />
@@ -131,7 +141,7 @@ const App = () => {
               path="/invoicecreation"
               element={
                 <ProtectedRoute allowedRoles={['3']}>
-                  <InvoiceCreationSup/>
+                  <InvoiceCreationSup />
                 </ProtectedRoute>
               }
             />
@@ -140,7 +150,7 @@ const App = () => {
               path="/invoice-report"
               element={
                 <ProtectedRoute allowedRoles={['1', '2']}>
-                  <InvoiceReport/>
+                  <InvoiceReport />
                 </ProtectedRoute>
               }
             />
@@ -149,11 +159,10 @@ const App = () => {
               path="/invoicereport"
               element={
                 <ProtectedRoute allowedRoles={['3']}>
-                  <InvoiceReportSup/>
+                  <InvoiceReportSup />
                 </ProtectedRoute>
               }
             />
-
           </Route>
 
           {/* Optional 404 route */}

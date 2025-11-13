@@ -34,6 +34,7 @@
     "file-saver": "^2.0.5",
     "flatpickr": "^4.6.13",
     "flowbite-react": "^0.10.2",
+    "framer-motion": "^12.23.24",
     "headlessui": "^0.0.0",
     "html2pdf.js": "^0.10.2",
     "jspdf": "^2.5.2",

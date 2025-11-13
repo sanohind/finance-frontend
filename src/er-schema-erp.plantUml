@@ -1,0 +1,231 @@
+@startuml ERP_Staging_Tables_Independent
+
+!define PRIMARY_KEY(x) <b><color:#b8861b><&key></color> x</b>
+!define FOREIGN_KEY(x) <color:#aaaaaa><&key></color> x
+!define COLUMN(x) <color:#efefef><&media-record></color> x
+!define TABLE(x) entity x << (T, white) >>
+!define STAGING_TABLE(x) entity x << (S, lightblue) >>
+
+' ERP Staging Table - INDEPENDENT, NO FOREIGN KEYS
+STAGING_TABLE(ERP_STAGING_DATA) {
+    PRIMARY_KEY(staging_id) : BIGINT
+    --
+    COLUMN(erp_sync_id) : VARCHAR(100) 
+    COLUMN(sync_batch_id) : VARCHAR(100)
+    COLUMN(data_type) : ENUM('BP', 'PO', 'DN', 'PO_LINE', 'DN_LINE')
+    COLUMN(operation_type) : ENUM('INSERT', 'UPDATE', 'DELETE')
+    --
+    ' Business Partner Fields
+    COLUMN(erp_bp_id) : VARCHAR(50)
+    COLUMN(bp_code) : VARCHAR(50)
+    COLUMN(company_name) : VARCHAR(255)
+    COLUMN(company_address) : TEXT
+    COLUMN(tax_id_number) : VARCHAR(50)
+    COLUMN(contact_person) : VARCHAR(255)
+    COLUMN(contact_email) : VARCHAR(255)
+    COLUMN(contact_phone) : VARCHAR(20)
+    --
+    ' Purchase Order Header Fields
+    COLUMN(erp_po_id) : VARCHAR(50)
+    COLUMN(po_no) : VARCHAR(100)
+    COLUMN(po_reference) : VARCHAR(100)
+    COLUMN(po_date) : DATE
+    COLUMN(po_currency) : VARCHAR(3)
+    COLUMN(po_total_amount) : DECIMAL(15,2)
+    COLUMN(po_status) : VARCHAR(50)
+    COLUMN(po_description) : TEXT
+    --
+    ' Delivery Note / Goods Receipt Header Fields
+    COLUMN(erp_dn_id) : VARCHAR(50)
+    COLUMN(dn_no) : VARCHAR(100)
+    COLUMN(gr_no) : VARCHAR(100)
+    COLUMN(receipt_no) : VARCHAR(100)
+    COLUMN(actual_receipt_date) : DATE
+    COLUMN(packing_slip) : VARCHAR(100)
+    COLUMN(dn_status) : VARCHAR(50)
+    --
+    ' Line Item Fields (for both PO and DN)
+    COLUMN(erp_line_id) : VARCHAR(50)
+    COLUMN(parent_erp_id) : VARCHAR(50)
+    COLUMN(receipt_line) : VARCHAR(50)
+    COLUMN(item_no) : VARCHAR(100)
+    COLUMN(ics_code) : VARCHAR(50)
+    COLUMN(ics_part) : VARCHAR(100)
+    COLUMN(part_no) : VARCHAR(100)
+    COLUMN(part_name) : VARCHAR(255)
+    COLUMN(request_qty) : DECIMAL(12,4)
+    COLUMN(actual_receipt_qty) : DECIMAL(12,4)
+    COLUMN(approve_qty) : DECIMAL(12,4)
+    COLUMN(unit) : VARCHAR(20)
+    COLUMN(receipt_amount) : DECIMAL(15,2)
+    COLUMN(receipt_unit_price) : DECIMAL(15,4)
+    COLUMN(line_currency) : VARCHAR(3)
+    --
+    ' Sync Control Fields
+    COLUMN(sync_status) : ENUM('PENDING', 'PROCESSED', 'ERROR', 'SKIPPED')
+    COLUMN(error_message) : TEXT
+    COLUMN(processed_at) : TIMESTAMP
+    COLUMN(retry_count) : INT
+    COLUMN(is_active) : BOOLEAN
+    --
+    ' ERP Source Fields
+    COLUMN(erp_created_at) : TIMESTAMP
+    COLUMN(erp_updated_at) : TIMESTAMP
+    COLUMN(erp_created_by) : VARCHAR(100)
+    COLUMN(erp_updated_by) : VARCHAR(100)
+    --
+    ' System Fields
+    COLUMN(created_at) : TIMESTAMP
+    COLUMN(updated_at) : TIMESTAMP
+}
+
+' ERP Sync Log - INDEPENDENT
+STAGING_TABLE(ERP_SYNC_LOG) {
+    PRIMARY_KEY(sync_log_id) : BIGINT
+    --
+    COLUMN(sync_batch_id) : VARCHAR(100)
+    COLUMN(sync_type) : ENUM('FULL', 'INCREMENTAL', 'MANUAL')
+    COLUMN(data_types) : VARCHAR(255)
+    COLUMN(sync_status) : ENUM('STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'PARTIAL')
+    COLUMN(total_records) : INT
+    COLUMN(processed_records) : INT
+    COLUMN(success_records) : INT
+    COLUMN(error_records) : INT
+    COLUMN(skipped_records) : INT
+    COLUMN(sync_started_at) : TIMESTAMP
+    COLUMN(sync_completed_at) : TIMESTAMP
+    COLUMN(sync_duration_seconds) : INT
+    COLUMN(error_summary) : TEXT
+    COLUMN(sync_triggered_by) : VARCHAR(100)
+    COLUMN(created_at) : TIMESTAMP
+}
+
+' Operational Tables - REFERENCE TO STAGING
+TABLE(BUSINESS_PARTNERS) {
+    PRIMARY_KEY(bp_id) : INT
+    --
+    COLUMN(staging_ref_id) : BIGINT
+    COLUMN(erp_bp_id) : VARCHAR(50)
+    FOREIGN_KEY(user_id) : INT
+    COLUMN(bp_code) : VARCHAR(50)
+    COLUMN(company_name) : VARCHAR(255)
+    COLUMN(company_address) : TEXT
+    COLUMN(tax_id_number) : VARCHAR(50)
+    COLUMN(contact_person) : VARCHAR(255)
+    COLUMN(contact_email) : VARCHAR(255)
+    COLUMN(contact_phone) : VARCHAR(20)
+    COLUMN(is_active) : BOOLEAN
+    COLUMN(last_sync_at) : TIMESTAMP
+    COLUMN(created_at) : TIMESTAMP
+    COLUMN(updated_at) : TIMESTAMP
+}
+
+TABLE(PURCHASE_ORDERS) {
+    PRIMARY_KEY(po_id) : INT
+    --
+    COLUMN(staging_ref_id) : BIGINT
+    COLUMN(erp_po_id) : VARCHAR(50)
+    COLUMN(po_no) : VARCHAR(100)
+    FOREIGN_KEY(bp_id) : INT
+    COLUMN(po_reference) : VARCHAR(100)
+    COLUMN(po_date) : DATE
+    COLUMN(currency) : VARCHAR(3)
+    COLUMN(total_amount) : DECIMAL(15,2)
+    COLUMN(status) : ENUM('open', 'partially_received', 'fully_received', 'cancelled')
+    COLUMN(description) : TEXT
+    COLUMN(last_sync_at) : TIMESTAMP
+    COLUMN(created_at) : TIMESTAMP
+    COLUMN(updated_at) : TIMESTAMP
+}
+
+TABLE(GOODS_RECEIPTS) {
+    PRIMARY_KEY(gr_id) : INT
+    --
+    COLUMN(staging_ref_id) : BIGINT
+    COLUMN(erp_dn_id) : VARCHAR(50)
+    COLUMN(gr_no) : VARCHAR(100)
+    COLUMN(receipt_no) : VARCHAR(100)
+    FOREIGN_KEY(bp_id) : INT
+    COLUMN(actual_receipt_date) : DATE
+    COLUMN(packing_slip) : VARCHAR(100)
+    COLUMN(status) : ENUM('received', 'invoiced', 'closed')
+    COLUMN(notes) : TEXT
+    COLUMN(last_sync_at) : TIMESTAMP
+    COLUMN(created_at) : TIMESTAMP
+    COLUMN(updated_at) : TIMESTAMP
+}
+
+TABLE(PO_LINE_ITEMS) {
+    PRIMARY_KEY(po_line_id) : INT
+    --
+    COLUMN(staging_ref_id) : BIGINT
+    COLUMN(erp_line_id) : VARCHAR(50)
+    FOREIGN_KEY(po_id) : INT
+    FOREIGN_KEY(gr_id) : INT
+    COLUMN(receipt_line) : VARCHAR(50)
+    COLUMN(item_no) : VARCHAR(100)
+    COLUMN(ics_code) : VARCHAR(50)
+    COLUMN(ics_part) : VARCHAR(100)
+    COLUMN(part_no) : VARCHAR(100)
+    COLUMN(part_name) : VARCHAR(255)
+    COLUMN(request_qty) : DECIMAL(12,4)
+    COLUMN(actual_receipt_qty) : DECIMAL(12,4)
+    COLUMN(approve_qty) : DECIMAL(12,4)
+    COLUMN(unit) : VARCHAR(20)
+    COLUMN(receipt_amount) : DECIMAL(15,2)
+    COLUMN(receipt_unit_price) : DECIMAL(15,4)
+    COLUMN(currency) : VARCHAR(3)
+    COLUMN(remaining_qty_to_invoice) : DECIMAL(12,4)
+    COLUMN(last_sync_at) : TIMESTAMP
+    COLUMN(created_at) : TIMESTAMP
+    COLUMN(updated_at) : TIMESTAMP
+}
+
+TABLE(USERS) {
+    PRIMARY_KEY(user_id) : INT
+    --
+    COLUMN(username) : VARCHAR(100)
+    COLUMN(email) : VARCHAR(255)
+    COLUMN(password_hash) : VARCHAR(255)
+    COLUMN(role) : ENUM('admin', 'supplier')
+    COLUMN(full_name) : VARCHAR(255)
+    COLUMN(phone) : VARCHAR(20)
+    COLUMN(is_active) : BOOLEAN
+    COLUMN(created_at) : TIMESTAMP
+    COLUMN(updated_at) : TIMESTAMP
+}
+
+' RELATIONSHIPS
+' Note: NO foreign keys FROM staging tables
+' Only operational tables reference to staging (weak reference)
+
+USERS ||--o{ BUSINESS_PARTNERS : user_id
+BUSINESS_PARTNERS ||--o{ PURCHASE_ORDERS : bp_id
+BUSINESS_PARTNERS ||--o{ GOODS_RECEIPTS : bp_id
+PURCHASE_ORDERS ||--o{ PO_LINE_ITEMS : po_id
+GOODS_RECEIPTS ||--o{ PO_LINE_ITEMS : gr_id
+
+' Weak references (no FK constraints)   
+ERP_STAGING_DATA ||..o{ BUSINESS_PARTNERS : staging_ref_id
+ERP_STAGING_DATA ||..o{ PURCHASE_ORDERS : staging_ref_id  
+ERP_STAGING_DATA ||..o{ GOODS_RECEIPTS : staging_ref_id
+ERP_STAGING_DATA ||..o{ PO_LINE_ITEMS : staging_ref_id
+
+note right of ERP_STAGING_DATA
+  INDEPENDENT TABLE
+  - No foreign key constraints
+  - Raw data from ERP
+  - Can contain incomplete data
+  - Bulk operations friendly
+  - Can be purged safely
+end note
+
+note right of BUSINESS_PARTNERS
+  OPERATIONAL TABLES
+  - Reference to staging (weak)
+  - Validated and processed data
+  - Business logic applied
+  - Referential integrity maintained
+end note
+
+@enduml
