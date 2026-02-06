@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
-import { Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, XCircle } from 'lucide-react';
 import { AiFillFilePdf } from 'react-icons/ai';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
@@ -95,51 +95,73 @@ const InvoiceReportSup = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectLoading, setRejectLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchInvoiceData = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('access_token');
-        const response = await fetch(API_Inv_Header_Admin(), {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+  const [totalItems, setTotalItems] = useState(0);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch invoice data');
-        }
+  const fetchInvoiceData = async (page = 1) => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('per_page', rowsPerPage.toString());
 
-        const result = await response.json();
-        if (result && typeof result === 'object') {
-          let invoiceList: Invoice[] = [];
+      if (invoiceNumber) queryParams.append('inv_no', invoiceNumber);
+      
+      if (invoiceDateFrom) queryParams.append('invoice_date_from', invoiceDateFrom);
+      if (invoiceDateTo) queryParams.append('invoice_date_to', invoiceDateTo);
+      if (invoiceStatus) queryParams.append('status', invoiceStatus);
+      if (paymentPlanningDate) queryParams.append('plan_date', paymentPlanningDate);
+      // 'bp_code' is not usually selected by supplier as they only see their own. But if searchSupplier exists?
+      // InvoiceReportSup implementation doesn't seem to have 'searchSupplier' state or input in the UI form shown in Step 48.
+      
+      const url = `${API_Inv_Header_Admin()}?${queryParams.toString()}`;
 
-          if (Array.isArray(result.data)) {
-            invoiceList = result.data;
-          } else if (result.data && typeof result.data === 'object') {
-            invoiceList = Object.values(result.data);
-          } else if (Array.isArray(result)) {
-            invoiceList = result;
-          }
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-          if (invoiceList.length > 0) {
-            setData(invoiceList);
-            setFilteredData(invoiceList);
-          } else {
-            toast.warn('No invoice data found');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching invoice data:', error);
-        toast.error('Failed to fetch invoice data');
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice data');
       }
-    };
 
-    fetchInvoiceData();
+      const result = await response.json();
+      if (result && typeof result === 'object') {
+        let invoiceList: Invoice[] = [];
+
+        if (Array.isArray(result.data)) {
+          invoiceList = result.data;
+          if (result.meta) {
+              setTotalItems(result.meta.total);
+          } else if (result.total) {
+              setTotalItems(result.total);
+          }
+        } else if (result.data && typeof result.data === 'object') {
+          invoiceList = Object.values(result.data);
+        } else if (Array.isArray(result)) {
+           // fallback
+          invoiceList = result;
+          setTotalItems(result.length);
+        }
+
+        setData(invoiceList);
+        setFilteredData(invoiceList);
+        setCurrentPage(page);
+      }
+    } catch (error) {
+      console.error('Error fetching invoice data:', error);
+      toast.error('Failed to fetch invoice data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoiceData(1);
   }, []);
 
   // Apply column filters
@@ -293,56 +315,20 @@ const InvoiceReportSup = () => {
     pphAmountFilter,
     totalAmountFilter,
   ]);
+  /* Updated to trigger server fetch */
   const handleSearch = () => {
-    let newFiltered = [...data];
-
-    if (invoiceNumber.trim()) {
-      newFiltered = newFiltered.filter(
-        (row) =>
-          row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase()),
-      );
-    }
-    if (invoiceStatus.trim()) {
-      newFiltered = newFiltered.filter(
-        (row) =>
-          row.status?.toLowerCase().includes(invoiceStatus.toLowerCase()),
-      );
-    }
-    if (paymentPlanningDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate,
-      );
-    }
-    // Filter by invoice date range
-    if (invoiceDateFrom && invoiceDateTo) {
-      newFiltered = newFiltered.filter((row) => {
-        if (!row.inv_date) return false;
-        const rowDate = row.inv_date.slice(0, 10);
-        return rowDate >= invoiceDateFrom && rowDate <= invoiceDateTo;
-      });
-    } else if (invoiceDateFrom) {
-      newFiltered = newFiltered.filter((row) => {
-        if (!row.inv_date) return false;
-        return row.inv_date.slice(0, 10) >= invoiceDateFrom;
-      });
-    } else if (invoiceDateTo) {
-      newFiltered = newFiltered.filter((row) => {
-        if (!row.inv_date) return false;
-        return row.inv_date.slice(0, 10) <= invoiceDateTo;
-      });
-    }
-
-    setFilteredData(newFiltered);
-    setCurrentPage(1);
+      fetchInvoiceData(1);
   };
+
   const handleClear = () => {
     setInvoiceNumber('');
     setInvoiceStatus('');
     setPaymentPlanningDate('');
     setInvoiceDateFrom('');
     setInvoiceDateTo('');
-    setFilteredData(data);
-    setCurrentPage(1);
+    
+    // Reset to first page without filters
+    fetchInvoiceData(1);
   };
 
   const handleDownloadAttachment = () => {
@@ -547,10 +533,8 @@ const InvoiceReportSup = () => {
   };
 
   // Add paginatedData for pagination
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage,
-  );
+  /* Since data is now paginated from server, filteredData CONTAINS only the current page. */
+  const paginatedData = filteredData;
 
   // Show detail modal for invoice
   const handleShowDetail = (invoice: Invoice) => {
@@ -1184,10 +1168,10 @@ const InvoiceReportSup = () => {
         </div>
 
         <Pagination
-          totalRows={filteredData.length}
+          totalRows={totalItems}
           rowsPerPage={rowsPerPage}
           currentPage={currentPage}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => fetchInvoiceData(page)}
         />
       </div>
       {/* Detail Modal */}

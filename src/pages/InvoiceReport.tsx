@@ -179,14 +179,32 @@ const InvoiceReport: React.FC = (): ReactNode => {
   };
 
   // fetch invoices
-  const fetchInvoices = async () => {
+  const [totalItems, setTotalItems] = useState(0);
+
+  // fetch invoices
+  const fetchInvoices = async (page = 1) => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('No access token found');
       }
-      const response = await fetch(API_Inv_Header_Admin(), {
+
+      // Construct URL with query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('per_page', rowsPerPage.toString());
+
+      if (searchSupplier) queryParams.append('bp_code', searchSupplier);
+      if (invoiceNumber) queryParams.append('inv_no', invoiceNumber);
+      if (invoiceDateFrom) queryParams.append('invoice_date_from', invoiceDateFrom);
+      if (invoiceDateTo) queryParams.append('invoice_date_to', invoiceDateTo);
+      if (invoiceStatus) queryParams.append('status', invoiceStatus);
+      if (paymentPlanningDate) queryParams.append('plan_date', paymentPlanningDate);
+
+      const url = `${API_Inv_Header_Admin()}?${queryParams.toString()}`;
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -203,19 +221,26 @@ const InvoiceReport: React.FC = (): ReactNode => {
       if (result && typeof result === 'object') {
         if (Array.isArray(result.data)) {
           invoiceList = result.data;
+          // Set pagination meta data if available
+          if (result.meta) {
+             setTotalItems(result.meta.total);
+          } else if (result.total) { // Handle non-resource pagination response
+             setTotalItems(result.total);
+          }
         } else if (result.data && typeof result.data === 'object') {
-          invoiceList = Object.values(result.data);
+             // Handle edge case where data might be object
+            invoiceList = Object.values(result.data);
         } else if (Array.isArray(result)) {
+           // Handle legacy response if any
           invoiceList = result;
+          setTotalItems(result.length);
         }
       }
 
-      if (invoiceList.length > 0) {
-        setData(invoiceList);
-        setFilteredData(invoiceList);
-      } else {
-        toast.warn('No invoice data found');
-      }
+      setData(invoiceList);
+      setFilteredData(invoiceList); // Initial filtered data is the fetched page
+      setCurrentPage(page);
+
     } catch (error) {
       console.error('Error fetching invoice data:', error);
       toast.error('Failed to fetch invoice data');
@@ -229,10 +254,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
   }, []);
 
   useEffect(() => {
-    fetchInvoices();
+    fetchInvoices(1);
   }, []);
 
-  // Apply column filters
+  // Apply column filters (client-side on the current page)
   useEffect(() => {
     let newFiltered = [...data];
 
@@ -243,6 +268,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
           item.inv_no?.toLowerCase().includes(invoiceNoFilter.toLowerCase()),
       );
     }
+    // ... (other column filters remain same, operating on current page data)
     if (invDateFilter) {
       newFiltered = newFiltered.filter(
         (item) => item.inv_date?.includes(invDateFilter),
@@ -364,9 +390,18 @@ const InvoiceReport: React.FC = (): ReactNode => {
         });
       }
     }
+    
+    // Also apply valid client-side search (like invoiceNumber which is not on backend yet for this task) - REMOVED since it is now on backend
+    /* if (invoiceNumber.trim()) {
+       newFiltered = newFiltered.filter(
+        (row) =>
+          row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase()),
+      );
+    } */
+
 
     setFilteredData(newFiltered);
-    setCurrentPage(1);
+    // Do NOT reset currentPage here as we are on a specific server page
   }, [
     data,
     invoiceNoFilter,
@@ -385,59 +420,11 @@ const InvoiceReport: React.FC = (): ReactNode => {
     pphBaseFilter,
     pphAmountFilter,
     totalAmountFilter,
+    invoiceNumber, // Added invoiceNumber here as client side filter on top of server page
   ]);
+
   const handleSearch = () => {
-    let newFiltered = [...data];
-
-    if (searchSupplier.trim()) {
-      newFiltered = newFiltered.filter((row) => {
-        const codeMatch = row.bp_code
-          ?.toLowerCase()
-          .includes(searchSupplier.toLowerCase());
-        const nameMatch = row.bp_name
-          ?.toLowerCase()
-          .includes(searchSupplier.toLowerCase());
-        return codeMatch || nameMatch;
-      });
-    }
-    if (invoiceNumber.trim()) {
-      newFiltered = newFiltered.filter(
-        (row) =>
-          row.inv_no?.toLowerCase().includes(invoiceNumber.toLowerCase()),
-      );
-    }
-    if (invoiceStatus.trim()) {
-      newFiltered = newFiltered.filter(
-        (row) =>
-          row.status?.toLowerCase().includes(invoiceStatus.toLowerCase()),
-      );
-    }
-    if (paymentPlanningDate) {
-      newFiltered = newFiltered.filter(
-        (row) => row.plan_date?.slice(0, 10) === paymentPlanningDate,
-      );
-    }
-    // Filter by invoice date range
-    if (invoiceDateFrom && invoiceDateTo) {
-      newFiltered = newFiltered.filter((row) => {
-        if (!row.inv_date) return false;
-        const rowDate = row.inv_date.slice(0, 10);
-        return rowDate >= invoiceDateFrom && rowDate <= invoiceDateTo;
-      });
-    } else if (invoiceDateFrom) {
-      newFiltered = newFiltered.filter((row) => {
-        if (!row.inv_date) return false;
-        return row.inv_date.slice(0, 10) >= invoiceDateFrom;
-      });
-    } else if (invoiceDateTo) {
-      newFiltered = newFiltered.filter((row) => {
-        if (!row.inv_date) return false;
-        return row.inv_date.slice(0, 10) <= invoiceDateTo;
-      });
-    }
-
-    setFilteredData(newFiltered);
-    setCurrentPage(1);
+      fetchInvoices(1);
   };
   const handleClear = () => {
     setSearchSupplier('');
@@ -465,8 +452,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
     setPphAmountFilter('');
     setTotalAmountFilter('');
 
-    setFilteredData(data);
-    setCurrentPage(1);
+    setFilteredData([]); // Use empty or data, but fetchInvoices will refill it
+    // Reset to first page without filters
+    fetchInvoices(1);
     setSelectedInvoices([]);
   };
 
@@ -907,10 +895,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
     }
   };
 
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage,
-  );
+  /* Since data is now paginated from server, filteredData CONTAINS only the current page. */
+  const paginatedData = filteredData;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -1735,10 +1721,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
           </table>
         </div>
         <Pagination
-          totalRows={filteredData.length}
+          totalRows={totalItems}
           rowsPerPage={rowsPerPage}
           currentPage={currentPage}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => fetchInvoices(page)}
         />
       </div>
       {/* Detail Modal */}
