@@ -101,7 +101,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [rowsPerPage] = useState(15);
+  const [rowsPerPage] = useState(20); // Client-side pagination: 20 items per page
+  const [filterInfo, setFilterInfo] = useState<any>(null);
 
   // Allow multiple 'New' but only single 'In Process' or multiple 'Ready To Payment'
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
@@ -181,8 +182,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
   // fetch invoices
   const [totalItems, setTotalItems] = useState(0);
 
-  // fetch invoices
-  const fetchInvoices = async (page = 1) => {
+  // fetch invoices - no pagination params, get all data
+  const fetchInvoices = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
@@ -190,10 +191,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
         throw new Error('No access token found');
       }
 
-      // Construct URL with query parameters
+      // Construct URL with query parameters (no page/per_page)
       const queryParams = new URLSearchParams();
-      queryParams.append('page', page.toString());
-      queryParams.append('per_page', rowsPerPage.toString());
 
       if (searchSupplier) queryParams.append('bp_code', searchSupplier);
       if (invoiceNumber) queryParams.append('inv_no', invoiceNumber);
@@ -218,28 +217,30 @@ const InvoiceReport: React.FC = (): ReactNode => {
       const result = await response.json();
       let invoiceList: Invoice[] = [];
 
+      // Handle new API response format with data and filter_info
       if (result && typeof result === 'object') {
         if (Array.isArray(result.data)) {
           invoiceList = result.data;
-          // Set pagination meta data if available
-          if (result.meta) {
-             setTotalItems(result.meta.total);
-          } else if (result.total) { // Handle non-resource pagination response
-             setTotalItems(result.total);
+          // Store filter info from backend
+          if (result.filter_info) {
+            setFilterInfo(result.filter_info);
+            setTotalItems(result.filter_info.total_records || result.data.length);
+          } else {
+            setTotalItems(result.data.length);
           }
         } else if (result.data && typeof result.data === 'object') {
-             // Handle edge case where data might be object
-            invoiceList = Object.values(result.data);
+          invoiceList = Object.values(result.data);
+          setTotalItems(invoiceList.length);
         } else if (Array.isArray(result)) {
-           // Handle legacy response if any
+          // Handle legacy response if any
           invoiceList = result;
           setTotalItems(result.length);
         }
       }
 
       setData(invoiceList);
-      setFilteredData(invoiceList); // Initial filtered data is the fetched page
-      setCurrentPage(page);
+      setFilteredData(invoiceList);
+      setCurrentPage(1); // Reset to first page when data changes
 
     } catch (error) {
       console.error('Error fetching invoice data:', error);
@@ -254,7 +255,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   }, []);
 
   useEffect(() => {
-    fetchInvoices(1);
+    fetchInvoices();
   }, []);
 
   // Apply column filters (client-side on the current page)
@@ -424,7 +425,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   ]);
 
   const handleSearch = () => {
-      fetchInvoices(1);
+      fetchInvoices();
   };
   const handleClear = () => {
     setSearchSupplier('');
@@ -454,7 +455,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
 
     setFilteredData([]); // Use empty or data, but fetchInvoices will refill it
     // Reset to first page without filters
-    fetchInvoices(1);
+    fetchInvoices();
     setSelectedInvoices([]);
   };
 
@@ -895,8 +896,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
     }
   };
 
-  /* Since data is now paginated from server, filteredData CONTAINS only the current page. */
-  const paginatedData = filteredData;
+  // Client-side pagination: slice filteredData based on currentPage
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -1721,10 +1724,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
           </table>
         </div>
         <Pagination
-          totalRows={totalItems}
+          totalRows={filteredData.length}
           rowsPerPage={rowsPerPage}
           currentPage={currentPage}
-          onPageChange={(page) => fetchInvoices(page)}
+          onPageChange={(page) => setCurrentPage(page)}
         />
       </div>
       {/* Detail Modal */}

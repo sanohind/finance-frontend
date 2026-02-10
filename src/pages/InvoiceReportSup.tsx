@@ -81,7 +81,8 @@ const InvoiceReportSup = () => {
   const [filteredData, setFilteredData] = useState<Invoice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [rowsPerPage] = useState(15);
+  const [rowsPerPage] = useState(20); // Client-side pagination: 20 items per page
+  const [filterInfo, setFilterInfo] = useState<any>(null);
 
   // Reason popup state
   const [showReasonModal, setShowReasonModal] = useState(false);
@@ -97,14 +98,12 @@ const InvoiceReportSup = () => {
 
   const [totalItems, setTotalItems] = useState(0);
 
-  const fetchInvoiceData = async (page = 1) => {
+  const fetchInvoiceData = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
       
       const queryParams = new URLSearchParams();
-      queryParams.append('page', page.toString());
-      queryParams.append('per_page', rowsPerPage.toString());
 
       if (invoiceNumber) queryParams.append('inv_no', invoiceNumber);
       
@@ -112,8 +111,6 @@ const InvoiceReportSup = () => {
       if (invoiceDateTo) queryParams.append('invoice_date_to', invoiceDateTo);
       if (invoiceStatus) queryParams.append('status', invoiceStatus);
       if (paymentPlanningDate) queryParams.append('plan_date', paymentPlanningDate);
-      // 'bp_code' is not usually selected by supplier as they only see their own. But if searchSupplier exists?
-      // InvoiceReportSup implementation doesn't seem to have 'searchSupplier' state or input in the UI form shown in Step 48.
       
       const url = `${API_Inv_Header_Admin()}?${queryParams.toString()}`;
 
@@ -135,13 +132,16 @@ const InvoiceReportSup = () => {
 
         if (Array.isArray(result.data)) {
           invoiceList = result.data;
-          if (result.meta) {
-              setTotalItems(result.meta.total);
-          } else if (result.total) {
-              setTotalItems(result.total);
+          // Store filter info from backend
+          if (result.filter_info) {
+            setFilterInfo(result.filter_info);
+            setTotalItems(result.filter_info.total_records || result.data.length);
+          } else {
+            setTotalItems(result.data.length);
           }
         } else if (result.data && typeof result.data === 'object') {
           invoiceList = Object.values(result.data);
+          setTotalItems(invoiceList.length);
         } else if (Array.isArray(result)) {
            // fallback
           invoiceList = result;
@@ -150,7 +150,7 @@ const InvoiceReportSup = () => {
 
         setData(invoiceList);
         setFilteredData(invoiceList);
-        setCurrentPage(page);
+        setCurrentPage(1); // Reset to first page when data changes
       }
     } catch (error) {
       console.error('Error fetching invoice data:', error);
@@ -161,7 +161,7 @@ const InvoiceReportSup = () => {
   };
 
   useEffect(() => {
-    fetchInvoiceData(1);
+    fetchInvoiceData();
   }, []);
 
   // Apply column filters
@@ -317,7 +317,7 @@ const InvoiceReportSup = () => {
   ]);
   /* Updated to trigger server fetch */
   const handleSearch = () => {
-      fetchInvoiceData(1);
+      fetchInvoiceData();
   };
 
   const handleClear = () => {
@@ -328,7 +328,7 @@ const InvoiceReportSup = () => {
     setInvoiceDateTo('');
     
     // Reset to first page without filters
-    fetchInvoiceData(1);
+    fetchInvoiceData();
   };
 
   const handleDownloadAttachment = () => {
@@ -532,9 +532,10 @@ const InvoiceReportSup = () => {
     setShowReasonModal(true);
   };
 
-  // Add paginatedData for pagination
-  /* Since data is now paginated from server, filteredData CONTAINS only the current page. */
-  const paginatedData = filteredData;
+  // Client-side pagination: slice filteredData based on currentPage
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
 
   // Show detail modal for invoice
   const handleShowDetail = (invoice: Invoice) => {
@@ -1168,10 +1169,10 @@ const InvoiceReportSup = () => {
         </div>
 
         <Pagination
-          totalRows={totalItems}
+          totalRows={filteredData.length}
           rowsPerPage={rowsPerPage}
           currentPage={currentPage}
-          onPageChange={(page) => fetchInvoiceData(page)}
+          onPageChange={(page) => setCurrentPage(page)}
         />
       </div>
       {/* Detail Modal */}
