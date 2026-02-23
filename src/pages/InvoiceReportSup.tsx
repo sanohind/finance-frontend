@@ -53,6 +53,7 @@ const InvoiceReportSup = () => {
   // Detail modal pagination states
   const [detailCurrentPage, setDetailCurrentPage] = useState(1);
   const [detailRowsPerPage] = useState(7);
+  const [detailSupplierName, setDetailSupplierName] = useState<string>('');
   // Filter states
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState('');
@@ -544,6 +545,7 @@ const InvoiceReportSup = () => {
   const handleShowDetail = async (invoice: Invoice) => {
     setDetailInvoice(invoice);
     setDetailInvoiceLines([]);
+    setDetailSupplierName('');
     setDetailModalOpen(true);
     setDetailLinesLoading(true);
     try {
@@ -555,7 +557,12 @@ const InvoiceReportSup = () => {
       );
       if (res.ok) {
         const json = await res.json();
-        setDetailInvoiceLines(json.data?.inv_lines || []);
+        const lines = json.data?.inv_lines || [];
+        setDetailInvoiceLines(lines);
+        // Ambil bp_name dari inv_lines[0] karena header tidak menyertakan bp_name
+        if (lines.length > 0 && lines[0].bp_name) {
+          setDetailSupplierName(lines[0].bp_name);
+        }
       } else {
         toast.error('Failed to fetch invoice lines');
       }
@@ -569,6 +576,7 @@ const InvoiceReportSup = () => {
   const closeDetailModal = () => {
     setDetailInvoice(null);
     setDetailInvoiceLines([]);
+    setDetailSupplierName('');
     setDetailModalOpen(false);
     setDetailCurrentPage(1);
   };
@@ -1225,17 +1233,10 @@ const InvoiceReportSup = () => {
                   Invoice Detail - {detailInvoice.inv_no}
                 </h2>
                 <div className="space-y-2 mb-4">
-                  {/* Supplier address if available */}
-                  {(() => {
-                    // Try to find supplier address from bp_code if available in data
-                    // If you have businessPartners data, you can use it here. Otherwise, fallback to bp_name.
-                    return (
-                      <p>
-                        <strong>Supplier:</strong> {detailInvoice.bp_code} —{' '}
-                        {detailInvoice.bp_name || '-'}
-                      </p>
-                    );
-                  })()}
+                  <p>
+                    <strong>Supplier:</strong> {detailInvoice.bp_code} —{' '}
+                    {detailSupplierName || '-'}
+                  </p>
                   <p>
                     <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
                   </p>

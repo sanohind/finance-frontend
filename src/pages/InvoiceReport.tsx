@@ -68,6 +68,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const [detailLinesLoading, setDetailLinesLoading] = useState(false);
   const [detailCurrentPage, setDetailCurrentPage] = useState(1);
   const [detailRowsPerPage] = useState(7);
+  const [detailSupplierName, setDetailSupplierName] = useState<string>('');
 
   const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>(
     [],
@@ -977,6 +978,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const handleShowDetail = async (invoice: Invoice) => {
     setDetailInvoice(invoice);
     setDetailInvoiceLines([]);
+    setDetailSupplierName('');
     setDetailModalOpen(true);
     setDetailLinesLoading(true);
     try {
@@ -988,7 +990,12 @@ const InvoiceReport: React.FC = (): ReactNode => {
       );
       if (res.ok) {
         const json = await res.json();
-        setDetailInvoiceLines(json.data?.inv_lines || []);
+        const lines = json.data?.inv_lines || [];
+        setDetailInvoiceLines(lines);
+        // Ambil bp_name dari inv_lines[0] karena header tidak menyertakan bp_name
+        if (lines.length > 0 && lines[0].bp_name) {
+          setDetailSupplierName(lines[0].bp_name);
+        }
       } else {
         toast.error('Failed to fetch invoice lines');
       }
@@ -1003,6 +1010,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
   const closeDetailModal = () => {
     setDetailInvoice(null);
     setDetailInvoiceLines([]);
+    setDetailSupplierName('');
     setDetailModalOpen(false);
     setDetailCurrentPage(1);
   };
@@ -1781,17 +1789,10 @@ const InvoiceReport: React.FC = (): ReactNode => {
                   Invoice Detail - {detailInvoice.inv_no}
                 </h2>
                 <div className="space-y-2 mb-4">
-                  {(() => {
-                    const partner = businessPartners.find(
-                      (bp) => bp.bp_code === detailInvoice.bp_code,
-                    );
-                    return (
-                      <p>
-                        <strong>Supplier:</strong> {detailInvoice.bp_code} —{' '}
-                        {partner ? partner.adr_line_1 : '-'}
-                      </p>
-                    );
-                  })()}
+                  <p>
+                    <strong>Supplier:</strong> {detailInvoice.bp_code} —{' '}
+                    {detailSupplierName || '-'}
+                  </p>
                   <p>
                     <strong>Date:</strong> {formatDate(detailInvoice.inv_date)}
                   </p>
