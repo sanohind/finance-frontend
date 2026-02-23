@@ -6,6 +6,7 @@ import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import {
   API_Inv_Header_Admin,
+  API_Inv_Header_By_Inv_No_Admin,
   API_Update_Inv_Header_Rejected,
   API_Stream_File_Invoice,
   API_Stream_File_Faktur,
@@ -47,6 +48,8 @@ const InvoiceReportSup = () => {
   // Detail modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+  const [detailInvoiceLines, setDetailInvoiceLines] = useState<any[]>([]);
+  const [detailLinesLoading, setDetailLinesLoading] = useState(false);
   // Detail modal pagination states
   const [detailCurrentPage, setDetailCurrentPage] = useState(1);
   const [detailRowsPerPage] = useState(7);
@@ -537,16 +540,37 @@ const InvoiceReportSup = () => {
   const endIndex = startIndex + rowsPerPage;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
-  // Show detail modal for invoice
-  const handleShowDetail = (invoice: Invoice) => {
+  // Show detail modal for invoice - fetches invoice lines from API
+  const handleShowDetail = async (invoice: Invoice) => {
     setDetailInvoice(invoice);
+    setDetailInvoiceLines([]);
     setDetailModalOpen(true);
+    setDetailLinesLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await fetch(
+        API_Inv_Header_By_Inv_No_Admin() + invoice.inv_id,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setDetailInvoiceLines(json.data?.inv_lines || []);
+      } else {
+        toast.error('Failed to fetch invoice lines');
+      }
+    } catch {
+      toast.error('Error fetching invoice lines');
+    } finally {
+      setDetailLinesLoading(false);
+    }
   };
   // Close detail modal
   const closeDetailModal = () => {
     setDetailInvoice(null);
+    setDetailInvoiceLines([]);
     setDetailModalOpen(false);
-    setDetailCurrentPage(1); // Reset pagination when closing modal
+    setDetailCurrentPage(1);
   };
 
   // Date range handlers
@@ -1180,9 +1204,7 @@ const InvoiceReportSup = () => {
         detailInvoice &&
         (() => {
           // Pagination logic for detail modal
-          const invoiceLines = Array.isArray((detailInvoice as any).inv_lines)
-            ? (detailInvoice as any).inv_lines
-            : [];
+          const invoiceLines = detailInvoiceLines;
           const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
           const startIndex = (detailCurrentPage - 1) * detailRowsPerPage;
           const endIndex = startIndex + detailRowsPerPage;
@@ -1231,7 +1253,9 @@ const InvoiceReportSup = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Invoice Lines</h3>
-                  {invoiceLines.length > 0 ? (
+                  {detailLinesLoading ? (
+                    <p className="text-gray-500 text-sm">Loading invoice lines...</p>
+                  ) : invoiceLines.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full border border-gray-200 text-sm">
                         <thead className="bg-gray-100">

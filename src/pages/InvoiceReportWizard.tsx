@@ -34,7 +34,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
   onFinish,
   invoiceNumberProp,
 }) => {
-  if (!isOpen) return null;
+  // NOTE: All hooks MUST be declared before any conditional return (Rules of Hooks)
 
   // Steps
   const [currentStep, setCurrentStep] = useState(1);
@@ -131,24 +131,38 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
     setTotalInvoiceAmount(newTotalInvoiceAmount);
   }, [pphCode, pphBaseAmount, taxBaseAmount, taxAmount, pphList]);
 
-  // Fetch invoice data when invoiceNumberProp changes
+  // Fetch invoice data when invoiceNumberProp changes or wizard opens
   useEffect(() => {
-    if (!invoiceNumberProp) return;
+    console.log('InvoiceReportWizard - useEffect triggered');
+    console.log('invoiceNumberProp:', invoiceNumberProp);
+    console.log('isOpen:', isOpen);
+
+    if (!isOpen || !invoiceNumberProp) {
+      console.log('Skipping fetch: isOpen=', isOpen, 'invoiceNumberProp=', invoiceNumberProp);
+      return;
+    }
 
     const fetchInvoiceData = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        if (!token) return;
+        if (!token) {
+          console.log('No access token found');
+          return;
+        }
 
         // --- Fetch header data using inv_id instead of inv_no ---
-        const headerRes = await fetch(
-          API_Inv_Header_By_Inv_No_Admin() + `${invoiceNumberProp}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const url = API_Inv_Header_By_Inv_No_Admin() + `${invoiceNumberProp}`;
+        console.log('Fetching invoice detail from:', url);
+        
+        const headerRes = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        console.log('Response status:', headerRes.status);
+        
         if (headerRes.ok) {
           const headerData = await headerRes.json();
+          console.log('Response data:', headerData);
           const data = headerData.data || {};
           
           setInvoiceNumber(data.inv_no || '');
@@ -186,7 +200,7 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
       }
     };
     fetchInvoiceData();
-  }, [invoiceNumberProp]);
+  }, [invoiceNumberProp, isOpen]);
 
   // Number formatting
   const formatRupiah = (val: string | number) => {
@@ -744,6 +758,9 @@ const InvoiceReportWizard: React.FC<InvoiceReportWizardProps> = ({
         return null;
     }
   };
+
+  // Guard moved here (after all hooks) to comply with React Rules of Hooks
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">

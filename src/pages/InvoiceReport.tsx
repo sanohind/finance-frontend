@@ -6,6 +6,7 @@ import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import Pagination from '../components/Table/Pagination';
 import {
   API_Inv_Header_Admin,
+  API_Inv_Header_By_Inv_No_Admin,
   API_List_Partner_Admin,
   API_Update_Status_To_In_Process_Finance,
   API_Upload_Payment_Admin,
@@ -63,6 +64,8 @@ const InvoiceReport: React.FC = (): ReactNode => {
   // Detail modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+  const [detailInvoiceLines, setDetailInvoiceLines] = useState<any[]>([]);
+  const [detailLinesLoading, setDetailLinesLoading] = useState(false);
   const [detailCurrentPage, setDetailCurrentPage] = useState(1);
   const [detailRowsPerPage] = useState(7);
 
@@ -970,17 +973,38 @@ const InvoiceReport: React.FC = (): ReactNode => {
     }
   };
 
-  // Click handler for showing invoice detail modal
-  const handleShowDetail = (invoice: Invoice) => {
+  // Click handler for showing invoice detail modal - fetches invoice lines from API
+  const handleShowDetail = async (invoice: Invoice) => {
     setDetailInvoice(invoice);
+    setDetailInvoiceLines([]);
     setDetailModalOpen(true);
+    setDetailLinesLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await fetch(
+        API_Inv_Header_By_Inv_No_Admin() + invoice.inv_id,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setDetailInvoiceLines(json.data?.inv_lines || []);
+      } else {
+        toast.error('Failed to fetch invoice lines');
+      }
+    } catch {
+      toast.error('Error fetching invoice lines');
+    } finally {
+      setDetailLinesLoading(false);
+    }
   };
 
   // Close detail modal
   const closeDetailModal = () => {
     setDetailInvoice(null);
+    setDetailInvoiceLines([]);
     setDetailModalOpen(false);
-    setDetailCurrentPage(1); // Reset pagination when closing modal
+    setDetailCurrentPage(1);
   };
 
   return (
@@ -1734,7 +1758,7 @@ const InvoiceReport: React.FC = (): ReactNode => {
       {detailModalOpen &&
         detailInvoice &&
         (() => {
-          const invoiceLines = (detailInvoice as any).inv_lines || [];
+          const invoiceLines = detailInvoiceLines;
 
           // Pagination logic for detail modal
           const totalPages = Math.ceil(invoiceLines.length / detailRowsPerPage);
@@ -1785,7 +1809,9 @@ const InvoiceReport: React.FC = (): ReactNode => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Invoice Lines</h3>
-                  {Array.isArray(invoiceLines) && invoiceLines.length > 0 ? (
+                  {detailLinesLoading ? (
+                    <p className="text-gray-500 text-sm">Loading invoice lines...</p>
+                  ) : Array.isArray(invoiceLines) && invoiceLines.length > 0 ? (
                     <div>
                       <div className="overflow-x-auto">
                         <table className="min-w-full border border-gray-200 text-sm">
