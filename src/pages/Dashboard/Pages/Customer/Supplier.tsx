@@ -49,6 +49,7 @@ const DashboardSupplier: React.FC = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [fullScreenImageUrl, setFullScreenImageUrl] = useState<string | null>(null);
 
   // Fetch supplier dashboard data
   const fetchDashboardData = async () => {
@@ -276,11 +277,21 @@ const DashboardSupplier: React.FC = () => {
               </div>
             ) : allCarouselImages.length > 0 ? (
               <div className="relative">
-                <div className="relative w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                <div 
+                  className="relative w-full h-96 bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
+                  onClick={(e) => {
+                    const imgEl = e.currentTarget.querySelector('img');
+                    if (imgEl && imgEl.src) {
+                      setFullScreenImageUrl(imgEl.src);
+                    } else {
+                      setFullScreenImageUrl(currentImage.url);
+                    }
+                  }}
+                >
                   <img
                     src={currentImage.url}
                     alt={`Carousel ${currentImageIndex + 1}`}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain pointer-events-none"
                     onError={(e) => {
                       const filename =
                         currentImage.filename ||
@@ -533,6 +544,36 @@ const DashboardSupplier: React.FC = () => {
       <div className="bg-white p-4 md:p-2 rounded-lg shadow">
         <ListProgress />
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullScreenImageUrl && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 p-4"
+          style={{ zIndex: 99999 }}
+          onClick={() => setFullScreenImageUrl(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 focus:outline-none"
+            style={{ zIndex: 100000 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullScreenImageUrl(null);
+            }}
+            aria-label="Close fullscreen"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={fullScreenImageUrl}
+            alt="Fullscreen"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: '90vh' }}
+          />
+        </div>
+      )}
     </div>
   );
 };
